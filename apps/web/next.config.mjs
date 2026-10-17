@@ -1,4 +1,7 @@
-/** @type {import('next').NextConfig} */
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
 const securityHeaders = [
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -19,8 +22,12 @@ const securityHeaders = [
   },
 ];
 
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // `next build` type-checks only application code. Tests are still covered by
+  // `bun run typecheck` (tsconfig.json), so type errors in them do not block deploys.
+  typescript: { tsconfigPath: "tsconfig.build.json" },
   // Vercel creates its own serverless output. Keep standalone output for the Docker deployment.
   ...(process.env.VERCEL === "1" ? {} : { output: "standalone" }),
   // The TypeScript source uses NodeNext-style ".js" specifiers for local modules.
@@ -37,4 +44,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

@@ -418,8 +418,8 @@ describe("feature flag setFlag confirmation requirements", () => {
   });
 
   it("a wrong typed phrase is rejected (400)", () => {
-    const expected = "enable kill_search_v3";
-    const typed = "enable kill_search_v2"; // typo — v2 instead of v3.
+    const expected: string = "enable kill_search_v3";
+    const typed: string = "enable kill_search_v2"; // typo — v2 instead of v3.
     expect(typed !== expected).toBe(true);
   });
 });

@@ -340,7 +340,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { token } = await params;
+  const { id: token } = await params;
 
   if (!/^[a-zA-Z0-9_-]{22}$/.test(token)) {
     return problem(400, "invalid_token");

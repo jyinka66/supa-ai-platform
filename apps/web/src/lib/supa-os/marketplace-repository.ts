@@ -39,7 +39,7 @@ export async function insertItem(item: MarketplaceItem, checks: ReviewCheck[] = 
       (id,name,type,description,creator_id,creator_name,status,monetization,price,version,tags,manifest,download_count,rating,review_count,featured,verified,published_at,created_at,updated_at)
       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::text[],$12::jsonb,$13,$14,$15,$16,$17,$18,$19,$20)`, [
       item.id, item.name, item.type, item.description, item.creatorId, item.creatorName, item.status, item.monetization, item.price, item.version,
-      tx.array(item.tags, "text"), JSON.stringify(item.manifest ?? {}), item.downloadCount, item.rating, item.reviewCount, item.featured, item.verified, item.publishedAt, item.createdAt, item.updatedAt,
+      tx.array(item.tags), JSON.stringify(item.manifest ?? {}), item.downloadCount, item.rating, item.reviewCount, item.featured, item.verified, item.publishedAt, item.createdAt, item.updatedAt,
     ]);
     await tx.unsafe(`insert into supa_os_marketplace_item_checks (item_id, checks) values ($1::uuid, $2::jsonb)`, [item.id, JSON.stringify(checks)]);
   });
@@ -78,7 +78,7 @@ export async function listItems(query: Filter & { sort?: "trending" | "newest" |
 
 export async function updateItem(item: MarketplaceItem): Promise<MarketplaceItem> {
   await withSystem(getSystemPool(), async (tx) => {
-    await tx.unsafe(`update supa_os_marketplace_items set name=$2,description=$3,status=$4,monetization=$5,price=$6,version=$7,tags=$8::text[],manifest=$9::jsonb,download_count=$10,rating=$11,review_count=$12,featured=$13,verified=$14,published_at=$15,updated_at=now() where id=$1::uuid`, [item.id,item.name,item.description,item.status,item.monetization,item.price,item.version,tx.array(item.tags,"text"),JSON.stringify(item.manifest ?? {}),item.downloadCount,item.rating,item.reviewCount,item.featured,item.verified,item.publishedAt]);
+    await tx.unsafe(`update supa_os_marketplace_items set name=$2,description=$3,status=$4,monetization=$5,price=$6,version=$7,tags=$8::text[],manifest=$9::jsonb,download_count=$10,rating=$11,review_count=$12,featured=$13,verified=$14,published_at=$15,updated_at=now() where id=$1::uuid`, [item.id,item.name,item.description,item.status,item.monetization,item.price,item.version,tx.array(item.tags),JSON.stringify(item.manifest ?? {}),item.downloadCount,item.rating,item.reviewCount,item.featured,item.verified,item.publishedAt]);
   });
   return item;
 }

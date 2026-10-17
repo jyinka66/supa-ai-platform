@@ -43,7 +43,9 @@ export const profiles = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [index("profiles_language_idx").on(t.language)],
+  (t) => ({
+    profiles_language_idx: index("profiles_language_idx").on(t.language),
+  }),
 );
 
 export const workspaces = pgTable(
@@ -78,7 +80,9 @@ export const workspaces = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [index("workspaces_slug_idx").on(t.slug)],
+  (t) => ({
+    workspaces_slug_idx: index("workspaces_slug_idx").on(t.slug),
+  }),
 );
 
 export const workspaceMembers = pgTable(
@@ -90,10 +94,10 @@ export const workspaceMembers = pgTable(
     invitedBy: uuid("invited_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    uniqueIndex("workspace_members_unique").on(t.workspaceId, t.userId),
-    index("workspace_members_user_idx").on(t.userId),
-  ],
+  (t) => ({
+    workspace_members_unique: uniqueIndex("workspace_members_unique").on(t.workspaceId, t.userId),
+    workspace_members_user_idx: index("workspace_members_user_idx").on(t.userId),
+  }),
 );
 
 export const invites = pgTable(
@@ -111,10 +115,10 @@ export const invites = pgTable(
     resendCount: integer("resend_count").default(0).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("invites_workspace_idx").on(t.workspaceId),
-    index("invites_email_idx").on(t.email),
-  ],
+  (t) => ({
+    invites_workspace_idx: index("invites_workspace_idx").on(t.workspaceId),
+    invites_email_idx: index("invites_email_idx").on(t.email),
+  }),
 );
 
 export const userSessions = pgTable("user_sessions", {
@@ -146,10 +150,10 @@ export const conversationFolders = pgTable(
     name: text("name").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    uniqueIndex("conversation_folders_user_name_unique").on(t.userId, t.name),
-    index("idx_folders_user").on(t.userId),
-  ],
+  (t) => ({
+    conversation_folders_user_name_unique: uniqueIndex("conversation_folders_user_name_unique").on(t.userId, t.name),
+    idx_folders_user: index("idx_folders_user").on(t.userId),
+  }),
 );
 
 export const conversations = pgTable(
@@ -167,11 +171,11 @@ export const conversations = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_conv_workspace").on(t.workspaceId, t.updatedAt),
-    index("idx_conv_user").on(t.userId, t.updatedAt),
-    index("idx_conv_pinned").on(t.userId, t.pinned),
-  ],
+  (t) => ({
+    idx_conv_workspace: index("idx_conv_workspace").on(t.workspaceId, t.updatedAt),
+    idx_conv_user: index("idx_conv_user").on(t.userId, t.updatedAt),
+    idx_conv_pinned: index("idx_conv_pinned").on(t.userId, t.pinned),
+  }),
 );
 
 export const messages = pgTable(
@@ -190,10 +194,10 @@ export const messages = pgTable(
     authorErased: boolean("author_erased").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_msg_conv").on(t.conversationId, t.createdAt),
-    index("idx_msg_parent").on(t.parentMessageId),
-  ],
+  (t) => ({
+    idx_msg_conv: index("idx_msg_conv").on(t.conversationId, t.createdAt),
+    idx_msg_parent: index("idx_msg_parent").on(t.parentMessageId),
+  }),
 );
 
 export const messageMeta = pgTable("message_meta", {
@@ -219,10 +223,10 @@ export const messageFeedback = pgTable(
     rating: smallint("rating").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    uniqueIndex("message_feedback_pk").on(t.messageId, t.userId),
-    index("idx_feedback_msg").on(t.messageId),
-  ],
+  (t) => ({
+    message_feedback_pk: uniqueIndex("message_feedback_pk").on(t.messageId, t.userId),
+    idx_feedback_msg: index("idx_feedback_msg").on(t.messageId),
+  }),
 );
 
 export const messageReports = pgTable(
@@ -237,10 +241,10 @@ export const messageReports = pgTable(
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_reports_status").on(t.status),
-    index("idx_reports_message").on(t.messageId),
-  ],
+  (t) => ({
+    idx_reports_status: index("idx_reports_status").on(t.status),
+    idx_reports_message: index("idx_reports_message").on(t.messageId),
+  }),
 );
 
 export const shareLinks = pgTable(
@@ -255,10 +259,10 @@ export const shareLinks = pgTable(
     viewCount: integer("view_count").default(0).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_share_conv").on(t.conversationId),
-    index("idx_share_expires").on(t.expiresAt),
-  ],
+  (t) => ({
+    idx_share_conv: index("idx_share_conv").on(t.conversationId),
+    idx_share_expires: index("idx_share_expires").on(t.expiresAt),
+  }),
 );
 
 export const usageBudgets = pgTable(
@@ -272,9 +276,9 @@ export const usageBudgets = pgTable(
     alertThreshold: numeric("alert_threshold", { precision: 3, scale: 2 }).default("0.80").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    uniqueIndex("usage_budgets_scope_unique").on(t.scopeType, t.scopeId, t.period),
-  ],
+  (t) => ({
+    usage_budgets_scope_unique: uniqueIndex("usage_budgets_scope_unique").on(t.scopeType, t.scopeId, t.period),
+  }),
 );
 
 // ============ PROMPT A/B TESTING ============
@@ -290,9 +294,9 @@ export const promptVersions = pgTable(
     isActive: boolean("is_active").default(false).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    uniqueIndex("prompt_versions_mode_lang_version_unique").on(t.mode, t.language, t.version),
-  ],
+  (t) => ({
+    prompt_versions_mode_lang_version_unique: uniqueIndex("prompt_versions_mode_lang_version_unique").on(t.mode, t.language, t.version),
+  }),
 );
 
 export const promptPromotions = pgTable(
@@ -310,9 +314,9 @@ export const promptPromotions = pgTable(
     sampleSizes: jsonb("sample_sizes").default({}).notNull(),
     decidedAt: timestamp("decided_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_prompt_promotions_slot").on(t.slot, t.decidedAt),
-  ],
+  (t) => ({
+    idx_prompt_promotions_slot: index("idx_prompt_promotions_slot").on(t.slot, t.decidedAt),
+  }),
 );
 
 // ============ DEV HARNESS ============
@@ -340,9 +344,9 @@ export const workFolders = pgTable(
     createdBy: uuid("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    uniqueIndex("work_folders_workspace_parent_name_unique").on(t.workspaceId, t.parentId, t.name),
-  ],
+  (t) => ({
+    work_folders_workspace_parent_name_unique: uniqueIndex("work_folders_workspace_parent_name_unique").on(t.workspaceId, t.parentId, t.name),
+  }),
 );
 
 export const workItems = pgTable(
@@ -378,11 +382,11 @@ export const workItems = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("work_items_ws_folder_idx").on(t.workspaceId, t.folderId, t.updatedAt),
-    index("work_items_ws_type_idx").on(t.workspaceId, t.type, t.updatedAt),
-    index("work_items_owner_fav_idx").on(t.ownerId),
-  ],
+  (t) => ({
+    work_items_ws_folder_idx: index("work_items_ws_folder_idx").on(t.workspaceId, t.folderId, t.updatedAt),
+    work_items_ws_type_idx: index("work_items_ws_type_idx").on(t.workspaceId, t.type, t.updatedAt),
+    work_items_owner_fav_idx: index("work_items_owner_fav_idx").on(t.ownerId),
+  }),
 );
 
 export const tags = pgTable(
@@ -392,9 +396,9 @@ export const tags = pgTable(
     workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
   },
-  (t) => [
-    uniqueIndex("tags_workspace_name_unique").on(t.workspaceId, t.name),
-  ],
+  (t) => ({
+    tags_workspace_name_unique: uniqueIndex("tags_workspace_name_unique").on(t.workspaceId, t.name),
+  }),
 );
 
 export const workItemTags = pgTable(
@@ -403,10 +407,10 @@ export const workItemTags = pgTable(
     itemId: uuid("item_id").notNull().references(() => workItems.id, { onDelete: "cascade" }),
     tagId: uuid("tag_id").notNull().references(() => tags.id, { onDelete: "cascade" }),
   },
-  (t) => [
-    uniqueIndex("work_item_tags_pk").on(t.itemId, t.tagId),
-    index("idx_work_item_tags_tag").on(t.tagId),
-  ],
+  (t) => ({
+    work_item_tags_pk: uniqueIndex("work_item_tags_pk").on(t.itemId, t.tagId),
+    idx_work_item_tags_tag: index("idx_work_item_tags_tag").on(t.tagId),
+  }),
 );
 
 export const workItemVersions = pgTable(
@@ -424,9 +428,9 @@ export const workItemVersions = pgTable(
     editedBy: uuid("edited_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    uniqueIndex("work_item_versions_item_version_unique").on(t.itemId, t.version),
-  ],
+  (t) => ({
+    work_item_versions_item_version_unique: uniqueIndex("work_item_versions_item_version_unique").on(t.itemId, t.version),
+  }),
 );
 
 export const workItemLinks = pgTable(
@@ -438,9 +442,9 @@ export const workItemLinks = pgTable(
     createdBy: uuid("created_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    uniqueIndex("work_item_links_pk").on(t.fromItemId, t.toItemId, t.kind),
-  ],
+  (t) => ({
+    work_item_links_pk: uniqueIndex("work_item_links_pk").on(t.fromItemId, t.toItemId, t.kind),
+  }),
 );
 
 export const workItemShares = pgTable(
@@ -452,9 +456,9 @@ export const workItemShares = pgTable(
     sharedBy: uuid("shared_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    uniqueIndex("work_item_shares_pk").on(t.itemId, t.userId),
-  ],
+  (t) => ({
+    work_item_shares_pk: uniqueIndex("work_item_shares_pk").on(t.itemId, t.userId),
+  }),
 );
 
 // ============ SAVED SEARCHES & HISTORY ============
@@ -471,10 +475,10 @@ export const savedSearches = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_saved_searches_workspace").on(t.workspaceId, t.pinned, t.updatedAt),
-    index("idx_saved_searches_owner").on(t.ownerId, t.createdAt),
-  ],
+  (t) => ({
+    idx_saved_searches_workspace: index("idx_saved_searches_workspace").on(t.workspaceId, t.pinned, t.updatedAt),
+    idx_saved_searches_owner: index("idx_saved_searches_owner").on(t.ownerId, t.createdAt),
+  }),
 );
 
 export const searchHistory = pgTable(
@@ -489,10 +493,10 @@ export const searchHistory = pgTable(
     tier: text("tier"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_search_history_user").on(t.userId, t.createdAt),
-    index("idx_search_history_workspace").on(t.workspaceId, t.createdAt),
-  ],
+  (t) => ({
+    idx_search_history_user: index("idx_search_history_user").on(t.userId, t.createdAt),
+    idx_search_history_workspace: index("idx_search_history_workspace").on(t.workspaceId, t.createdAt),
+  }),
 );
 
 export const workItemViews = pgTable(
@@ -502,10 +506,10 @@ export const workItemViews = pgTable(
     itemId: uuid("item_id").notNull().references(() => workItems.id, { onDelete: "cascade" }),
     viewedAt: timestamp("viewed_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    uniqueIndex("work_item_views_pk").on(t.userId, t.itemId),
-    index("idx_work_item_views_user").on(t.userId, t.viewedAt),
-  ],
+  (t) => ({
+    work_item_views_pk: uniqueIndex("work_item_views_pk").on(t.userId, t.itemId),
+    idx_work_item_views_user: index("idx_work_item_views_user").on(t.userId, t.viewedAt),
+  }),
 );
 
 // ============ WORK SHARE LINKS + VIEWS ============
@@ -527,12 +531,12 @@ export const workShareLinks = pgTable(
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_work_share_links_ws").on(t.workspaceId),
-    index("idx_work_share_links_token").on(t.token),
-    index("idx_work_share_links_item").on(t.itemId),
-    index("idx_work_share_links_folder").on(t.folderId),
-  ],
+  (t) => ({
+    idx_work_share_links_ws: index("idx_work_share_links_ws").on(t.workspaceId),
+    idx_work_share_links_token: index("idx_work_share_links_token").on(t.token),
+    idx_work_share_links_item: index("idx_work_share_links_item").on(t.itemId),
+    idx_work_share_links_folder: index("idx_work_share_links_folder").on(t.folderId),
+  }),
 );
 
 export const workShareViews = pgTable(
@@ -547,9 +551,9 @@ export const workShareViews = pgTable(
     referrer: text("referrer"),
     durationMs: integer("duration_ms"),
   },
-  (t) => [
-    index("idx_work_share_views_link").on(t.shareLinkId, t.viewedAt),
-  ],
+  (t) => ({
+    idx_work_share_views_link: index("idx_work_share_views_link").on(t.shareLinkId, t.viewedAt),
+  }),
 );
 
 // ============ EXPORT JOBS ============
@@ -572,10 +576,10 @@ export const exportJobs = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_export_jobs_user").on(t.userId, t.createdAt),
-    index("idx_export_jobs_status").on(t.status, t.createdAt),
-  ],
+  (t) => ({
+    idx_export_jobs_user: index("idx_export_jobs_user").on(t.userId, t.createdAt),
+    idx_export_jobs_status: index("idx_export_jobs_status").on(t.status, t.createdAt),
+  }),
 );
 
 // ============ AUDIT LOG ============
@@ -594,12 +598,12 @@ export const auditLog = pgTable(
     ipAddress: text("ip_address"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_audit_actor").on(t.actorId, t.createdAt),
-    index("idx_audit_target").on(t.targetType, t.targetId),
-    index("idx_audit_workspace").on(t.workspaceId, t.createdAt),
-    index("idx_audit_action").on(t.action, t.createdAt),
-  ],
+  (t) => ({
+    idx_audit_actor: index("idx_audit_actor").on(t.actorId, t.createdAt),
+    idx_audit_target: index("idx_audit_target").on(t.targetType, t.targetId),
+    idx_audit_workspace: index("idx_audit_workspace").on(t.workspaceId, t.createdAt),
+    idx_audit_action: index("idx_audit_action").on(t.action, t.createdAt),
+  }),
 );
 
 // ───────────────────────────────────────────────
@@ -626,11 +630,11 @@ export const monetaryFacts = pgTable(
     sourceId: text("source_id").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_monetary_facts_ws").on(t.workspaceId, t.asOf),
-    index("idx_monetary_facts_source").on(t.sourceId, t.kind),
-    index("idx_monetary_facts_kind").on(t.kind, t.asOf),
-  ],
+  (t) => ({
+    idx_monetary_facts_ws: index("idx_monetary_facts_ws").on(t.workspaceId, t.asOf),
+    idx_monetary_facts_source: index("idx_monetary_facts_source").on(t.sourceId, t.kind),
+    idx_monetary_facts_kind: index("idx_monetary_facts_kind").on(t.kind, t.asOf),
+  }),
 );
 
 // Invoice sequence — atomic numbering per (workspace, profile, kind)
@@ -643,9 +647,9 @@ export const invoiceSequences = pgTable(
     next: bigint("next", { mode: "bigint" }).notNull().default(2n),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    uniqueIndex("idx_invoice_seq_pk").on(t.workspaceId, t.profileId, t.kind),
-  ],
+  (t) => ({
+    idx_invoice_seq_pk: uniqueIndex("idx_invoice_seq_pk").on(t.workspaceId, t.profileId, t.kind),
+  }),
 );
 
 // Invoices
@@ -670,12 +674,12 @@ export const invoices = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_invoices_ws_profile").on(t.workspaceId, t.profileId),
-    index("idx_invoices_status").on(t.workspaceId, t.status),
-    index("idx_invoices_customer").on(t.customerId),
-    uniqueIndex("idx_invoices_number").on(t.workspaceId, t.profileId, t.number),
-  ],
+  (t) => ({
+    idx_invoices_ws_profile: index("idx_invoices_ws_profile").on(t.workspaceId, t.profileId),
+    idx_invoices_status: index("idx_invoices_status").on(t.workspaceId, t.status),
+    idx_invoices_customer: index("idx_invoices_customer").on(t.customerId),
+    idx_invoices_number: uniqueIndex("idx_invoices_number").on(t.workspaceId, t.profileId, t.number),
+  }),
 );
 
 // Credit notes
@@ -692,10 +696,10 @@ export const creditNotes = pgTable(
     reason: text("reason").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_credit_notes_invoice").on(t.invoiceId),
-    index("idx_credit_notes_ws_profile").on(t.workspaceId, t.profileId),
-  ],
+  (t) => ({
+    idx_credit_notes_invoice: index("idx_credit_notes_invoice").on(t.invoiceId),
+    idx_credit_notes_ws_profile: index("idx_credit_notes_ws_profile").on(t.workspaceId, t.profileId),
+  }),
 );
 
 // Customers
@@ -720,10 +724,10 @@ export const customers = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_customers_ws_status").on(t.workspaceId, t.status),
-    index("idx_customers_ws_name").on(t.workspaceId, t.name),
-  ],
+  (t) => ({
+    idx_customers_ws_status: index("idx_customers_ws_status").on(t.workspaceId, t.status),
+    idx_customers_ws_name: index("idx_customers_ws_name").on(t.workspaceId, t.name),
+  }),
 );
 
 // Activity facts — the timeline
@@ -743,11 +747,11 @@ export const activityFacts = pgTable(
     editedAt: timestamp("edited_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_activity_customer").on(t.customerId, t.occurredAt),
-    index("idx_activity_deal").on(t.dealId, t.occurredAt),
-    index("idx_activity_ws_kind").on(t.workspaceId, t.kind, t.occurredAt),
-  ],
+  (t) => ({
+    idx_activity_customer: index("idx_activity_customer").on(t.customerId, t.occurredAt),
+    idx_activity_deal: index("idx_activity_deal").on(t.dealId, t.occurredAt),
+    idx_activity_ws_kind: index("idx_activity_ws_kind").on(t.workspaceId, t.kind, t.occurredAt),
+  }),
 );
 
 // Merge records — for customer dedup
@@ -763,10 +767,10 @@ export const mergeRecords = pgTable(
     reversibleUntil: timestamp("reversible_until", { withTimezone: true }).notNull(),
     reversedAt: timestamp("reversed_at", { withTimezone: true }),
   },
-  (t) => [
-    index("idx_merge_survivor").on(t.survivorId),
-    index("idx_merge_merged").on(t.mergedId),
-  ],
+  (t) => ({
+    idx_merge_survivor: index("idx_merge_survivor").on(t.survivorId),
+    idx_merge_merged: index("idx_merge_merged").on(t.mergedId),
+  }),
 );
 
 // Import batches — for CSV import undo
@@ -782,9 +786,9 @@ export const importBatches = pgTable(
     reversibleUntil: timestamp("reversible_until", { withTimezone: true }).notNull(),
     reversedAt: timestamp("reversed_at", { withTimezone: true }),
   },
-  (t) => [
-    index("idx_import_ws").on(t.workspaceId, t.importedAt),
-  ],
+  (t) => ({
+    idx_import_ws: index("idx_import_ws").on(t.workspaceId, t.importedAt),
+  }),
 );
 
 // Deals — the pipeline
@@ -805,11 +809,11 @@ export const deals = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_deals_ws_stage").on(t.workspaceId, t.stageId),
-    index("idx_deals_customer").on(t.customerId),
-    index("idx_deals_owner").on(t.owner),
-  ],
+  (t) => ({
+    idx_deals_ws_stage: index("idx_deals_ws_stage").on(t.workspaceId, t.stageId),
+    idx_deals_customer: index("idx_deals_customer").on(t.customerId),
+    idx_deals_owner: index("idx_deals_owner").on(t.owner),
+  }),
 );
 
 // Deal-invoice links — for the conversion loop
@@ -823,9 +827,9 @@ export const dealInvoiceLinks = pgTable(
     convertedAt: timestamp("converted_at", { withTimezone: true }).defaultNow().notNull(),
     convertedBy: uuid("converted_by").notNull(),
   },
-  (t) => [
-    uniqueIndex("idx_deal_invoice_link").on(t.dealId, t.invoiceId),
-  ],
+  (t) => ({
+    idx_deal_invoice_link: uniqueIndex("idx_deal_invoice_link").on(t.dealId, t.invoiceId),
+  }),
 );
 
 // Expenses
@@ -853,11 +857,11 @@ export const expenses = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_expenses_ws_profile").on(t.workspaceId, t.profileId),
-    index("idx_expenses_status").on(t.workspaceId, t.status),
-    index("idx_expenses_category").on(t.workspaceId, t.category, t.date),
-  ],
+  (t) => ({
+    idx_expenses_ws_profile: index("idx_expenses_ws_profile").on(t.workspaceId, t.profileId),
+    idx_expenses_status: index("idx_expenses_status").on(t.workspaceId, t.status),
+    idx_expenses_category: index("idx_expenses_category").on(t.workspaceId, t.category, t.date),
+  }),
 );
 
 // Recurring expense rules
@@ -882,9 +886,9 @@ export const recurringExpenseRules = pgTable(
     active: boolean("active").default(true).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_recurring_rules_ws").on(t.workspaceId, t.active),
-  ],
+  (t) => ({
+    idx_recurring_rules_ws: index("idx_recurring_rules_ws").on(t.workspaceId, t.active),
+  }),
 );
 
 // ───────────────────────────────────────────────
@@ -917,11 +921,11 @@ export const freelanceJobs = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_freelance_jobs_ws").on(t.workspaceId, t.status),
-    index("idx_freelance_jobs_client").on(t.clientRef),
-    index("idx_freelance_jobs_discipline").on(t.discipline),
-  ],
+  (t) => ({
+    idx_freelance_jobs_ws: index("idx_freelance_jobs_ws").on(t.workspaceId, t.status),
+    idx_freelance_jobs_client: index("idx_freelance_jobs_client").on(t.clientRef),
+    idx_freelance_jobs_discipline: index("idx_freelance_jobs_discipline").on(t.discipline),
+  }),
 );
 
 // Listings (public face of a supa-source job)
@@ -943,10 +947,10 @@ export const listings = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_listings_ws").on(t.workspaceId, t.status),
-    index("idx_listings_job").on(t.jobId),
-  ],
+  (t) => ({
+    idx_listings_ws: index("idx_listings_ws").on(t.workspaceId, t.status),
+    idx_listings_job: index("idx_listings_job").on(t.jobId),
+  }),
 );
 
 // Applications
@@ -971,11 +975,11 @@ export const applications = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_applications_listing").on(t.listingId, t.status),
-    index("idx_applications_freelancer").on(t.freelancerWsId, t.status),
-    uniqueIndex("idx_applications_listing_freelancer").on(t.listingId, t.freelancerWsId),
-  ],
+  (t) => ({
+    idx_applications_listing: index("idx_applications_listing").on(t.listingId, t.status),
+    idx_applications_freelancer: index("idx_applications_freelancer").on(t.freelancerWsId, t.status),
+    idx_applications_listing_freelancer: uniqueIndex("idx_applications_listing_freelancer").on(t.listingId, t.freelancerWsId),
+  }),
 );
 
 // Contracts
@@ -999,11 +1003,11 @@ export const contracts = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_contracts_freelancer").on(t.freelancerWsId, t.status),
-    index("idx_contracts_client").on(t.clientWsId, t.status),
-    index("idx_contracts_job").on(t.jobId),
-  ],
+  (t) => ({
+    idx_contracts_freelancer: index("idx_contracts_freelancer").on(t.freelancerWsId, t.status),
+    idx_contracts_client: index("idx_contracts_client").on(t.clientWsId, t.status),
+    idx_contracts_job: index("idx_contracts_job").on(t.jobId),
+  }),
 );
 
 // Milestones
@@ -1028,9 +1032,9 @@ export const milestones = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_milestones_contract").on(t.contractId, t.status),
-  ],
+  (t) => ({
+    idx_milestones_contract: index("idx_milestones_contract").on(t.contractId, t.status),
+  }),
 );
 
 // Reviews (double-blind, gated by completed-contract fact)
@@ -1050,11 +1054,11 @@ export const reviews = pgTable(
     contractCompletedAt: timestamp("contract_completed_at", { withTimezone: true }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_reviews_contract").on(t.contractId),
-    index("idx_reviews_reviewer").on(t.reviewerWsId),
-    index("idx_reviews_reviewee").on(t.revieweeWsId),
-  ],
+  (t) => ({
+    idx_reviews_contract: index("idx_reviews_contract").on(t.contractId),
+    idx_reviews_reviewer: index("idx_reviews_reviewer").on(t.reviewerWsId),
+    idx_reviews_reviewee: index("idx_reviews_reviewee").on(t.revieweeWsId),
+  }),
 );
 
 // Work samples (portfolio pieces)
@@ -1074,10 +1078,10 @@ export const workSamples = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_work_samples_ws").on(t.workspaceId, t.visibility),
-    index("idx_work_samples_milestone").on(t.milestoneFactId),
-  ],
+  (t) => ({
+    idx_work_samples_ws: index("idx_work_samples_ws").on(t.workspaceId, t.visibility),
+    idx_work_samples_milestone: index("idx_work_samples_milestone").on(t.milestoneFactId),
+  }),
 );
 
 // Escrow ledger entries (append-only, double-entry)
@@ -1103,11 +1107,11 @@ export const ledgerEntries = pgTable(
     at: timestamp("at", { withTimezone: true }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    uniqueIndex("idx_ledger_idempotency").on(t.idempotencyKey),
-    index("idx_ledger_ws").on(t.workspaceId, t.type),
-    index("idx_ledger_ref").on(t.refType, t.refId),
-  ],
+  (t) => ({
+    idx_ledger_idempotency: uniqueIndex("idx_ledger_idempotency").on(t.idempotencyKey),
+    idx_ledger_ws: index("idx_ledger_ws").on(t.workspaceId, t.type),
+    idx_ledger_ref: index("idx_ledger_ref").on(t.refType, t.refId),
+  }),
 );
 
 // Payouts
@@ -1125,10 +1129,10 @@ export const payouts = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    uniqueIndex("idx_payouts_idempotency").on(t.idempotencyKey),
-    index("idx_payouts_ws").on(t.workspaceId, t.status),
-  ],
+  (t) => ({
+    idx_payouts_idempotency: uniqueIndex("idx_payouts_idempotency").on(t.idempotencyKey),
+    idx_payouts_ws: index("idx_payouts_ws").on(t.workspaceId, t.status),
+  }),
 );
 
 // ───────────────────────────────────────────────
@@ -1170,9 +1174,9 @@ export const agents = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_agents_ws_status").on(t.workspaceId, t.status),
-  ],
+  (t) => ({
+    idx_agents_ws_status: index("idx_agents_ws_status").on(t.workspaceId, t.status),
+  }),
 );
 
 // Agent memory
@@ -1192,10 +1196,10 @@ export const agentMemory = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    uniqueIndex("idx_agent_memory_dedup").on(t.agentId, t.kind, t.content),
-    index("idx_agent_memory_agent_kind").on(t.agentId, t.kind, t.expiresAt),
-  ],
+  (t) => ({
+    idx_agent_memory_dedup: uniqueIndex("idx_agent_memory_dedup").on(t.agentId, t.kind, t.content),
+    idx_agent_memory_agent_kind: index("idx_agent_memory_agent_kind").on(t.agentId, t.kind, t.expiresAt),
+  }),
 );
 
 // Agent triggers — schedules, events, webhooks as first-class entities (migration 0027).
@@ -1213,10 +1217,10 @@ export const agentTriggers = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_agent_triggers_ws_agent_enabled").on(t.workspaceId, t.agentId, t.enabled),
-    index("idx_agent_triggers_agent_kind_enabled").on(t.agentId, t.kind, t.enabled),
-  ],
+  (t) => ({
+    idx_agent_triggers_ws_agent_enabled: index("idx_agent_triggers_ws_agent_enabled").on(t.workspaceId, t.agentId, t.enabled),
+    idx_agent_triggers_agent_kind_enabled: index("idx_agent_triggers_agent_kind_enabled").on(t.agentId, t.kind, t.enabled),
+  }),
 );
 
 // Agent teams — the delegation graph (migration 0028).
@@ -1234,11 +1238,11 @@ export const agentTeams = pgTable(
     grantedTools: text("granted_tools").array().notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_agent_teams_ws").on(t.workspaceId),
-    index("idx_agent_teams_from").on(t.fromAgent),
-    index("idx_agent_teams_to").on(t.toAgent),
-  ],
+  (t) => ({
+    idx_agent_teams_ws: index("idx_agent_teams_ws").on(t.workspaceId),
+    idx_agent_teams_from: index("idx_agent_teams_from").on(t.fromAgent),
+    idx_agent_teams_to: index("idx_agent_teams_to").on(t.toAgent),
+  }),
 );
 
 // Runs
@@ -1267,9 +1271,9 @@ export const runs = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     finishedAt: timestamp("finished_at", { withTimezone: true }),
   },
-  (t) => [
-    index("idx_runs_ws_agent").on(t.workspaceId, t.agentId, t.status, t.createdAt),
-  ],
+  (t) => ({
+    idx_runs_ws_agent: index("idx_runs_ws_agent").on(t.workspaceId, t.agentId, t.status, t.createdAt),
+  }),
 );
 
 // Run steps
@@ -1290,9 +1294,9 @@ export const runSteps = pgTable(
     error: text("error"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    uniqueIndex("idx_run_steps_seq").on(t.runId, t.seq),
-  ],
+  (t) => ({
+    idx_run_steps_seq: uniqueIndex("idx_run_steps_seq").on(t.runId, t.seq),
+  }),
 );
 
 // Approvals
@@ -1314,9 +1318,9 @@ export const approvals = pgTable(
     decidedAt: timestamp("decided_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_approvals_ws_status").on(t.workspaceId, t.status, t.expiresAt),
-  ],
+  (t) => ({
+    idx_approvals_ws_status: index("idx_approvals_ws_status").on(t.workspaceId, t.status, t.expiresAt),
+  }),
 );
 
 // Budget entries
@@ -1332,9 +1336,9 @@ export const budgetEntries = pgTable(
     periodDay: text("period_day").notNull(), // date as text for simplicity
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_budget_entries_agent").on(t.agentId, t.periodDay),
-  ],
+  (t) => ({
+    idx_budget_entries_agent: index("idx_budget_entries_agent").on(t.agentId, t.periodDay),
+  }),
 );
 
 // Agent idempotency
@@ -1346,9 +1350,9 @@ export const agentIdempotency = pgTable(
     resultRef: text("result_ref"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_agent_idempotency_created").on(t.createdAt),
-  ],
+  (t) => ({
+    idx_agent_idempotency_created: index("idx_agent_idempotency_created").on(t.createdAt),
+  }),
 );
 
 // ───────────────────────────────────────────────
@@ -1379,10 +1383,10 @@ export const memberships = pgTable(
     suspendReason: text("suspend_reason"),
     seatId: uuid("seat_id"),
   },
-  (t) => [
-    index("idx_memberships_user_status").on(t.userId, t.status),
-    index("idx_memberships_ws_status").on(t.wsId, t.status),
-  ],
+  (t) => ({
+    idx_memberships_user_status: index("idx_memberships_user_status").on(t.userId, t.status),
+    idx_memberships_ws_status: index("idx_memberships_ws_status").on(t.wsId, t.status),
+  }),
 );
 
 // Custom roles (Enterprise): named bundles of granular permissions.
@@ -1397,9 +1401,9 @@ export const customRoles = pgTable(
     createdBy: uuid("created_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_custom_roles_ws").on(t.wsId),
-  ],
+  (t) => ({
+    idx_custom_roles_ws: index("idx_custom_roles_ws").on(t.wsId),
+  }),
 );
 
 // SSO configs — one per workspace (OIDC or SAML).
@@ -1427,9 +1431,9 @@ export const ssoNonces = pgTable(
     wsId: uuid("ws_id").references(() => workspaces.id, { onDelete: "cascade" }),
     consumedAt: timestamp("consumed_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_sso_nonces_consumed").on(t.consumedAt),
-  ],
+  (t) => ({
+    idx_sso_nonces_consumed: index("idx_sso_nonces_consumed").on(t.consumedAt),
+  }),
 );
 
 // SCIM tokens — bearer tokens for SCIM provisioning.
@@ -1443,9 +1447,9 @@ export const scimTokens = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
   },
-  (t) => [
-    index("idx_scim_tokens_ws_revoked").on(t.wsId, t.revokedAt),
-  ],
+  (t) => ({
+    idx_scim_tokens_ws_revoked: index("idx_scim_tokens_ws_revoked").on(t.wsId, t.revokedAt),
+  }),
 );
 
 // SCIM groups — group → role mapping.
@@ -1472,11 +1476,11 @@ export const scimRefs = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_scim_refs_ws_user").on(t.wsId, t.userId),
-    index("idx_scim_refs_ws_external").on(t.wsId, t.scimExternalId),
-    index("idx_scim_refs_ws_scim_user").on(t.wsId, t.scimUserId),
-  ],
+  (t) => ({
+    idx_scim_refs_ws_user: index("idx_scim_refs_ws_user").on(t.wsId, t.userId),
+    idx_scim_refs_ws_external: index("idx_scim_refs_ws_external").on(t.wsId, t.scimExternalId),
+    idx_scim_refs_ws_scim_user: index("idx_scim_refs_ws_scim_user").on(t.wsId, t.scimUserId),
+  }),
 );
 
 // SCIM log — full request log for debugging + acceptance proof.
@@ -1492,9 +1496,9 @@ export const scimLog = pgTable(
     result: text("result"),
     ts: timestamp("ts", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_scim_log_ws_ts").on(t.wsId, t.ts),
-  ],
+  (t) => ({
+    idx_scim_log_ws_ts: index("idx_scim_log_ws_ts").on(t.wsId, t.ts),
+  }),
 );
 
 // API keys — workspace API keys (argon2id hashed, never reversible).
@@ -1515,10 +1519,10 @@ export const apiKeys = pgTable(
     revokedBy: uuid("revoked_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_api_keys_ws_revoked").on(t.wsId, t.revokedAt),
-    index("idx_api_keys_user").on(t.userId),
-  ],
+  (t) => ({
+    idx_api_keys_ws_revoked: index("idx_api_keys_ws_revoked").on(t.wsId, t.revokedAt),
+    idx_api_keys_user: index("idx_api_keys_user").on(t.userId),
+  }),
 );
 
 // Enterprise audit log — hash-chained, tamper-evident.
@@ -1539,9 +1543,9 @@ export const enterpriseAuditLog = pgTable(
     prevHash: bytea("prev_hash").notNull(),
     hash: bytea("hash").notNull(),
   },
-  (t) => [
-    index("idx_enterprise_audit_log_ws_ts_action").on(t.wsId, t.ts, t.action),
-  ],
+  (t) => ({
+    idx_enterprise_audit_log_ws_ts_action: index("idx_enterprise_audit_log_ws_ts_action").on(t.wsId, t.ts, t.action),
+  }),
 );
 
 // Retention policies — per-workspace data retention + legal hold.
@@ -1569,9 +1573,9 @@ export const webhookEndpoints = pgTable(
     disabledUntil: timestamp("disabled_until", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_webhook_endpoints_ws").on(t.wsId),
-  ],
+  (t) => ({
+    idx_webhook_endpoints_ws: index("idx_webhook_endpoints_ws").on(t.wsId),
+  }),
 );
 
 // Webhook deliveries — at-most-once per endpoint per event.
@@ -1587,9 +1591,9 @@ export const webhookDeliveries = pgTable(
     responseCode: integer("response_code"),
     deliveredAt: timestamp("delivered_at", { withTimezone: true }),
   },
-  (t) => [
-    index("idx_webhook_deliveries_status_retry").on(t.status, t.nextRetry),
-  ],
+  (t) => ({
+    idx_webhook_deliveries_status_retry: index("idx_webhook_deliveries_status_retry").on(t.status, t.nextRetry),
+  }),
 );
 
 // Sessions — session security + device management (migration 0032).
@@ -1619,11 +1623,11 @@ export const sessions = pgTable(
     rotatedTo: uuid("rotated_to"), // v2: the new session's id (reuse detection).
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_sessions_user_revoked").on(t.userId, t.revokedAt),
-    index("idx_sessions_user_kind_seen").on(t.userId, t.kind, t.lastSeenAt),
-    index("idx_sessions_family").on(t.familyId),
-  ],
+  (t) => ({
+    idx_sessions_user_revoked: index("idx_sessions_user_revoked").on(t.userId, t.revokedAt),
+    idx_sessions_user_kind_seen: index("idx_sessions_user_kind_seen").on(t.userId, t.kind, t.lastSeenAt),
+    idx_sessions_family: index("idx_sessions_family").on(t.familyId),
+  }),
 );
 
 // MFA recovery codes — 10 single-use, argon2id-hashed codes per user (migration 0038).
@@ -1636,9 +1640,9 @@ export const mfaRecoveryCodes = pgTable(
     usedAt: timestamp("used_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_mfa_recovery_codes_user").on(t.userId),
-  ],
+  (t) => ({
+    idx_mfa_recovery_codes_user: index("idx_mfa_recovery_codes_user").on(t.userId),
+  }),
 );
 
 // Product-user TOTP factors (migration 0072); independent from admin MFA.
@@ -1668,10 +1672,10 @@ export const files = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
-  (t) => [
-    index("idx_files_ws_parent").on(t.workspaceId, t.parentId),
-    index("idx_files_ws_deleted").on(t.workspaceId, t.deletedAt),
-  ],
+  (t) => ({
+    idx_files_ws_parent: index("idx_files_ws_parent").on(t.workspaceId, t.parentId),
+    idx_files_ws_deleted: index("idx_files_ws_deleted").on(t.workspaceId, t.deletedAt),
+  }),
 );
 
 // File versions — version history (content-hash dedup).
@@ -1686,9 +1690,9 @@ export const fileVersions = pgTable(
     createdBy: uuid("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_file_versions_file_version").on(t.fileId, t.version),
-  ],
+  (t) => ({
+    idx_file_versions_file_version: index("idx_file_versions_file_version").on(t.fileId, t.version),
+  }),
 );
 
 // Webhooks v2 — HTTPS-only, admin-only RLS (migration 0040).
@@ -1748,9 +1752,9 @@ export const ssoConnections = pgTable(
     createdBy: uuid("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_sso_connections_ws").on(t.workspaceId),
-  ],
+  (t) => ({
+    idx_sso_connections_ws: index("idx_sso_connections_ws").on(t.workspaceId),
+  }),
 );
 
 // SCIM identities v2 — IdP user ↔ our user mapping, per connection (migration 0042).
@@ -1762,10 +1766,10 @@ export const scimIdentities = pgTable(
     userId: uuid("user_id"),
     workspaceId: uuid("ws_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
   },
-  (t) => [
-    index("idx_scim_identities_ws").on(t.workspaceId),
-    index("idx_scim_identities_user").on(t.userId),
-  ],
+  (t) => ({
+    idx_scim_identities_ws: index("idx_scim_identities_ws").on(t.workspaceId),
+    idx_scim_identities_user: index("idx_scim_identities_user").on(t.userId),
+  }),
 );
 
 // Roles — custom roles as data (migration 0043).
@@ -1779,9 +1783,9 @@ export const roles = pgTable(
     permissions: text("permissions").array().notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_roles_ws").on(t.workspaceId),
-  ],
+  (t) => ({
+    idx_roles_ws: index("idx_roles_ws").on(t.workspaceId),
+  }),
 );
 
 // Share links v2 — token hashed, password argon2id, perm-scoped (migration 0044).
@@ -1802,9 +1806,9 @@ export const shareLinksV2 = pgTable(
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_share_links_ws_file").on(t.workspaceId, t.fileId),
-  ],
+  (t) => ({
+    idx_share_links_ws_file: index("idx_share_links_ws_file").on(t.workspaceId, t.fileId),
+  }),
 );
 
 // Share views v2 — view log for analytics + exhaustion tracking (migration 0044).
@@ -1816,9 +1820,9 @@ export const shareViewsV2 = pgTable(
     ipHash: text("ip_hash").notNull(),
     ok: boolean("ok").notNull(),
   },
-  (t) => [
-    index("idx_share_views_share").on(t.shareId, t.viewedAt),
-  ],
+  (t) => ({
+    idx_share_views_share: index("idx_share_views_share").on(t.shareId, t.viewedAt),
+  }),
 );
 
 // Regions — data residency catalog (migration 0046).
@@ -1874,9 +1878,9 @@ export const adminSessions = pgTable(
     idleExpiresAt: timestamp("idle_expires_at", { withTimezone: true }).notNull(),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
   },
-  (t) => [
-    index("idx_admin_sessions_admin").on(t.adminId),
-  ],
+  (t) => ({
+    idx_admin_sessions_admin: index("idx_admin_sessions_admin").on(t.adminId),
+  }),
 );
 
 // Admin audit log — hash-chained, tamper-evident, insert-only (migration 0048).
@@ -1899,11 +1903,11 @@ export const adminAuditLog = pgTable(
     prevHash: bytea("prev_hash").notNull(),
     hash: bytea("hash").notNull(),
   },
-  (t) => [
-    index("idx_admin_audit_log_seq").on(t.seq),
-    index("idx_admin_audit_log_actor").on(t.actorId, t.ts),
-    index("idx_admin_audit_log_action_ts").on(t.action, t.ts),
-  ],
+  (t) => ({
+    idx_admin_audit_log_seq: index("idx_admin_audit_log_seq").on(t.seq),
+    idx_admin_audit_log_actor: index("idx_admin_audit_log_actor").on(t.actorId, t.ts),
+    idx_admin_audit_log_action_ts: index("idx_admin_audit_log_action_ts").on(t.action, t.ts),
+  }),
 );
 
 // Feature flags — global control plane (migration 0049).
@@ -1922,9 +1926,9 @@ export const featureFlags = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_feature_flags_kill_switches").on(t.key),
-  ],
+  (t) => ({
+    idx_feature_flags_kill_switches: index("idx_feature_flags_kill_switches").on(t.key),
+  }),
 );
 
 // Admin confirmations — 2nd-admin approval for kill_switch flips (migration 0050).
@@ -1943,10 +1947,10 @@ export const adminConfirmations = pgTable(
     approvedAt: timestamp("approved_at", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   },
-  (t) => [
-    index("idx_admin_confirmations_status_expires").on(t.status, t.expiresAt),
-    index("idx_admin_confirmations_target").on(t.actionType, t.targetKey),
-  ],
+  (t) => ({
+    idx_admin_confirmations_status_expires: index("idx_admin_confirmations_status_expires").on(t.status, t.expiresAt),
+    idx_admin_confirmations_target: index("idx_admin_confirmations_target").on(t.actionType, t.targetKey),
+  }),
 );
 
 // SLO definitions — the SLO contracts per service (migration 0051).
@@ -1964,9 +1968,9 @@ export const sloDefinitions = pgTable(
     owner: text("owner").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_slo_definitions_service_name").on(t.service, t.sloName),
-  ],
+  (t) => ({
+    idx_slo_definitions_service_name: index("idx_slo_definitions_service_name").on(t.service, t.sloName),
+  }),
 );
 
 // SLO snapshots — periodic SLI vs SLO measurements (migration 0051).
@@ -1983,10 +1987,10 @@ export const sloSnapshots = pgTable(
     sampleCount: integer("sample_count").notNull(),
     metadata: jsonb("metadata").notNull().default({}),
   },
-  (t) => [
-    index("idx_slo_snapshots_slo_time").on(t.sloId, t.snapshotAt),
-    index("idx_slo_snapshots_time").on(t.snapshotAt),
-  ],
+  (t) => ({
+    idx_slo_snapshots_slo_time: index("idx_slo_snapshots_slo_time").on(t.sloId, t.snapshotAt),
+    idx_slo_snapshots_time: index("idx_slo_snapshots_time").on(t.snapshotAt),
+  }),
 );
 
 // Cost ledger — append-only cost events (migration 0051).
@@ -2004,11 +2008,11 @@ export const costLedger = pgTable(
     quantityUnit: text("quantity_unit"),
     metadata: jsonb("metadata").notNull().default({}),
   },
-  (t) => [
-    index("idx_cost_ledger_ts").on(t.ts),
-    index("idx_cost_ledger_ws_feature").on(t.workspaceId, t.feature, t.ts),
-    index("idx_cost_ledger_feature_ts").on(t.feature, t.ts),
-  ],
+  (t) => ({
+    idx_cost_ledger_ts: index("idx_cost_ledger_ts").on(t.ts),
+    idx_cost_ledger_ws_feature: index("idx_cost_ledger_ws_feature").on(t.workspaceId, t.feature, t.ts),
+    idx_cost_ledger_feature_ts: index("idx_cost_ledger_feature_ts").on(t.feature, t.ts),
+  }),
 );
 
 // Locales — the locale registry (migration 0052).
@@ -2040,10 +2044,10 @@ export const translationMemory = pgTable(
     sourceContext: text("source_context"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_tm_source").on(t.sourceLocale, t.sourceText),
-    index("idx_tm_target").on(t.targetLocale, t.targetText),
-  ],
+  (t) => ({
+    idx_tm_source: index("idx_tm_source").on(t.sourceLocale, t.sourceText),
+    idx_tm_target: index("idx_tm_target").on(t.targetLocale, t.targetText),
+  }),
 );
 
 // Glossary — brand/legal/technical terms (migration 0052).
@@ -2068,9 +2072,9 @@ export const glossaryTranslations = pgTable(
     approvedBy: uuid("approved_by"),
     approvedAt: timestamp("approved_at", { withTimezone: true }),
   },
-  (t) => [
-    index("idx_glossary_translations_locale").on(t.glossaryId, t.locale),
-  ],
+  (t) => ({
+    idx_glossary_translations_locale: index("idx_glossary_translations_locale").on(t.glossaryId, t.locale),
+  }),
 );
 
 // Blog posts — localized blog articles (migration 0053).
@@ -2093,9 +2097,9 @@ export const blogPosts = pgTable(
     noindex: boolean("noindex").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_blog_posts_locale_status").on(t.locale, t.status, t.publishedAt),
-  ],
+  (t) => ({
+    idx_blog_posts_locale_status: index("idx_blog_posts_locale_status").on(t.locale, t.status, t.publishedAt),
+  }),
 );
 
 // Help articles — help center (migration 0053).
@@ -2117,9 +2121,9 @@ export const helpArticles = pgTable(
     helpfulNo: integer("helpful_no").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_help_articles_category_locale").on(t.category, t.locale, t.status, t.sortOrder),
-  ],
+  (t) => ({
+    idx_help_articles_category_locale: index("idx_help_articles_category_locale").on(t.category, t.locale, t.status, t.sortOrder),
+  }),
 );
 
 // Changelog entries — public changelog (migration 0053).
@@ -2137,9 +2141,9 @@ export const changelogEntries = pgTable(
     status: text("status").notNull().default("published"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_changelog_locale_published").on(t.locale, t.status, t.publishedAt),
-  ],
+  (t) => ({
+    idx_changelog_locale_published: index("idx_changelog_locale_published").on(t.locale, t.status, t.publishedAt),
+  }),
 );
 
 // Legal documents — legal docs with versioning (migration 0053).
@@ -2155,9 +2159,9 @@ export const legalDocuments = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_legal_documents_type_jurisdiction").on(t.docType, t.jurisdiction),
-  ],
+  (t) => ({
+    idx_legal_documents_type_jurisdiction: index("idx_legal_documents_type_jurisdiction").on(t.docType, t.jurisdiction),
+  }),
 );
 
 // Legal versions — append-only version history (migration 0053).
@@ -2178,9 +2182,9 @@ export const legalVersions = pgTable(
     approvedAt: timestamp("approved_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_legal_versions_doc").on(t.documentId, t.locale, t.status),
-  ],
+  (t) => ({
+    idx_legal_versions_doc: index("idx_legal_versions_doc").on(t.documentId, t.locale, t.status),
+  }),
 );
 
 // Legal review — review workflow for new jurisdictions (migration 0053).
@@ -2214,10 +2218,10 @@ export const backlinks = pgTable(
     status: text("status").notNull().default("active"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_backlinks_target").on(t.targetUrl),
-    index("idx_backlinks_status").on(t.status, t.lastSeen),
-  ],
+  (t) => ({
+    idx_backlinks_target: index("idx_backlinks_target").on(t.targetUrl),
+    idx_backlinks_status: index("idx_backlinks_status").on(t.status, t.lastSeen),
+  }),
 );
 
 // Rank tracking — keyword positions per locale (migration 0053).
@@ -2234,9 +2238,9 @@ export const rankTracking = pgTable(
     trackedAt: timestamp("tracked_at", { withTimezone: true }).defaultNow().notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_rank_tracking_keyword").on(t.keyword, t.locale, t.trackedAt),
-  ],
+  (t) => ({
+    idx_rank_tracking_keyword: index("idx_rank_tracking_keyword").on(t.keyword, t.locale, t.trackedAt),
+  }),
 );
 
 // Support tickets — with SLA tracking (migration 0054).
@@ -2268,11 +2272,11 @@ export const supportTickets = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_support_tickets_status_priority").on(t.status, t.priority, t.createdAt),
-    index("idx_support_tickets_sla").on(t.slaDeadline),
-    index("idx_support_tickets_user").on(t.userId, t.createdAt),
-  ],
+  (t) => ({
+    idx_support_tickets_status_priority: index("idx_support_tickets_status_priority").on(t.status, t.priority, t.createdAt),
+    idx_support_tickets_sla: index("idx_support_tickets_sla").on(t.slaDeadline),
+    idx_support_tickets_user: index("idx_support_tickets_user").on(t.userId, t.createdAt),
+  }),
 );
 
 // Support macros — localized pre-written responses (migration 0054).
@@ -2292,9 +2296,9 @@ export const supportMacros = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_support_macros_category_locale").on(t.category, t.locale, t.active),
-  ],
+  (t) => ({
+    idx_support_macros_category_locale: index("idx_support_macros_category_locale").on(t.category, t.locale, t.active),
+  }),
 );
 
 // CSAT surveys (migration 0054).
@@ -2308,9 +2312,9 @@ export const csatSurveys = pgTable(
     comment: text("comment"),
     submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_csat_surveys_submitted").on(t.submittedAt),
-  ],
+  (t) => ({
+    idx_csat_surveys_submitted: index("idx_csat_surveys_submitted").on(t.submittedAt),
+  }),
 );
 
 // Regional config — per-region playbook template (migration 0054).
@@ -2350,9 +2354,9 @@ export const regionalPricing = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_regional_pricing_region_plan").on(t.regionCode, t.plan),
-  ],
+  (t) => ({
+    idx_regional_pricing_region_plan: index("idx_regional_pricing_region_plan").on(t.regionCode, t.plan),
+  }),
 );
 
 // Expansion tasks — onboarding pipeline tracker (migration 0055).
@@ -2373,9 +2377,9 @@ export const expansionTasks = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
   },
-  (t) => [
-    index("idx_expansion_tasks_status").on(t.status, t.kind),
-  ],
+  (t) => ({
+    idx_expansion_tasks_status: index("idx_expansion_tasks_status").on(t.status, t.kind),
+  }),
 );
 
 // PII redaction log — support data access audit trail (migration 0055).
@@ -2392,10 +2396,10 @@ export const piiRedactionLog = pgTable(
     userAgent: text("user_agent"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_pii_redaction_ticket").on(t.ticketId, t.createdAt),
-    index("idx_pii_redaction_agent").on(t.accessedBy, t.createdAt),
-  ],
+  (t) => ({
+    idx_pii_redaction_ticket: index("idx_pii_redaction_ticket").on(t.ticketId, t.createdAt),
+    idx_pii_redaction_agent: index("idx_pii_redaction_agent").on(t.accessedBy, t.createdAt),
+  }),
 );
 
 // Cookie consent — per-jurisdiction (migration 0055).
@@ -2415,9 +2419,9 @@ export const cookieConsent = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     withdrawnAt: timestamp("withdrawn_at", { withTimezone: true }),
   },
-  (t) => [
-    index("idx_cookie_consent_session").on(t.sessionId),
-  ],
+  (t) => ({
+    idx_cookie_consent_session: index("idx_cookie_consent_session").on(t.sessionId),
+  }),
 );
 
 // Automated reports — weekly/monthly/quarterly (migration 0056).
@@ -2434,9 +2438,9 @@ export const automatedReports = pgTable(
     distributedAt: timestamp("distributed_at", { withTimezone: true }),
     distributedTo: text("distributed_to").array(),
   },
-  (t) => [
-    index("idx_automated_reports_period").on(t.period, t.periodStart),
-  ],
+  (t) => ({
+    idx_automated_reports_period: index("idx_automated_reports_period").on(t.period, t.periodStart),
+  }),
 );
 
 // Anomaly alerts (migration 0056).
@@ -2456,10 +2460,10 @@ export const anomalyAlerts = pgTable(
     resolvedBy: uuid("resolved_by"),
     resolution: text("resolution"),
   },
-  (t) => [
-    index("idx_anomaly_alerts_unresolved").on(t.severity, t.detectedAt),
-    index("idx_anomaly_alerts_category").on(t.category, t.detectedAt),
-  ],
+  (t) => ({
+    idx_anomaly_alerts_unresolved: index("idx_anomaly_alerts_unresolved").on(t.severity, t.detectedAt),
+    idx_anomaly_alerts_category: index("idx_anomaly_alerts_category").on(t.category, t.detectedAt),
+  }),
 );
 
 // Risk registry (migration 0056).
@@ -2477,10 +2481,10 @@ export const riskRegistry = pgTable(
     lastReviewedAt: timestamp("last_reviewed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_risk_registry_category").on(t.category),
-    index("idx_risk_registry_status").on(t.mitigationStatus),
-  ],
+  (t) => ({
+    idx_risk_registry_category: index("idx_risk_registry_category").on(t.category),
+    idx_risk_registry_status: index("idx_risk_registry_status").on(t.mitigationStatus),
+  }),
 );
 
 // Tool registry — every capability is a typed tool (migration 0057).
@@ -2507,9 +2511,9 @@ export const toolRegistry = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_tool_registry_category").on(t.category, t.status),
-  ],
+  (t) => ({
+    idx_tool_registry_category: index("idx_tool_registry_category").on(t.category, t.status),
+  }),
 );
 
 // Marketplace items — self-governing (migration 0057).
@@ -2540,10 +2544,10 @@ export const marketplaceItems = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
     publishedAt: timestamp("published_at", { withTimezone: true }),
   },
-  (t) => [
-    index("idx_marketplace_kind_status").on(t.kind, t.status),
-    index("idx_marketplace_author").on(t.authorOrgId),
-  ],
+  (t) => ({
+    idx_marketplace_kind_status: index("idx_marketplace_kind_status").on(t.kind, t.status),
+    idx_marketplace_author: index("idx_marketplace_author").on(t.authorOrgId),
+  }),
 );
 
 // Developer orgs (migration 0057).
@@ -2604,9 +2608,9 @@ export const enterpriseDeployments = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_enterprise_deployments_ws").on(t.workspaceId, t.status),
-  ],
+  (t) => ({
+    idx_enterprise_deployments_ws: index("idx_enterprise_deployments_ws").on(t.workspaceId, t.status),
+  }),
 );
 
 // Policy rules — policy as code (migration 0057).
@@ -2626,9 +2630,9 @@ export const policyRules = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_policy_rules_category_status").on(t.category, t.status, t.priority),
-  ],
+  (t) => ({
+    idx_policy_rules_category_status: index("idx_policy_rules_category_status").on(t.category, t.status, t.priority),
+  }),
 );
 
 // Connectors — declarative connector specs (migration 0058).
@@ -2657,9 +2661,9 @@ export const connectors = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_connectors_category").on(t.category, t.status),
-  ],
+  (t) => ({
+    idx_connectors_category: index("idx_connectors_category").on(t.category, t.status),
+  }),
 );
 
 // Connector versions (migration 0058).
@@ -2678,9 +2682,9 @@ export const connectorVersions = pgTable(
     deprecatedAt: timestamp("deprecated_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_connector_versions_connector").on(t.connectorId, t.version),
-  ],
+  (t) => ({
+    idx_connector_versions_connector: index("idx_connector_versions_connector").on(t.connectorId, t.version),
+  }),
 );
 
 // Tool fixtures — test suites (migration 0058).
@@ -2696,9 +2700,9 @@ export const toolFixtures = pgTable(
     tags: text("tags").array().notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_tool_fixtures_tool").on(t.toolKey),
-  ],
+  (t) => ({
+    idx_tool_fixtures_tool: index("idx_tool_fixtures_tool").on(t.toolKey),
+  }),
 );
 
 // Tool usage stats — analytics (migration 0058).
@@ -2717,9 +2721,9 @@ export const toolUsageStats = pgTable(
     uniqueCallers: integer("unique_callers").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_tool_usage_stats_tool").on(t.toolKey, t.periodStart),
-  ],
+  (t) => ({
+    idx_tool_usage_stats_tool: index("idx_tool_usage_stats_tool").on(t.toolKey, t.periodStart),
+  }),
 );
 
 // Agent quality scores (migration 0058).
@@ -2735,9 +2739,9 @@ export const agentQualityScores = pgTable(
     testResults: jsonb("test_results").notNull().default({}),
     scoredAt: timestamp("scored_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_agent_quality_item").on(t.marketplaceItemId, t.scoredAt),
-  ],
+  (t) => ({
+    idx_agent_quality_item: index("idx_agent_quality_item").on(t.marketplaceItemId, t.scoredAt),
+  }),
 );
 
 // Template items — design/prompt/workflow/business templates (migration 0059).
@@ -2775,10 +2779,10 @@ export const templateItems = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
     publishedAt: timestamp("published_at", { withTimezone: true }),
   },
-  (t) => [
-    index("idx_template_items_kind_status").on(t.kind, t.status),
-    index("idx_template_items_featured").on(t.featuredScore),
-  ],
+  (t) => ({
+    idx_template_items_kind_status: index("idx_template_items_kind_status").on(t.kind, t.status),
+    idx_template_items_featured: index("idx_template_items_featured").on(t.featuredScore),
+  }),
 );
 
 // Sandbox workspaces — isolated developer sandboxes (migration 0059).
@@ -2802,9 +2806,9 @@ export const sandboxWorkspaces = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_sandbox_workspaces_org").on(t.developerOrgId, t.status),
-  ],
+  (t) => ({
+    idx_sandbox_workspaces_org: index("idx_sandbox_workspaces_org").on(t.developerOrgId, t.status),
+  }),
 );
 
 // Embedded surfaces — white-label (migration 0059).
@@ -2831,9 +2835,9 @@ export const embeddedSurfaces = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_embedded_surfaces_partner").on(t.partnerOrgId, t.status),
-  ],
+  (t) => ({
+    idx_embedded_surfaces_partner: index("idx_embedded_surfaces_partner").on(t.partnerOrgId, t.status),
+  }),
 );
 
 // Partner integrations — bidirectional (migration 0059).
@@ -2859,10 +2863,10 @@ export const partnerIntegrations = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_partner_integrations_ws").on(t.workspaceId, t.status),
-    index("idx_partner_integrations_connector").on(t.connectorKey, t.status),
-  ],
+  (t) => ({
+    idx_partner_integrations_ws: index("idx_partner_integrations_ws").on(t.workspaceId, t.status),
+    idx_partner_integrations_connector: index("idx_partner_integrations_connector").on(t.connectorKey, t.status),
+  }),
 );
 
 // Partner tokens — encrypted OAuth tokens (migration 0059).
@@ -2878,9 +2882,9 @@ export const partnerTokens = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [
-    index("idx_partner_tokens_integration").on(t.integrationId),
-  ],
+  (t) => ({
+    idx_partner_tokens_integration: index("idx_partner_tokens_integration").on(t.integrationId),
+  }),
 );
 
 // Regional playbooks (migration 0060).
@@ -2903,7 +2907,9 @@ export const regionalPlaybooks = pgTable("regional_playbooks", {
   thresholdMet: boolean("threshold_met").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => [index("idx_regional_playbooks_status").on(t.status)]);
+}, (t) => ({
+    idx_regional_playbooks_status: index("idx_regional_playbooks_status").on(t.status),
+  }));
 
 // Vertical configs (migration 0060).
 export const verticalConfigs = pgTable("vertical_configs", {
@@ -2927,7 +2933,9 @@ export const verticalConfigs = pgTable("vertical_configs", {
   totalRevenueUsd: numeric("total_revenue_usd").notNull().default("0"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => [index("idx_vertical_configs_status").on(t.status)]);
+}, (t) => ({
+    idx_vertical_configs_status: index("idx_vertical_configs_status").on(t.status),
+  }));
 
 // Enterprise licenses (migration 0060).
 export const enterpriseLicenses = pgTable("enterprise_licenses", {
@@ -2944,7 +2952,9 @@ export const enterpriseLicenses = pgTable("enterprise_licenses", {
   lastVerifiedAt: timestamp("last_verified_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => [index("idx_enterprise_licenses_ws").on(t.workspaceId, t.status)]);
+}, (t) => ({
+    idx_enterprise_licenses_ws: index("idx_enterprise_licenses_ws").on(t.workspaceId, t.status),
+  }));
 
 // Enterprise SLAs (migration 0060).
 export const enterpriseSlas = pgTable("enterprise_slas", {
@@ -2960,7 +2970,9 @@ export const enterpriseSlas = pgTable("enterprise_slas", {
   creditPolicy: jsonb("credit_policy").notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => [index("idx_enterprise_slas_ws").on(t.workspaceId)]);
+}, (t) => ({
+    idx_enterprise_slas_ws: index("idx_enterprise_slas_ws").on(t.workspaceId),
+  }));
 
 // Compliance evidence (migration 0060).
 export const complianceEvidence = pgTable("compliance_evidence", {
@@ -2975,10 +2987,10 @@ export const complianceEvidence = pgTable("compliance_evidence", {
   verified: boolean("verified").notNull().default(false),
   verifiedAt: timestamp("verified_at", { withTimezone: true }),
   expiresAt: timestamp("expires_at", { withTimezone: true }),
-}, (t) => [
-  index("idx_compliance_evidence_ws").on(t.workspaceId, t.framework),
-  index("idx_compliance_evidence_framework").on(t.framework, t.controlId),
-]);
+}, (t) => ({
+    idx_compliance_evidence_ws: index("idx_compliance_evidence_ws").on(t.workspaceId, t.framework),
+    idx_compliance_evidence_framework: index("idx_compliance_evidence_framework").on(t.framework, t.controlId),
+  }));
 
 // Policy versions (migration 0061).
 export const policyVersions = pgTable("policy_versions", {
@@ -2993,7 +3005,9 @@ export const policyVersions = pgTable("policy_versions", {
   status: text("status").notNull().default("committed"),
   simulationResults: jsonb("simulation_results"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => [index("idx_policy_versions_key").on(t.policyKey, t.version)]);
+}, (t) => ({
+    idx_policy_versions_key: index("idx_policy_versions_key").on(t.policyKey, t.version),
+  }));
 
 // Policy evaluations (migration 0061).
 export const policyEvaluations = pgTable("policy_evaluations", {
@@ -3006,10 +3020,10 @@ export const policyEvaluations = pgTable("policy_evaluations", {
   evaluatedAt: timestamp("evaluated_at", { withTimezone: true }).defaultNow().notNull(),
   workspaceId: uuid("ws_id"),
   toolKey: text("tool_key"),
-}, (t) => [
-  index("idx_policy_evaluations_time").on(t.evaluatedAt),
-  index("idx_policy_evaluations_category").on(t.category, t.evaluatedAt),
-]);
+}, (t) => ({
+    idx_policy_evaluations_time: index("idx_policy_evaluations_time").on(t.evaluatedAt),
+    idx_policy_evaluations_category: index("idx_policy_evaluations_category").on(t.category, t.evaluatedAt),
+  }));
 
 // Governance actions (migration 0061).
 export const governanceActions = pgTable("governance_actions", {
@@ -3024,10 +3038,10 @@ export const governanceActions = pgTable("governance_actions", {
   status: text("status").notNull().default("completed"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
-}, (t) => [
-  index("idx_governance_actions_domain").on(t.domain, t.status),
-  index("idx_governance_actions_target").on(t.targetType, t.targetId),
-]);
+}, (t) => ({
+    idx_governance_actions_domain: index("idx_governance_actions_domain").on(t.domain, t.status),
+    idx_governance_actions_target: index("idx_governance_actions_target").on(t.targetType, t.targetId),
+  }));
 
 // Billing events (migration 0061).
 export const billingEvents = pgTable("billing_events", {
@@ -3047,11 +3061,11 @@ export const billingEvents = pgTable("billing_events", {
   region: text("region"),
   metadata: jsonb("metadata").notNull().default({}),
   ts: timestamp("ts", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => [
-  index("idx_billing_events_ts").on(t.ts),
-  index("idx_billing_events_ws_feature").on(t.workspaceId, t.feature, t.ts),
-  index("idx_billing_events_feature").on(t.feature, t.ts),
-]);
+}, (t) => ({
+    idx_billing_events_ts: index("idx_billing_events_ts").on(t.ts),
+    idx_billing_events_ws_feature: index("idx_billing_events_ws_feature").on(t.workspaceId, t.feature, t.ts),
+    idx_billing_events_feature: index("idx_billing_events_feature").on(t.feature, t.ts),
+  }));
 
 // Scaling events (migration 0061).
 export const scalingEvents = pgTable("scaling_events", {
@@ -3064,7 +3078,9 @@ export const scalingEvents = pgTable("scaling_events", {
   costImpactUsd: numeric("cost_impact_usd"),
   automated: boolean("automated").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => [index("idx_scaling_events_type").on(t.actionType, t.createdAt)]);
+}, (t) => ({
+    idx_scaling_events_type: index("idx_scaling_events_type").on(t.actionType, t.createdAt),
+  }));
 
 // Security scans (migration 0061).
 export const securityScans = pgTable("security_scans", {
@@ -3076,10 +3092,10 @@ export const securityScans = pgTable("security_scans", {
   passed: boolean("passed").notNull().default(false),
   scannedAt: timestamp("scanned_at", { withTimezone: true }).defaultNow().notNull(),
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
-}, (t) => [
-  index("idx_security_scans_type").on(t.scanType, t.scannedAt),
-  index("idx_security_scans_unresolved").on(t.scanType),
-]);
+}, (t) => ({
+    idx_security_scans_type: index("idx_security_scans_type").on(t.scanType, t.scannedAt),
+    idx_security_scans_unresolved: index("idx_security_scans_unresolved").on(t.scanType),
+  }));
 
 // Governance decisions (migration 0062).
 export const governanceDecisions = pgTable("governance_decisions", {
@@ -3102,11 +3118,11 @@ export const governanceDecisions = pgTable("governance_decisions", {
   appealable: boolean("appealable").notNull().default(true),
   appealedAt: timestamp("appealed_at", { withTimezone: true }),
   appealStatus: text("appeal_status"),
-}, (t) => [
-  index("idx_gov_decisions_target").on(t.targetType, t.targetId),
-  index("idx_gov_decisions_risk").on(t.riskLevel, t.decision),
-  index("idx_gov_decisions_ws").on(t.workspaceId, t.decidedAt),
-]);
+}, (t) => ({
+    idx_gov_decisions_target: index("idx_gov_decisions_target").on(t.targetType, t.targetId),
+    idx_gov_decisions_risk: index("idx_gov_decisions_risk").on(t.riskLevel, t.decision),
+    idx_gov_decisions_ws: index("idx_gov_decisions_ws").on(t.workspaceId, t.decidedAt),
+  }));
 
 // Governance delegations (migration 0062).
 export const governanceDelegations = pgTable("governance_delegations", {
@@ -3125,10 +3141,10 @@ export const governanceDelegations = pgTable("governance_delegations", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
   revokedReason: text("revoked_reason"),
-}, (t) => [
-  index("idx_gov_delegations_delegatee").on(t.delegateeId, t.status),
-  index("idx_gov_delegations_action").on(t.actionType, t.status),
-]);
+}, (t) => ({
+    idx_gov_delegations_delegatee: index("idx_gov_delegations_delegatee").on(t.delegateeId, t.status),
+    idx_gov_delegations_action: index("idx_gov_delegations_action").on(t.actionType, t.status),
+  }));
 
 // Governance kill switches (migration 0062).
 export const governanceKillSwitches = pgTable("governance_kill_switches", {
@@ -3147,9 +3163,9 @@ export const governanceKillSwitches = pgTable("governance_kill_switches", {
   deactivationReason: text("deactivation_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => [
-  index("idx_kill_switches_active").on(t.isActive, t.scopeType),
-]);
+}, (t) => ({
+    idx_kill_switches_active: index("idx_kill_switches_active").on(t.isActive, t.scopeType),
+  }));
 
 // Governance transparency log (migration 0062).
 export const governanceTransparencyLog = pgTable("governance_transparency_log", {
@@ -3168,8 +3184,8 @@ export const governanceTransparencyLog = pgTable("governance_transparency_log", 
   auditorVisible: boolean("auditor_visible").notNull().default(false),
   auditorEvidence: jsonb("auditor_evidence").notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => [
-  index("idx_transparency_user").on(t.userId, t.createdAt),
-  index("idx_transparency_ws").on(t.workspaceId, t.createdAt),
-  index("idx_transparency_auditor").on(t.auditorVisible, t.createdAt),
-]);
+}, (t) => ({
+    idx_transparency_user: index("idx_transparency_user").on(t.userId, t.createdAt),
+    idx_transparency_ws: index("idx_transparency_ws").on(t.workspaceId, t.createdAt),
+    idx_transparency_auditor: index("idx_transparency_auditor").on(t.auditorVisible, t.createdAt),
+  }));
