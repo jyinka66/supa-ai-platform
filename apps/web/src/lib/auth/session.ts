@@ -212,6 +212,7 @@ function signJwt(payload: { sub: string; jti: string }, expiresAt: Date): string
   const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
   const body = Buffer.from(JSON.stringify({
     ...payload,
+    aud: "authenticated",
     exp: Math.floor(expiresAt.getTime() / 1000),
     iat: Math.floor(Date.now() / 1000),
   })).toString("base64url");
