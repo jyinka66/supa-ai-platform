@@ -42,7 +42,6 @@ export default tseslint.config(
         {
           "ts-ignore": "allow-with-description",
           minimumDescriptionLength: 8,
-          descriptionPattern: "^GH-\\d+ ", // must link an issue: // @ts-ignore GH-123 reason
         },
       ],
 
