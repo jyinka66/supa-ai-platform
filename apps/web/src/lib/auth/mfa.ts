@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { createCipheriv, createDecipheriv, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { db } from "@supa/db";
-import { mfaRecoveryCodes, productMfaFactors } from "@supa/db/schema";
-import { and, eq, isNull } from "drizzle-orm";
+import { mfaRecoveryCodes } from "@supa/db/schema";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { ApiError } from "@/lib/http/middleware";
 
 const TOTP_STEP_SECONDS = 30;
@@ -111,26 +111,23 @@ function formatRecoveryCode(code: string): string {
   return code.match(/.{1,4}/g)?.join("-") ?? code;
 }
 
-/** Create an encrypted pending TOTP factor; never overwrite a confirmed factor. */
+/** Create an encrypted pending TOTP factor; a confirmed factor is never overwritten. */
 export async function beginTotpEnrollment(userId: string, label?: string): Promise<{ secret: string; otpauthUrl: string }> {
   getMfaKey();
-  const rows = await db.select({ confirmedAt: productMfaFactors.confirmedAt })
-    .from(productMfaFactors).where(eq(productMfaFactors.userId, userId as any)).limit(1);
-  const existing = rows[0];
+  const rows = await db.execute(sql`select confirmed_at as "confirmedAt" from product_mfa_factors where user_id = ${userId}::uuid limit 1`);
+  const existing = rows[0] as { confirmedAt: Date | null } | undefined;
   if (existing?.confirmedAt) throw new ApiError("mfa_already_enabled", 409);
 
   const secret = base32Encode(randomBytes(20));
   const encrypted = encryptSecret(secret);
   if (existing) {
-    const updated = await db.update(productMfaFactors)
-      .set({ totpSecretEncrypted: encrypted, updatedAt: new Date() })
-      .where(and(eq(productMfaFactors.userId, userId as any), isNull(productMfaFactors.confirmedAt)))
-      .returning({ userId: productMfaFactors.userId });
+    const updated = await db.execute(sql`update product_mfa_factors
+      set totp_secret_encrypted = ${encrypted}, updated_at = now()
+      where user_id = ${userId}::uuid and confirmed_at is null returning user_id`);
     if (!updated.length) throw new ApiError("mfa_enrollment_conflict", 409);
   } else {
-    const inserted = await db.insert(productMfaFactors)
-      .values({ userId: userId as any, totpSecretEncrypted: encrypted })
-      .onConflictDoNothing().returning({ userId: productMfaFactors.userId });
+    const inserted = await db.execute(sql`insert into product_mfa_factors (user_id, totp_secret_encrypted)
+      values (${userId}::uuid, ${encrypted}) on conflict (user_id) do nothing returning user_id`);
     if (!inserted.length) throw new ApiError("mfa_enrollment_conflict", 409);
   }
 
@@ -142,11 +139,9 @@ export async function beginTotpEnrollment(userId: string, label?: string): Promi
 
 /** Confirm enrollment, then issue ten single-use recovery codes exactly once. */
 export async function confirmTotpEnrollment(userId: string, code: string): Promise<string[] | null> {
-  const rows = await db.select({
-    totpSecretEncrypted: productMfaFactors.totpSecretEncrypted,
-    confirmedAt: productMfaFactors.confirmedAt,
-  }).from(productMfaFactors).where(eq(productMfaFactors.userId, userId as any)).limit(1);
-  const factor = rows[0];
+  const rows = await db.execute(sql`select totp_secret_encrypted as "totpSecretEncrypted",
+    confirmed_at as "confirmedAt" from product_mfa_factors where user_id = ${userId}::uuid limit 1`);
+  const factor = rows[0] as { totpSecretEncrypted: string; confirmedAt: Date | null } | undefined;
   if (!factor) throw new ApiError("mfa_enrollment_not_found", 404);
   if (factor.confirmedAt) throw new ApiError("mfa_already_enabled", 409);
   if (!verifyTotpCode(code, decryptSecret(factor.totpSecretEncrypted))) return null;
@@ -157,29 +152,25 @@ export async function confirmTotpEnrollment(userId: string, code: string): Promi
   for (const raw of rawCodes) hashes.push(await argon2.hash(raw, ARGON2_OPTIONS));
 
   await db.transaction(async (tx) => {
-    const activated = await tx.update(productMfaFactors)
-      .set({ confirmedAt: new Date(), updatedAt: new Date() })
-      .where(and(eq(productMfaFactors.userId, userId as any), isNull(productMfaFactors.confirmedAt)))
-      .returning({ userId: productMfaFactors.userId });
+    const activated = await tx.execute(sql`update product_mfa_factors
+      set confirmed_at = now(), updated_at = now()
+      where user_id = ${userId}::uuid and confirmed_at is null returning user_id`);
     if (!activated.length) throw new ApiError("mfa_enrollment_conflict", 409);
 
     await tx.delete(mfaRecoveryCodes).where(eq(mfaRecoveryCodes.userId, userId as any));
     await tx.insert(mfaRecoveryCodes).values(hashes.map((codeHash) => ({ userId: userId as any, codeHash })));
   });
-
   return rawCodes.map(formatRecoveryCode);
 }
 
 /** Verify TOTP or atomically consume a valid, single-use recovery code. */
 export async function verifyTotp(userId: string, code: string): Promise<boolean> {
-  const rows = await db.select({
-    totpSecretEncrypted: productMfaFactors.totpSecretEncrypted,
-    confirmedAt: productMfaFactors.confirmedAt,
-  }).from(productMfaFactors).where(eq(productMfaFactors.userId, userId as any)).limit(1);
-  const factor = rows[0];
+  const rows = await db.execute(sql`select totp_secret_encrypted as "totpSecretEncrypted",
+    confirmed_at as "confirmedAt" from product_mfa_factors where user_id = ${userId}::uuid limit 1`);
+  const factor = rows[0] as { totpSecretEncrypted: string; confirmedAt: Date | null } | undefined;
   if (!factor?.confirmedAt) return false;
 
-  if (/^\d{6}$/.test(code)) return verifyTotpCode(code, decryptSecret(factor.totpSecretEncrypted));
+  if (/^\\d{6}$/.test(code)) return verifyTotpCode(code, decryptSecret(factor.totpSecretEncrypted));
   const normalized = normalizeRecoveryCode(code);
   if (!/^[A-F0-9]{20}$/.test(normalized)) return false;
 
@@ -191,8 +182,7 @@ export async function verifyTotp(userId: string, code: string): Promise<boolean>
     let matches = false;
     try { matches = await argon2.verify(item.codeHash, normalized); } catch { matches = false; }
     if (!matches) continue;
-    const consumed = await db.update(mfaRecoveryCodes)
-      .set({ usedAt: new Date() })
+    const consumed = await db.update(mfaRecoveryCodes).set({ usedAt: new Date() })
       .where(and(eq(mfaRecoveryCodes.id, item.id), eq(mfaRecoveryCodes.userId, userId as any), isNull(mfaRecoveryCodes.usedAt)))
       .returning({ id: mfaRecoveryCodes.id });
     return consumed.length > 0;
