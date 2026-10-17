@@ -21,7 +21,7 @@ const securityHeaders = [
 
 const nextConfig = {
   reactStrictMode: true,
-  output: "standalone", // produces self-contained .next/standalone for the Docker image
+  // Vercel creates its own serverless output. Keep standalone output for the Docker deployment.\n  ...(process.env.VERCEL === "1" ? {} : { output: "standalone" }),
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

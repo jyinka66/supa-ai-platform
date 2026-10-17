@@ -72,6 +72,41 @@ supa-ai/
 - `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` — required for production rate limiting (local development may leave these blank)
 - `TURBO_TOKEN` / `TURBO_TEAM` — remote caching (CI only)
 
+## Deploy to Vercel
+
+The deployable Next.js application lives in `apps/web`. Configure Vercel to use that directory as the **Root Directory**; do not set the repository root as the app root.
+
+1. Import `jyinka66/supa-ai-platform` in [Vercel](https://vercel.com/new).
+2. Set **Root Directory** to `apps/web`. Keep the detected Next.js framework and default build command (`next build`); do not set a static output directory.
+3. Keep Bun workspace installation enabled. The lockfile is at the repository root, and the app imports workspace packages from outside `apps/web`; Vercel must install the monorepo workspace from the repository root.
+4. Add the production environment variables listed below in Vercel Project Settings → Environment Variables, for Preview and Production as appropriate. Never add real credentials to Git.
+5. Deploy a Preview first and test sign-in, database operations, email links, and any enabled provider integrations before promoting to Production.
+
+### Required production environment
+
+- `NEXT_PUBLIC_APP_URL` — the final HTTPS app URL (used for callbacks and email links).
+- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` — the Supabase project URL and public/publishable client key.
+- `SUPABASE_SERVICE_ROLE_KEY` — server-only privileged key; never use a `NEXT_PUBLIC_` prefix.
+- `SUPABASE_JWT_SECRET` — server-side JWT verification secret where required by the app.
+- `DATABASE_URL` — PostgreSQL connection string for the Supabase database. Use the connection mode appropriate for serverless clients; keep credentials private.
+- `SENSITIVE_DATA_ENCRYPTION_KEY` — 64-character hexadecimal value representing 32 random bytes; server-only. Back it up securely because rotating or losing it can make existing encrypted fields unreadable.
+- `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` — required for production rate limiting.
+- At least one of `GEMINI_API_KEY`, `GROQ_API_KEY`, or `OPENROUTER_API_KEY` — required if chat functionality is enabled.
+- `RESEND_API_KEY` — required for email delivery; configure `EMAIL_FROM` to a verified sender.
+- `INVITE_TOKEN_SECRET` — recommended strong server-only secret for invite-token signing.
+- `CRON_SECRET` — set if scheduled/cron endpoints are enabled.
+- `SUPABASE_URL` and `SUPABASE_ANON_KEY` — compatibility aliases used by database integration tests or scripts; only add them to deployed environments if the deployed code path requires them.
+
+Optional integrations include `SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_TRACES_SAMPLER_ARG`, and `LOG_LEVEL`. `TURBO_TOKEN` and `TURBO_TEAM` are only needed if using Turbo Remote Cache.
+
+Find Supabase URL and public/secret API keys in the Supabase project dashboard under **Connect** or **Settings → API Keys**. Find the database connection string using **Connect → Database**. Do not expose the service-role key, JWT secret, database password, encryption key, provider keys, or email/cron secrets to the browser.
+
+### Vercel runtime limitation
+
+The isolated command-execution API depends on starting Docker containers. Standard Vercel functions cannot run a Docker daemon, so that feature will not work on Vercel just by deploying the Next.js app. Run it in a separately secured sandbox/worker service with Docker access and configure the app to call that service, or disable the feature in the Vercel deployment. Do not enable it while its worker endpoint is unconfigured.
+
+Supabase schema changes must be reviewed and applied deliberately using the Supabase CLI or migration pipeline. Do not run a destructive local reset command against production.
+
 ## CI
 
 `.github/workflows/ci.yml` runs on pushes to `main`/`master` and on pull requests. It installs dependencies with Bun's frozen lockfile, then runs workspace linting, type checking, unit tests, and a production build. Full local Supabase integration tests require the Supabase CLI and Docker and are not currently part of this workflow.
