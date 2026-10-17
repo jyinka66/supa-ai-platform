@@ -1641,6 +1641,15 @@ export const mfaRecoveryCodes = pgTable(
   ],
 );
 
+// Product-user TOTP factors (migration 0072); independent from admin MFA.
+export const productMfaFactors = pgTable("product_mfa_factors", {
+  userId: uuid("user_id").primaryKey(),
+  totpSecretEncrypted: text("totp_secret_encrypted").notNull(),
+  confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 // Files — file tree (dirs + files), content-hash dedup, soft delete (migration 0039).
 export const files = pgTable(
   "files",
