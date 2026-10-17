@@ -1,4 +1,3 @@
-import { defineConfig } from "eslint-define-config";
 import tseslint from "typescript-eslint";
 import nextPlugin from "@next/eslint-plugin-next";
 import jsxA11y from "eslint-plugin-jsx-a11y";
