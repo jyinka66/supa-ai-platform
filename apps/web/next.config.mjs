@@ -23,6 +23,15 @@ const nextConfig = {
   reactStrictMode: true,
   // Vercel creates its own serverless output. Keep standalone output for the Docker deployment.
   ...(process.env.VERCEL === "1" ? {} : { output: "standalone" }),
+  // The TypeScript source uses NodeNext-style ".js" specifiers for local modules.
+  // Next/Webpack does not map those to the corresponding .ts/.tsx files by default.
+  webpack(config) {
+    config.resolve.extensionAlias = {
+      ...config.resolve.extensionAlias,
+      ".js": [".ts", ".tsx", ".js"],
+    };
+    return config;
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
