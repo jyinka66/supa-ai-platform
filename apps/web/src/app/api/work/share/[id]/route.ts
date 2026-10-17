@@ -9,6 +9,7 @@ import { guard } from "@/lib/ratelimit/guard";
 import { problem, ok } from "@/lib/api/problem";
 import { audit } from "@/lib/audit";
 import { ip } from "@/lib/utils/ip";
+import { hashPassword as argonHash, verifyPassword as argonVerify } from "@/lib/auth/passwords";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
