@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { randomUUID } from "node:crypto";
 
 const LOCALES = ["en", "ar", "fr", "es", "de", "pt", "zh", "ja", "ko", "hi"] as const;
 const DEFAULT_LOCALE = "en";
@@ -42,7 +41,7 @@ function resolveTraceId(incoming: string | null): string {
   if (incoming && /^[a-f0-9-]{36}$/i.test(incoming)) {
     return incoming;
   }
-  return randomUUID();
+  return crypto.randomUUID();
 }
 
 /**
