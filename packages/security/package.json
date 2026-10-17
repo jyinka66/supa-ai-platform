@@ -1,0 +1,31 @@
+{
+  "name": "@supa/security",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./primitives": "./src/primitives.ts",
+    "./share-links": "./src/share-links.ts",
+    "./boundary-1-sync": "./src/boundary-1-sync.ts",
+    "./boundary-2-assets": "./src/boundary-2-assets.ts",
+    "./boundary-3-ai": "./src/boundary-3-ai.ts",
+    "./boundary-4-codegen": "./src/boundary-4-codegen.ts",
+    "./boundary-5-platform": "./src/boundary-5-platform.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@supa/design-model": "workspace:*"
+  },
+  "devDependencies": {
+    "@supa/config": "workspace:*",
+    "@supa/tsconfig": "workspace:*",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

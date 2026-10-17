@@ -1,0 +1,89 @@
+{
+  "onboarding": {
+    "skipAll": "オンボーディングをスキップ",
+    "steps": {
+      "language": "言語を選択してください",
+      "country": "お住まいの地域は？",
+      "role": "最も当てはまるものは？",
+      "goals": "目標は何ですか？",
+      "firstValue": "最初のアイテムを作成"
+    },
+    "actions": {
+      "next": "続ける",
+      "back": "戻る",
+      "skip": "このステップをスキップ",
+      "finish": "完了"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "サインイン",
+      "email": "メールアドレス",
+      "password": "パスワード",
+      "submit": "サインイン",
+      "mfaPrompt": "認証コードを入力してください"
+    },
+    "challenge": {
+      "title": "二要素認証",
+      "code": "6 桁のコード",
+      "verify": "確認",
+      "cancel": "キャンセル"
+    }
+  },
+  "dashboard": {
+    "title": "ダッシュボード",
+    "workspaces": "ワークスペース",
+    "noWorkspaces": "まだワークスペースに所属していません。",
+    "personalWorkspace": "個人",
+    "plan": "プラン"
+  },
+  "errors": {
+    "rate_limited": "試行回数が多すぎます。後でもう一度お試しください。",
+    "invalid_email": "有効なメールアドレスを入力してください。",
+    "weak_password": "パスワードは 12 文字以上でなければなりません。",
+    "signup_failed": "サインアップに失敗しました。もう一度お試しください。",
+    "unauthenticated": "続行するにはサインインしてください。"
+  },
+  "settings": {
+    "sessions": {
+      "title": "Sessions",
+      "active": "Active",
+      "revoked": "Revoked",
+      "revoke": "Revoke",
+      "revokeAll": "Revoke all",
+      "current": "Current",
+      "lastActive": "Last active",
+      "noOtherDevices": "No other devices signed in.",
+      "confirmRevokeAllTitle": "Revoke all sessions?",
+      "confirmRevokeAllBody": "You will be signed out of every device, including this one."
+    }
+  },
+  "chat": {
+    "untitled": "Untitled conversation",
+    "emptyState": "Send a message to start the conversation.",
+    "composerPlaceholder": "Type your message...",
+    "aborted": "Generation stopped.",
+    "modes": {
+      "chat": "Chat",
+      "write": "Write",
+      "rewrite": "Rewrite",
+      "summarize": "Summarize",
+      "translate": "Translate",
+      "code": "Code",
+      "image": "Image",
+      "document": "Document",
+      "plan": "Plan"
+    }
+  },
+  "invite": {
+    "invalidTitle": "Invalid invite",
+    "missingToken": "No invite token was provided.",
+    "accepting": "Accepting your invite...",
+    "acceptedTitle": "Welcome!",
+    "acceptedBody": "You have joined the workspace. Redirecting...",
+    "invalidOrExpired": "This invite link is invalid or has expired.",
+    "alreadyConsumed": "This invite has already been used.",
+    "emailMismatch": "This invite was sent to a different email address.",
+    "networkError": "Network error. Please try again."
+  }
+}

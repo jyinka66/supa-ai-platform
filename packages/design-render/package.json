@@ -1,0 +1,27 @@
+{
+  "name": "@supa/design-render",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./transform": "./src/transform.ts",
+    "./measure": "./src/measure.ts",
+    "./hittest": "./src/hittest.ts",
+    "./render": "./src/render.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@supa/design-model": "workspace:*"
+  },
+  "devDependencies": {
+    "@supa/config": "workspace:*",
+    "@supa/tsconfig": "workspace:*",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

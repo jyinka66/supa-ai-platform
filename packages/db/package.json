@@ -1,0 +1,35 @@
+{
+  "name": "@supa/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./client": "./src/client.ts",
+    "./pool": "./src/pool.ts"
+  },
+  "scripts": {
+    "generate": "node ../../scripts/new-migration.mjs",
+    "migrate": "node ../../scripts/sync-migrations.mjs && cd ../.. && supabase migration up --local",
+    "studio": "drizzle-kit studio",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:sql": "psql $DATABASE_URL -f tests/rls_test.sql -v ON_ERROR_STOP=1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "drizzle-orm": "^0.33.0",
+    "postgres": "^3.4.4"
+  },
+  "devDependencies": {
+    "@supa/config": "workspace:*",
+    "@supa/tsconfig": "workspace:*",
+    "@types/node": "^20.14.0",
+    "drizzle-kit": "^0.24.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

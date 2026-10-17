@@ -1,0 +1,7 @@
+# Next.js default security headers (applies to all responses from /public/)
+# These complement the headers set in next.config.mjs; the static host
+# (Vercel) adds additional CDN-level headers automatically.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()

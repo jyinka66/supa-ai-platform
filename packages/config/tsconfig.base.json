@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "verbatimModuleSyntax": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "incremental": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "jsx": "react-jsx"
+  },
+  "exclude": ["node_modules", "dist", ".next", "storybook-static"]
+}

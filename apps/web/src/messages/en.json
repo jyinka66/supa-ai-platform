@@ -1,0 +1,89 @@
+{
+  "onboarding": {
+    "skipAll": "Skip onboarding",
+    "steps": {
+      "language": "Choose your language",
+      "country": "Where are you based?",
+      "role": "What best describes you?",
+      "goals": "What are your goals?",
+      "firstValue": "Create your first item"
+    },
+    "actions": {
+      "next": "Continue",
+      "back": "Back",
+      "skip": "Skip this step",
+      "finish": "Finish"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "mfaPrompt": "Enter your authenticator code"
+    },
+    "challenge": {
+      "title": "Two-factor authentication",
+      "code": "6-digit code",
+      "verify": "Verify",
+      "cancel": "Cancel"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "workspaces": "Workspaces",
+    "noWorkspaces": "You don't belong to any workspaces yet.",
+    "personalWorkspace": "Personal",
+    "plan": "Plan"
+  },
+  "settings": {
+    "sessions": {
+      "title": "Sessions",
+      "active": "Active sessions",
+      "revoked": "Revoked",
+      "revoke": "Revoke",
+      "revokeAll": "Revoke all",
+      "current": "Current",
+      "lastActive": "Last active",
+      "noOtherDevices": "No other devices signed in.",
+      "confirmRevokeAllTitle": "Revoke all sessions?",
+      "confirmRevokeAllBody": "You'll be signed out of every device, including this one. You'll need to sign in again to continue."
+    }
+  },
+  "errors": {
+    "rate_limited": "Too many attempts. Try again later.",
+    "invalid_email": "Please enter a valid email address.",
+    "weak_password": "Password must be at least 12 characters.",
+    "signup_failed": "Sign-up failed. Please try again.",
+    "unauthenticated": "Please sign in to continue."
+  },
+  "chat": {
+    "untitled": "Untitled conversation",
+    "emptyState": "Send a message to start the conversation.",
+    "composerPlaceholder": "Type your message...",
+    "aborted": "Generation stopped.",
+    "modes": {
+      "chat": "Chat",
+      "write": "Write",
+      "rewrite": "Rewrite",
+      "summarize": "Summarize",
+      "translate": "Translate",
+      "code": "Code",
+      "image": "Image",
+      "document": "Document",
+      "plan": "Plan"
+    }
+  },
+  "invite": {
+    "invalidTitle": "Invalid invite",
+    "missingToken": "No invite token was provided.",
+    "accepting": "Accepting your invite...",
+    "acceptedTitle": "Welcome!",
+    "acceptedBody": "You have joined the workspace. Redirecting...",
+    "invalidOrExpired": "This invite link is invalid or has expired.",
+    "alreadyConsumed": "This invite has already been used.",
+    "emailMismatch": "This invite was sent to a different email address.",
+    "networkError": "Network error. Please try again."
+  }
+}

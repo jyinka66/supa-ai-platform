@@ -1,0 +1,42 @@
+{
+  "en": {
+    "Summarize this article": "## Overview\nThis article covers the key concepts.\n\n## Details\nThe implementation uses three components.",
+    "Write a short essay about cats": "Cats are fascinating creatures.\n\nThey have been companions to humans for thousands of years.\n\nIn conclusion, cats make excellent pets."
+  },
+  "es": {
+    "Resume este artículo": "## Resumen\nEste artículo cubre los conceptos clave.\n\n## Detalles\nLa implementación usa tres componentes.",
+    "Escribe un ensayo corto sobre gatos": "Los gatos son criaturas fascinantes.\n\nHan sido compañeros de los humanos durante miles de años.\n\nEn conclusión, los gatos son excelentes mascotas."
+  },
+  "pt": {
+    "Resuma este artigo": "## Resumo\nEste artigo cobre os conceitos-chave.\n\n## Detalhes\nA implementação usa três componentes.",
+    "Escreva um ensaio curto sobre gatos": "Os gatos são criaturas fascinantes.\n\nEles têm sido companheiros dos humanos por milhares de anos.\n\nEm conclusão, os gatos são excelentes animais de estimação."
+  },
+  "fr": {
+    "Résume cet article": "## Résumé\nCet article couvre les concepts clés.\n\n## Détails\nL'implémentation utilise trois composants.",
+    "Écris un court essai sur les chats": "Les chats sont des créatures fascinantes.\n\nIls sont compagnons des humains depuis des milliers d'années.\n\nEn conclusion, les chats font d'excellents animaux de compagnie."
+  },
+  "de": {
+    "Fasse diesen Artikel zusammen": "## Zusammenfassung\nDieser Artikel behandelt die wichtigsten Konzepte.\n\n## Details\nDie Implementierung verwendet drei Komponenten.",
+    "Schreibe einen kurzen Aufsatz über Katzen": "Katzen sind faszinierende Geschöpfe.\n\nSie sind seit Jahrtausenden Gefährten der Menschen.\n\nZusammenfassend sind Katzen ausgezeichnete Haustiere."
+  },
+  "ar": {
+    "لخص هذا المقال": "## ملخص\nيغطي هذا المقال المفاهيم الرئيسية.\n\n## التفاصيل\nيستخدم التنفيذ ثلاثة مكونات.",
+    "اكتب مقالاً قصيراً عن القطط": "القطط مخلوقات رائعة.\n\nلقد كانت رفيقة للبشر لآلاف السنين.\n\nفي الختام، القطط حيوانات أليفة ممتازة."
+  },
+  "zh": {
+    "总结这篇文章": "## 概述\n本文涵盖了关键概念。\n\n## 详情\n实现使用三个组件。",
+    "写一篇关于猫的短文": "猫是迷人的生物。\n\n它们已经是人类的伴侣数千年了。\n\n总之，猫是极好的宠物。"
+  },
+  "ja": {
+    "この記事を要約して": "## 概要\nこの記事は主要な概念をカバーしています。\n\n## 詳細\n実装は3つのコンポーネントを使用します。",
+    "猫について短いエッセイを書いて": "猫は魅力的な生き物です。\n\n何千年もの間、人間の伴侶でした。\n\n結論として、猫は素晴らしいペットです。"
+  },
+  "ko": {
+    "이 기사를 요약해 주세요": "## 요약\n이 기사는 주요 개념을 다룹니다.\n\n## 세부 정보\n구현은 세 가지 구성 요소를 사용합니다.",
+    "고양이에 대한 짧은 에세이를 써주세요": "고양이는 매력적인 생물입니다.\n\n수천 년 동안 인간의 동반자였습니다.\n\n결론적으로, 고양이는 훌륭한 반려동물입니다."
+  },
+  "hi": {
+    "इस लेख का सारांश दें": "## सारांश\nयह लेख मुख्य अवधारणाओं को कवर करता है।\n\n## विवरण\nकार्यान्वयन तीन घटकों का उपयोग करता है।",
+    "बिल्लियों के बारे में एक छोटा निबंध लिखें": "बिल्लियाँ आकर्षक जीव हैं।\n\nहजारों वर्षों से वे मनुष्य की साथी रही हैं।\n\nनिष्कर्ष में, बिल्लियाँ उत्कृष्ट पालतू जानवर हैं।"
+  }
+}

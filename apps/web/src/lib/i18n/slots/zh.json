@@ -1,0 +1,14 @@
+{
+  "greeting": "这是我找到的内容：",
+  "disclaimer": "我是 AI 助手 — 请验证重要信息。",
+  "followUp": "您还想了解其他内容吗？",
+  "clarify": "您能澄清一下您的意思吗？",
+  "summarizing": "以下是摘要：",
+  "translating": "以下是翻译：",
+  "writing": "这是一份草稿：",
+  "coding": "以下是代码：",
+  "planning": "以下是计划：",
+  "error": "遇到了错误。请重试。",
+  "rateLimited": "您发送消息太快了。请稍等片刻。",
+  "budgetExceeded": "您已达到使用上限。请联系您的工作空间管理员。"
+}

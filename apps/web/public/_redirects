@@ -1,0 +1,12 @@
+# Enforce HTTPS in production
+/*.well-known/openid-configuration
+  Content-Type: application/json
+
+/*.svg
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.png
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.woff2
+  Cache-Control: public, max-age=31536000, immutable

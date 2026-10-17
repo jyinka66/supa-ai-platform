@@ -1,0 +1,26 @@
+{
+  "name": "@supa/app-shell",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./workspace": "./src/workspace.ts" },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@supa/design-ai": "workspace:*",
+    "@supa/design-editor": "workspace:*",
+    "@supa/design-io": "workspace:*",
+    "@supa/design-model": "workspace:*",
+    "@supa/design-render": "workspace:*",
+    "@supa/design-tokens": "workspace:*"
+  },
+  "devDependencies": {
+    "@supa/config": "workspace:*",
+    "@supa/tsconfig": "workspace:*",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

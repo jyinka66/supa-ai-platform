@@ -1,0 +1,29 @@
+{
+  "name": "@supa/design-tokens",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./bindings": "./src/bindings.ts",
+    "./variants": "./src/variants.ts",
+    "./codegen": "./src/codegen.ts",
+    "./ai-integration": "./src/ai-integration.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@supa/design-model": "workspace:*"
+  },
+  "devDependencies": {
+    "@supa/config": "workspace:*",
+    "@supa/tsconfig": "workspace:*",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

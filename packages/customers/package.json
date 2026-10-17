@@ -1,0 +1,29 @@
+{
+  "name": "@supa/customers",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./customer": "./src/customer.ts",
+    "./activity": "./src/activity.ts",
+    "./duplicates": "./src/duplicates.ts",
+    "./import": "./src/import.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@supa/money": "workspace:*",
+    "@supa/workspace-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@supa/config": "workspace:*",
+    "@supa/tsconfig": "workspace:*",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

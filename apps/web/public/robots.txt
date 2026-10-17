@@ -1,0 +1,6 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Sitemap (added in production once deployed)
+# Sitemap: https://supa-ai.example/sitemap.xml

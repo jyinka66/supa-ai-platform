@@ -1,0 +1,28 @@
+{
+  "name": "@supa/workspace-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./workspace": "./src/workspace.ts",
+    "./profile": "./src/profile.ts",
+    "./capabilities": "./src/capabilities.ts",
+    "./repository": "./src/repository.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@supa/money": "workspace:*"
+  },
+  "devDependencies": {
+    "@supa/config": "workspace:*",
+    "@supa/tsconfig": "workspace:*",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

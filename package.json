@@ -1,0 +1,45 @@
+{
+  "name": "supa-ai",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "bun@1.2.0",
+  "engines": {
+    "node": ">=20.11.0",
+    "bun": ">=1.1.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "db:generate": "node scripts/new-migration.mjs",
+    "db:migrate": "bun run sync:migrations && supabase migration up --local",
+    "db:studio": "bun run --filter @supa/db studio",
+    "setup": "bun install && bun run supabase:start && bun run dev:env && bun run supabase:reset && bun run supabase:types",
+    "supabase:start": "bun run sync:migrations && supabase start",
+    "supabase:reset": "bun run sync:migrations && supabase db reset --local",
+    "supabase:types": "node scripts/generate-supabase-types.mjs",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/docker-compose.yml down",
+    "infra:logs": "docker compose -f infra/docker-compose.yml logs -f",
+    "infra:reset": "docker compose -f infra/docker-compose.yml down -v && docker compose -f infra/docker-compose.yml up -d",
+    "sync:migrations": "node scripts/sync-migrations.mjs",
+    "dev:env": "node scripts/dev-env.mjs"
+  },
+  "devDependencies": {
+    "@supa/config": "workspace:*",
+    "@supa/tsconfig": "workspace:*",
+    "turbo": "^2.1.0",
+    "prettier": "^3.3.0",
+    "husky": "^9.1.0",
+    "lint-staged": "^15.2.0",
+    "gitleaks": "latest"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ]
+}

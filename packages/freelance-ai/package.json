@@ -1,0 +1,41 @@
+{
+  "name": "@supa/freelance-ai",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./verbs": "./src/verbs.ts",
+    "./capture": "./src/capture.ts",
+    "./proposal": "./src/proposal.ts",
+    "./milestones": "./src/milestones.ts",
+    "./brief": "./src/brief.ts",
+    "./agent": "./src/agent.ts",
+    "./quality-loop": "./src/quality-loop.ts",
+    "./comms": "./src/comms.ts",
+    "./delivery": "./src/delivery.ts",
+    "./pricing": "./src/pricing.ts",
+    "./market": "./src/market.ts",
+    "./auto-bid": "./src/auto-bid.ts",
+    "./quality": "./src/quality.ts",
+    "./guardrails": "./src/guardrails.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@supa/db": "workspace:*",
+    "@supa/freelance-core": "workspace:*",
+    "@supa/supa-board": "workspace:*"
+  },
+  "devDependencies": {
+    "@supa/config": "workspace:*",
+    "@supa/tsconfig": "workspace:*",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0",
+    "zod": "^3.23.0"
+  }
+}

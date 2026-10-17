@@ -1,0 +1,28 @@
+{
+  "name": "@supa/observability",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./telemetry": "./src/telemetry.ts",
+    "./crash": "./src/crash.ts",
+    "./ai-quality": "./src/ai-quality.ts",
+    "./cost-model": "./src/cost-model.ts",
+    "./canary": "./src/canary.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@supa/design-model": "workspace:*"
+  },
+  "devDependencies": {
+    "@supa/config": "workspace:*",
+    "@supa/tsconfig": "workspace:*",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

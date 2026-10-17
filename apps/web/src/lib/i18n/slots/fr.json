@@ -1,0 +1,14 @@
+{
+  "greeting": "Voici ce que j'ai trouvé :",
+  "disclaimer": "Je suis un assistant IA — veuillez vérifier les informations importantes.",
+  "followUp": "Y a-t-il autre chose que vous aimeriez savoir ?",
+  "clarify": "Pourriez-vous préciser ce que vous voulez dire ?",
+  "summarizing": "Voici le résumé :",
+  "translating": "Voici la traduction :",
+  "writing": "Voici un brouillon :",
+  "coding": "Voici le code :",
+  "planning": "Voici le plan :",
+  "error": "J'ai rencontré une erreur. Veuillez réessayer.",
+  "rateLimited": "Vous envoyez des messages trop rapidement. Veuillez patienter un instant.",
+  "budgetExceeded": "Vous avez atteint votre limite d'utilisation. Veuillez contacter l'administrateur de l'espace de travail."
+}

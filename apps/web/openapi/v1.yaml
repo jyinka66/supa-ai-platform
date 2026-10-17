@@ -1,0 +1,612 @@
+# OpenAPI 3.1 — Public API v1
+#
+# The public API for programmatic access to workspaces. Auth via Bearer API
+# key (sk_live_<prefix>_<secret>). Every endpoint declares its required scope
+# via the `x-scope` extension — enforced by the v1 router middleware
+# (authenticateApiKey → requireScope).
+#
+# Rate limits: per-key (100 req/min) + per-ws (1000 req/min). Rate-limit
+# headers are returned on every response.
+#
+# Versioning: the URL prefix `/v1/` is the version. Breaking changes require
+# a new major version (`/v2/`). Additive changes (new fields, new endpoints)
+# are backward-compatible within v1.
+#
+# This spec is auto-generated from the route definitions. The `x-scope`
+# extension is consumed by the router to enforce scope checks.
+
+openapi: 3.1.0
+info:
+  title: Public API v1
+  version: 1.0.0
+  description: |
+    Programmatic access to workspaces via API keys.
+
+    ## Authentication
+    All requests require a Bearer API key in the Authorization header:
+    ```
+    Authorization: Bearer sk_live_<prefix>_<secret>
+    ```
+
+    API keys are created via the dashboard (Settings → API Keys) or via
+    the API key management endpoints. The full key is shown ONCE at creation;
+    it's stored only as a hash (never reversible).
+
+    ## Scopes
+    Every endpoint declares its required scope via the `x-scope` extension.
+    Scopes are granted at key creation time. Wildcard scopes:
+    - `*` — grants all scopes (use with caution).
+    - `chat.*` — grants `chat.read` + `chat.write`.
+
+    ## Rate Limiting
+    - Per-key: 100 requests/minute.
+    - Per-workspace: 1000 requests/minute.
+    Rate-limit headers are returned on every response:
+    - `X-RateLimit-Limit`: the limit (per-key).
+    - `X-RateLimit-Remaining`: remaining requests in the window.
+    - `X-RateLimit-Reset`: epoch seconds when the window resets.
+
+    ## Errors
+    Errors follow RFC 9457 (Problem Details for HTTP APIs):
+    ```json
+    {
+      "type": "https://api.example.com/errors/insufficient_scope",
+      "title": "Insufficient Scope",
+      "status": 403,
+      "detail": "The API key's scopes do not include 'work.write'",
+      "instance": "/v1/work/items"
+    }
+    ```
+
+    ## Pagination
+    List endpoints use cursor-based pagination:
+    - `?limit=50` — page size (max 100, default 50).
+    - `?cursor=<opaque>` — cursor from the previous page's `nextCursor`.
+    The response includes `nextCursor` (null if no more pages).
+
+  contact:
+    name: API Support
+    url: https://docs.example.com/api/v1
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.example.com
+    description: Production
+  - url: https://api.staging.example.com
+    description: Staging
+
+# ───────────────────────────────────────────────
+# Security — Bearer API key
+# ───────────────────────────────────────────────
+security:
+  - bearer: []
+
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      description: |
+        Bearer API key. Format: `sk_live_<prefix>_<secret>`.
+        The prefix (8 chars) is for lookup + display; the secret is the
+        part that's verified. The full key is shown ONCE at creation.
+
+  # ───────────────────────────────────────────────
+  # Schemas — shared types
+  # ───────────────────────────────────────────────
+  schemas:
+    # ── Common ──────────────────────────────────
+    Error:
+      type: object
+      required: [type, title, status, detail]
+      properties:
+        type:
+          type: string
+          format: uri
+          description: "A URI reference identifying the error type."
+        title:
+          type: string
+          description: "Short, human-readable summary."
+        status:
+          type: integer
+          description: "HTTP status code."
+        detail:
+          type: string
+          description: "Human-readable explanation specific to this occurrence."
+        instance:
+          type: string
+          description: "The request path that caused the error."
+
+    Pagination:
+      type: object
+      properties:
+        nextCursor:
+          type: string
+          nullable: true
+          description: "Cursor for the next page. Null if no more pages."
+        hasMore:
+          type: boolean
+
+    # ── Chat ────────────────────────────────────
+    Thread:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Message:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        threadId: { type: string, format: uuid }
+        role: { type: string, enum: [user, assistant, system] }
+        content: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    # ── Work ────────────────────────────────────
+    WorkItem:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        status: { type: string, enum: [todo, in_progress, done, archived] }
+        tags: { type: array, items: { type: string } }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    # ── Business (CRM) ──────────────────────────
+    Client:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        tags: { type: array, items: { type: string } }
+        createdAt: { type: string, format: date-time }
+
+    # ── Freelance ───────────────────────────────
+    Invoice:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        number: { type: string }
+        clientId: { type: string, format: uuid }
+        status: { type: string, enum: [draft, sent, paid, overdue, void] }
+        totalMinor: { type: integer, description: "Total in minor units (cents)." }
+        currency: { type: string, description: "ISO 4217 currency code." }
+        dueDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+
+    # ── Agents ──────────────────────────────────
+    Agent:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        status: { type: string, enum: [draft, active, paused, killed] }
+        goal: { type: string }
+        budget:
+          type: object
+          properties:
+            dailyUsdMinor: { type: integer }
+            monthlyUsdMinor: { type: integer }
+            maxRunsPerDay: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    Run:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        agentId: { type: string, format: uuid }
+        status: { type: string, enum: [queued, running, awaiting_approval, done, failed, cancelled] }
+        triggerType: { type: string, enum: [manual, schedule, event, webhook, chain] }
+        createdAt: { type: string, format: date-time }
+        finishedAt: { type: string, format: date-time, nullable: true }
+
+    # ── Webhooks ────────────────────────────────
+    WebhookEndpoint:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        url: { type: string, format: uri }
+        events: { type: array, items: { type: string } }
+        disabledUntil: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+  # ───────────────────────────────────────────────
+  # Responses — shared error responses
+  # ───────────────────────────────────────────────
+  responses:
+    Unauthorized:
+      description: "Invalid or missing API key."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            type: "https://api.example.com/errors/invalid_api_key"
+            title: "Invalid API Key"
+            status: 401
+            detail: "The Bearer token is invalid, revoked, or expired."
+    Forbidden:
+      description: "Insufficient scope."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            type: "https://api.example.com/errors/insufficient_scope"
+            title: "Insufficient Scope"
+            status: 403
+            detail: "The API key's scopes do not include 'work.write'."
+    NotFound:
+      description: "Resource not found."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            type: "https://api.example.com/errors/not_found"
+            title: "Not Found"
+            status: 404
+            detail: "The requested resource was not found."
+    RateLimited:
+      description: "Rate limit exceeded."
+      headers:
+        X-RateLimit-Limit:
+          schema: { type: integer }
+          description: "The rate limit (per-key or per-ws)."
+        X-RateLimit-Remaining:
+          schema: { type: integer }
+          description: "Remaining requests in the window."
+        Retry-After:
+          schema: { type: integer }
+          description: "Seconds until the rate limit resets."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            type: "https://api.example.com/errors/rate_limited"
+            title: "Rate Limited"
+            status: 429
+            detail: "Too many requests. Retry after the Retry-After header."
+
+  # ───────────────────────────────────────────────
+  # Parameters — shared query params
+  # ───────────────────────────────────────────────
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      description: "Page size (max 100)."
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+      description: "Pagination cursor from the previous page's nextCursor."
+
+# ───────────────────────────────────────────────
+# Paths — every endpoint declares x-scope
+# ───────────────────────────────────────────────
+paths:
+  # ── Chat ──────────────────────────────────────
+  /v1/chat/threads:
+    get:
+      summary: List chat threads
+      x-scope: chat.read
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: "List of chat threads."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Thread" }
+                  pagination: { $ref: "#/components/schemas/Pagination" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/chat/threads/{threadId}/messages:
+    post:
+      summary: Send a message to a chat thread
+      x-scope: chat.write
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string }
+      responses:
+        "201":
+          description: "Message created."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Message" }
+        "400": { $ref: "#/components/responses/NotFound" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  # ── Work ──────────────────────────────────────
+  /v1/work/items:
+    get:
+      summary: List work items
+      x-scope: work.read
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+        - name: status
+          in: query
+          schema: { type: string, enum: [todo, in_progress, done, archived] }
+      responses:
+        "200":
+          description: "List of work items."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/WorkItem" }
+                  pagination: { $ref: "#/components/schemas/Pagination" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    post:
+      summary: Create a work item
+      x-scope: work.write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string }
+                tags: { type: array, items: { type: string } }
+      responses:
+        "201":
+          description: "Work item created."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkItem" }
+        "400": { $ref: "#/components/responses/NotFound" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  # ── Business (CRM) ────────────────────────────
+  /v1/business/clients:
+    get:
+      summary: List clients
+      x-scope: business.read
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: "List of clients."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Client" }
+                  pagination: { $ref: "#/components/schemas/Pagination" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    post:
+      summary: Create a client
+      x-scope: business.write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string }
+                tags: { type: array, items: { type: string } }
+      responses:
+        "201":
+          description: "Client created."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Client" }
+        "400": { $ref: "#/components/responses/NotFound" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  # ── Freelance ────────────────────────────────
+  /v1/freelance/invoices:
+    get:
+      summary: List invoices
+      x-scope: freelance.read
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+        - name: status
+          in: query
+          schema: { type: string, enum: [draft, sent, paid, overdue, void] }
+      responses:
+        "200":
+          description: "List of invoices."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Invoice" }
+                  pagination: { $ref: "#/components/schemas/Pagination" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    post:
+      summary: Create an invoice
+      x-scope: freelance.write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [clientId, lineItems]
+              properties:
+                clientId: { type: string, format: uuid }
+                lineItems:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      description: { type: string }
+                      quantity: { type: number }
+                      unitPriceMinor: { type: integer }
+                currency: { type: string }
+                dueDate: { type: string, format: date }
+      responses:
+        "201":
+          description: "Invoice created."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invoice" }
+        "400": { $ref: "#/components/responses/NotFound" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  # ── Agents ────────────────────────────────────
+  /v1/agents:
+    get:
+      summary: List agents
+      x-scope: agents.read
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+        - name: status
+          in: query
+          schema: { type: string, enum: [draft, active, paused, killed] }
+      responses:
+        "200":
+          description: "List of agents."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Agent" }
+                  pagination: { $ref: "#/components/schemas/Pagination" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/agents/{agentId}/runs:
+    post:
+      summary: Trigger an agent run
+      x-scope: agents.run
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                triggerPayload: { type: object }
+                idempotencyKey: { type: string }
+      responses:
+        "201":
+          description: "Run queued."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Run" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: "Agent not active or concurrency cap reached."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  # ── Webhooks ──────────────────────────────────
+  /v1/webhooks:
+    get:
+      summary: List webhook endpoints
+      x-scope: webhooks.manage
+      responses:
+        "200":
+          description: "List of webhook endpoints."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/WebhookEndpoint" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    post:
+      summary: Create a webhook endpoint
+      x-scope: webhooks.manage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, events]
+              properties:
+                url: { type: string, format: uri }
+                events: { type: array, items: { type: string } }
+      responses:
+        "201":
+          description: "Webhook endpoint created."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WebhookEndpoint" }
+        "400": { $ref: "#/components/responses/NotFound" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/RateLimited" }

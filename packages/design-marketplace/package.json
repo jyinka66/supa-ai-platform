@@ -1,0 +1,30 @@
+{
+  "name": "@supa/design-marketplace",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./template-package": "./src/template-package.ts",
+    "./publish": "./src/publish.ts",
+    "./discovery": "./src/discovery.ts",
+    "./gates": "./src/gates.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@supa/design-model": "workspace:*",
+    "@supa/design-tokens": "workspace:*",
+    "@supa/design-templates": "workspace:*"
+  },
+  "devDependencies": {
+    "@supa/config": "workspace:*",
+    "@supa/tsconfig": "workspace:*",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

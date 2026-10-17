@@ -1,0 +1,89 @@
+{
+  "onboarding": {
+    "skipAll": "Ignorar introdução",
+    "steps": {
+      "language": "Escolha o seu idioma",
+      "country": "Onde está sediado?",
+      "role": "O que o descreve melhor?",
+      "goals": "Quais são os seus objetivos?",
+      "firstValue": "Crie o seu primeiro elemento"
+    },
+    "actions": {
+      "next": "Continuar",
+      "back": "Voltar",
+      "skip": "Ignorar este passo",
+      "finish": "Concluir"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Iniciar sessão",
+      "email": "E-mail",
+      "password": "Palavra-passe",
+      "submit": "Iniciar sessão",
+      "mfaPrompt": "Introduza o seu código de autenticação"
+    },
+    "challenge": {
+      "title": "Autenticação de dois fatores",
+      "code": "Código de 6 dígitos",
+      "verify": "Verificar",
+      "cancel": "Cancelar"
+    }
+  },
+  "dashboard": {
+    "title": "Painel",
+    "workspaces": "Espaços de trabalho",
+    "noWorkspaces": "Ainda não pertence a nenhum espaço de trabalho.",
+    "personalWorkspace": "Pessoal",
+    "plan": "Plano"
+  },
+  "errors": {
+    "rate_limited": "Muitas tentativas. Tente novamente mais tarde.",
+    "invalid_email": "Introduza um endereço de e-mail válido.",
+    "weak_password": "A palavra-passe deve ter pelo menos 12 caracteres.",
+    "signup_failed": "O registo falhou. Tente novamente.",
+    "unauthenticated": "Inicie sessão para continuar."
+  },
+  "settings": {
+    "sessions": {
+      "title": "Sessions",
+      "active": "Active",
+      "revoked": "Revoked",
+      "revoke": "Revoke",
+      "revokeAll": "Revoke all",
+      "current": "Current",
+      "lastActive": "Last active",
+      "noOtherDevices": "No other devices signed in.",
+      "confirmRevokeAllTitle": "Revoke all sessions?",
+      "confirmRevokeAllBody": "You will be signed out of every device, including this one."
+    }
+  },
+  "chat": {
+    "untitled": "Untitled conversation",
+    "emptyState": "Send a message to start the conversation.",
+    "composerPlaceholder": "Type your message...",
+    "aborted": "Generation stopped.",
+    "modes": {
+      "chat": "Chat",
+      "write": "Write",
+      "rewrite": "Rewrite",
+      "summarize": "Summarize",
+      "translate": "Translate",
+      "code": "Code",
+      "image": "Image",
+      "document": "Document",
+      "plan": "Plan"
+    }
+  },
+  "invite": {
+    "invalidTitle": "Invalid invite",
+    "missingToken": "No invite token was provided.",
+    "accepting": "Accepting your invite...",
+    "acceptedTitle": "Welcome!",
+    "acceptedBody": "You have joined the workspace. Redirecting...",
+    "invalidOrExpired": "This invite link is invalid or has expired.",
+    "alreadyConsumed": "This invite has already been used.",
+    "emailMismatch": "This invite was sent to a different email address.",
+    "networkError": "Network error. Please try again."
+  }
+}

@@ -1,0 +1,3 @@
+# Migration files are generated from packages/db/migrations by scripts/sync-migrations.mjs.
+/migrations/*.sql
+!/migrations/.gitkeep

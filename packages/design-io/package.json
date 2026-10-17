@@ -1,0 +1,22 @@
+{
+  "name": "@supa/design-io",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./export": "./src/export.ts" },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@supa/design-model": "workspace:*",
+    "@supa/design-render": "workspace:*"
+  },
+  "devDependencies": {
+    "@supa/config": "workspace:*",
+    "@supa/tsconfig": "workspace:*",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

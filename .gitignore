@@ -1,0 +1,54 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# next.js
+.next/
+out/
+build
+dist
+storybook-static
+
+# turbo
+.turbo
+
+# misc
+.DS_Store
+*.pem
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea
+
+# debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# env files (only the example is checked in)
+.env
+.env.*
+!.env.example
+
+# supabase
+supabase/.branches
+supabase/.temp
+
+# gitleaks
+.gitleaks-report.json
+
+# test artifacts
+coverage
+.nyc_output
+playwright-report
+test-results
+
+# SBOM
+sbom.json
+
+# Local Supabase-derived app environment
+apps/web/.env.local
+supabase/.temp/
+supabase/.branches/

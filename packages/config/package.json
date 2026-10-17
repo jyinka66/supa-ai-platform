@@ -1,0 +1,11 @@
+{
+  "name": "@supa/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./eslint": "./eslint.config.mjs",
+    "./tsconfig": "./tsconfig.base.json",
+    "./prettier": "./prettier.mjs"
+  }
+}

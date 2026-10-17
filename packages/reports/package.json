@@ -1,0 +1,30 @@
+{
+  "name": "@supa/reports",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./engine": "./src/engine.ts",
+    "./money": "./src/money.ts",
+    "./dashboard": "./src/dashboard.ts",
+    "./schedule": "./src/schedule.ts",
+    "./ai-summary": "./src/ai-summary.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@supa/money": "workspace:*",
+    "@supa/workspace-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@supa/config": "workspace:*",
+    "@supa/tsconfig": "workspace:*",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

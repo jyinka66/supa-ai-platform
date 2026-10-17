@@ -1,0 +1,14 @@
+{
+  "greeting": "Das habe ich gefunden:",
+  "disclaimer": "Ich bin ein KI-Assistent — bitte überprüfen Sie wichtige Informationen.",
+  "followUp": "Gibt es noch etwas, das Sie wissen möchten?",
+  "clarify": "Könnten Sie klären, was Sie meinen?",
+  "summarizing": "Hier ist die Zusammenfassung:",
+  "translating": "Hier ist die Übersetzung:",
+  "writing": "Hier ist ein Entwurf:",
+  "coding": "Hier ist der Code:",
+  "planning": "Hier ist der Plan:",
+  "error": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+  "rateLimited": "Sie senden zu schnell Nachrichten. Bitte warten Sie einen Moment.",
+  "budgetExceeded": "Sie haben Ihr Nutzungslimit erreicht. Bitte wenden Sie sich an Ihren Workspace-Administrator."
+}

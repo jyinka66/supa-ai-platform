@@ -1,0 +1,89 @@
+{
+  "onboarding": {
+    "skipAll": "跳过引导",
+    "steps": {
+      "language": "选择您的语言",
+      "country": "您位于哪里？",
+      "role": "哪个描述最适合您？",
+      "goals": "您的目标是什么？",
+      "firstValue": "创建您的第一个项目"
+    },
+    "actions": {
+      "next": "继续",
+      "back": "返回",
+      "skip": "跳过此步骤",
+      "finish": "完成"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "登录",
+      "email": "电子邮件",
+      "password": "密码",
+      "submit": "登录",
+      "mfaPrompt": "输入您的验证器代码"
+    },
+    "challenge": {
+      "title": "双因素认证",
+      "code": "6 位代码",
+      "verify": "验证",
+      "cancel": "取消"
+    }
+  },
+  "dashboard": {
+    "title": "仪表板",
+    "workspaces": "工作空间",
+    "noWorkspaces": "您尚未加入任何工作空间。",
+    "personalWorkspace": "个人",
+    "plan": "计划"
+  },
+  "errors": {
+    "rate_limited": "尝试次数过多。请稍后再试。",
+    "invalid_email": "请输入有效的电子邮件地址。",
+    "weak_password": "密码必须至少为 12 个字符。",
+    "signup_failed": "注册失败。请重试。",
+    "unauthenticated": "请登录以继续。"
+  },
+  "settings": {
+    "sessions": {
+      "title": "Sessions",
+      "active": "Active",
+      "revoked": "Revoked",
+      "revoke": "Revoke",
+      "revokeAll": "Revoke all",
+      "current": "Current",
+      "lastActive": "Last active",
+      "noOtherDevices": "No other devices signed in.",
+      "confirmRevokeAllTitle": "Revoke all sessions?",
+      "confirmRevokeAllBody": "You will be signed out of every device, including this one."
+    }
+  },
+  "chat": {
+    "untitled": "Untitled conversation",
+    "emptyState": "Send a message to start the conversation.",
+    "composerPlaceholder": "Type your message...",
+    "aborted": "Generation stopped.",
+    "modes": {
+      "chat": "Chat",
+      "write": "Write",
+      "rewrite": "Rewrite",
+      "summarize": "Summarize",
+      "translate": "Translate",
+      "code": "Code",
+      "image": "Image",
+      "document": "Document",
+      "plan": "Plan"
+    }
+  },
+  "invite": {
+    "invalidTitle": "Invalid invite",
+    "missingToken": "No invite token was provided.",
+    "accepting": "Accepting your invite...",
+    "acceptedTitle": "Welcome!",
+    "acceptedBody": "You have joined the workspace. Redirecting...",
+    "invalidOrExpired": "This invite link is invalid or has expired.",
+    "alreadyConsumed": "This invite has already been used.",
+    "emailMismatch": "This invite was sent to a different email address.",
+    "networkError": "Network error. Please try again."
+  }
+}

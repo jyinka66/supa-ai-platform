@@ -1,0 +1,30 @@
+name: CI
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-role-key
+      SUPABASE_JWT_SECRET: ci-only-secret-not-for-production-1234567890
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:54322/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run build

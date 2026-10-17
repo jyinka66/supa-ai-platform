@@ -1,0 +1,31 @@
+{
+  "name": "@supa/freelance-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./job": "./src/job.ts",
+    "./boundary": "./src/boundary.ts",
+    "./store": "./src/store.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@supa/db": "workspace:*",
+    "@supa/money": "workspace:*",
+    "@supa/workspace-core": "workspace:*",
+    "drizzle-orm": "^0.33.0"
+  },
+  "devDependencies": {
+    "@supa/config": "workspace:*",
+    "@supa/tsconfig": "workspace:*",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0",
+    "zod": "^3.23.0"
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "onboarding": {
+    "skipAll": "ऑनबोर्डिंग छोड़ें",
+    "steps": {
+      "language": "अपनी भाषा चुनें",
+      "country": "आप कहाँ स्थित हैं?",
+      "role": "आपको सबसे अच्छा क्या वर्णित करता है?",
+      "goals": "आपके लक्ष्य क्या हैं?",
+      "firstValue": "अपना पहला आइटम बनाएँ"
+    },
+    "actions": {
+      "next": "जारी रखें",
+      "back": "वापस",
+      "skip": "इस चरण को छोड़ें",
+      "finish": "समाप्त करें"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "साइन इन करें",
+      "email": "ईमेल",
+      "password": "पासवर्ड",
+      "submit": "साइन इन करें",
+      "mfaPrompt": "अपना प्रमाणीकरण कोड दर्ज करें"
+    },
+    "challenge": {
+      "title": "द्वि-कारक प्रमाणीकरण",
+      "code": "6-अंकीय कोड",
+      "verify": "सत्यापित करें",
+      "cancel": "रद्द करें"
+    }
+  },
+  "dashboard": {
+    "title": "डैशबोर्ड",
+    "workspaces": "वर्कस्पेस",
+    "noWorkspaces": "आप अभी तक किसी भी वर्कस्पेस से संबद्ध नहीं हैं।",
+    "personalWorkspace": "व्यक्तिगत",
+    "plan": "योजना"
+  },
+  "errors": {
+    "rate_limited": "बहुत अधिक प्रयास। बाद में पुनः प्रयास करें।",
+    "invalid_email": "कृपया एक मान्य ईमेल पता दर्ज करें।",
+    "weak_password": "पासवर्ड कम से कम 12 अक्षरों का होना चाहिए।",
+    "signup_failed": "साइन-अप विफल हुआ। कृपया पुनः प्रयास करें।",
+    "unauthenticated": "जारी रखने के लिए कृपया साइन इन करें।"
+  },
+  "settings": {
+    "sessions": {
+      "title": "Sessions",
+      "active": "Active",
+      "revoked": "Revoked",
+      "revoke": "Revoke",
+      "revokeAll": "Revoke all",
+      "current": "Current",
+      "lastActive": "Last active",
+      "noOtherDevices": "No other devices signed in.",
+      "confirmRevokeAllTitle": "Revoke all sessions?",
+      "confirmRevokeAllBody": "You will be signed out of every device, including this one."
+    }
+  },
+  "chat": {
+    "untitled": "Untitled conversation",
+    "emptyState": "Send a message to start the conversation.",
+    "composerPlaceholder": "Type your message...",
+    "aborted": "Generation stopped.",
+    "modes": {
+      "chat": "Chat",
+      "write": "Write",
+      "rewrite": "Rewrite",
+      "summarize": "Summarize",
+      "translate": "Translate",
+      "code": "Code",
+      "image": "Image",
+      "document": "Document",
+      "plan": "Plan"
+    }
+  },
+  "invite": {
+    "invalidTitle": "Invalid invite",
+    "missingToken": "No invite token was provided.",
+    "accepting": "Accepting your invite...",
+    "acceptedTitle": "Welcome!",
+    "acceptedBody": "You have joined the workspace. Redirecting...",
+    "invalidOrExpired": "This invite link is invalid or has expired.",
+    "alreadyConsumed": "This invite has already been used.",
+    "emailMismatch": "This invite was sent to a different email address.",
+    "networkError": "Network error. Please try again."
+  }
+}

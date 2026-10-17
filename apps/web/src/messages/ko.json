@@ -1,0 +1,89 @@
+{
+  "onboarding": {
+    "skipAll": "온보딩 건너뛰기",
+    "steps": {
+      "language": "언어를 선택하세요",
+      "country": "어디에 거주하시나요?",
+      "role": "가장 잘 맞는 설명은?",
+      "goals": "목표가 무엇인가요?",
+      "firstValue": "첫 항목 만들기"
+    },
+    "actions": {
+      "next": "계속",
+      "back": "뒤로",
+      "skip": "이 단계 건너뛰기",
+      "finish": "완료"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "로그인",
+      "email": "이메일",
+      "password": "비밀번호",
+      "submit": "로그인",
+      "mfaPrompt": "인증기 코드를 입력하세요"
+    },
+    "challenge": {
+      "title": "이중 인증",
+      "code": "6자리 코드",
+      "verify": "확인",
+      "cancel": "취소"
+    }
+  },
+  "dashboard": {
+    "title": "대시보드",
+    "workspaces": "워크스페이스",
+    "noWorkspaces": "아직 워크스페이스에 속해 있지 않습니다.",
+    "personalWorkspace": "개인",
+    "plan": "플랜"
+  },
+  "errors": {
+    "rate_limited": "시도 횟수가 너무 많습니다. 나중에 다시 시도해 주세요.",
+    "invalid_email": "유효한 이메일 주소를 입력하세요.",
+    "weak_password": "비밀번호는 최소 12자 이상이어야 합니다.",
+    "signup_failed": "가입에 실패했습니다. 다시 시도해 주세요.",
+    "unauthenticated": "계속하려면 로그인하세요."
+  },
+  "settings": {
+    "sessions": {
+      "title": "Sessions",
+      "active": "Active",
+      "revoked": "Revoked",
+      "revoke": "Revoke",
+      "revokeAll": "Revoke all",
+      "current": "Current",
+      "lastActive": "Last active",
+      "noOtherDevices": "No other devices signed in.",
+      "confirmRevokeAllTitle": "Revoke all sessions?",
+      "confirmRevokeAllBody": "You will be signed out of every device, including this one."
+    }
+  },
+  "chat": {
+    "untitled": "Untitled conversation",
+    "emptyState": "Send a message to start the conversation.",
+    "composerPlaceholder": "Type your message...",
+    "aborted": "Generation stopped.",
+    "modes": {
+      "chat": "Chat",
+      "write": "Write",
+      "rewrite": "Rewrite",
+      "summarize": "Summarize",
+      "translate": "Translate",
+      "code": "Code",
+      "image": "Image",
+      "document": "Document",
+      "plan": "Plan"
+    }
+  },
+  "invite": {
+    "invalidTitle": "Invalid invite",
+    "missingToken": "No invite token was provided.",
+    "accepting": "Accepting your invite...",
+    "acceptedTitle": "Welcome!",
+    "acceptedBody": "You have joined the workspace. Redirecting...",
+    "invalidOrExpired": "This invite link is invalid or has expired.",
+    "alreadyConsumed": "This invite has already been used.",
+    "emailMismatch": "This invite was sent to a different email address.",
+    "networkError": "Network error. Please try again."
+  }
+}

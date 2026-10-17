@@ -1,0 +1,28 @@
+{
+  "name": "@supa/test-fixtures",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./op-fuzz": "./src/op-fuzz.ts",
+    "./injection": "./src/injection.ts",
+    "./ssrf": "./src/ssrf.ts",
+    "./xss": "./src/xss.ts",
+    "./golden": "./src/golden.ts",
+    "./dtcg": "./src/dtcg.ts",
+    "./crash-replay": "./src/crash-replay.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@supa/config": "workspace:*",
+    "@supa/tsconfig": "workspace:*",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

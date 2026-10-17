@@ -1,0 +1,10 @@
+{
+  "extends": "@supa/tsconfig/base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "lib": ["ES2022"],
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts"]
+}

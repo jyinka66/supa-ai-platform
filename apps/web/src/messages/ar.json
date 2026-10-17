@@ -1,0 +1,89 @@
+{
+  "onboarding": {
+    "skipAll": "تخطي الإعداد",
+    "steps": {
+      "language": "اختر لغتك",
+      "country": "أين تقيم؟",
+      "role": "ما الذي يصفك بشكل أفضل؟",
+      "goals": "ما هي أهدافك؟",
+      "firstValue": "أنشئ أول عنصر لك"
+    },
+    "actions": {
+      "next": "متابعة",
+      "back": "رجوع",
+      "skip": "تخطي هذه الخطوة",
+      "finish": "إنهاء"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "تسجيل الدخول",
+      "email": "البريد الإلكتروني",
+      "password": "كلمة المرور",
+      "submit": "تسجيل الدخول",
+      "mfaPrompt": "أدخل رمز المصادقة الخاص بك"
+    },
+    "challenge": {
+      "title": "المصادقة الثنائية",
+      "code": "رمز من 6 أرقام",
+      "verify": "تحقق",
+      "cancel": "إلغاء"
+    }
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "workspaces": "مساحات العمل",
+    "noWorkspaces": "أنت لا تنتمي إلى أي مساحة عمل بعد.",
+    "personalWorkspace": "شخصية",
+    "plan": "الخطة"
+  },
+  "errors": {
+    "rate_limited": "محاولات كثيرة جداً. حاول مرة أخرى لاحقاً.",
+    "invalid_email": "يرجى إدخال بريد إلكتروني صحيح.",
+    "weak_password": "يجب أن تكون كلمة المرور 12 حرفاً على الأقل.",
+    "signup_failed": "فشل التسجيل. يرجى المحاولة مرة أخرى.",
+    "unauthenticated": "يرجى تسجيل الدخول للمتابعة."
+  },
+  "settings": {
+    "sessions": {
+      "title": "الجلسات",
+      "active": "الجلسات النشطة",
+      "revoked": "المُلغاة",
+      "revoke": "إلغاء",
+      "revokeAll": "إلغاء الكل",
+      "current": "الحالية",
+      "lastActive": "آخر نشاط",
+      "noOtherDevices": "لا توجد أجهزة أخرى مسجلة الدخول.",
+      "confirmRevokeAllTitle": "إلغاء جميع الجلسات؟",
+      "confirmRevokeAllBody": "سيتم تسجيل خروجك من كل جهاز، بما في ذلك هذا الجهاز."
+    }
+  },
+  "chat": {
+    "untitled": "محادثة بدون عنوان",
+    "emptyState": "أرسل رسالة لبدء المحادثة.",
+    "composerPlaceholder": "اكتب رسالتك...",
+    "aborted": "تم إيقاف التوليد.",
+    "modes": {
+      "chat": "دردشة",
+      "write": "كتابة",
+      "rewrite": "إعادة كتابة",
+      "summarize": "تلخيص",
+      "translate": "ترجمة",
+      "code": "كود",
+      "image": "صورة",
+      "document": "مستند",
+      "plan": "تخطيط"
+    }
+  },
+  "invite": {
+    "invalidTitle": "دعوة غير صالحة",
+    "missingToken": "لم يتم تقديم رمز دعوة.",
+    "accepting": "جاري قبول دعوتك...",
+    "acceptedTitle": "مرحباً بك!",
+    "acceptedBody": "لقد انضممت إلى مساحة العمل. جاري إعادة التوجيه...",
+    "invalidOrExpired": "رابط الدعوة هذا غير صالح أو منتهي الصلاحية.",
+    "alreadyConsumed": "تم استخدام هذه الدعوة بالفعل.",
+    "emailMismatch": "تم إرسال هذه الدعوة إلى عنوان بريد إلكتروني مختلف.",
+    "networkError": "خطأ في الشبكة. يرجى المحاولة مرة أخرى."
+  }
+}
