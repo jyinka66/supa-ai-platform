@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     redirectTo.searchParams.set("next", `/${locale}/onboarding`);
 
     const supabase = await supabaseServer();
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email: email.toLowerCase(),
       password,
       options: {
