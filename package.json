@@ -41,5 +41,8 @@
     "apps/*",
     "packages/*",
     "services/*"
+  ],
+  "trustedDependencies": [
+    "argon2"
   ]
 }
