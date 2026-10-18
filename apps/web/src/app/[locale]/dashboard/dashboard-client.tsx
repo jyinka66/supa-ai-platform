@@ -45,6 +45,7 @@ interface RecentConversation {
   title: string | null;
   updatedAt: string | Date;
   createdAt: string | Date;
+  pinned: boolean;
 }
 
 interface ToolCard {
@@ -128,6 +129,9 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
   const router = useRouter();
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(initialWorkspaceId || workspaces[0]?.id || "");
   const [recentConversations, setRecentConversations] = useState<RecentConversation[]>([]);
+  const [pinnedConversations, setPinnedConversations] = useState<RecentConversation[]>([]);
+  const [studioPrompt, setStudioPrompt] = useState("");
+  const [studioMode, setStudioMode] = useState<Mode>("chat");
   const [loadingRecent, setLoadingRecent] = useState(true);
   const [recentError, setRecentError] = useState(false);
   const [busyMode, setBusyMode] = useState<Mode | null>(null);
@@ -159,7 +163,9 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
         };
         if (!response.ok) throw new Error(payload.error?.message ?? "Could not load conversations.");
         if (mounted) {
-          setRecentConversations(Array.isArray(payload.data) ? payload.data.slice(0, 6) : []);
+          const conversations = Array.isArray(payload.data) ? payload.data : [];
+          setRecentConversations(conversations.slice(0, 6));
+          setPinnedConversations(conversations.filter((conversation) => conversation.pinned).slice(0, 4));
           setRecentError(false);
         }
       } catch {
@@ -176,7 +182,7 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
   }, []);
 
   const startConversation = useCallback(
-    async (mode: Mode) => {
+    async (mode: Mode, initialPrompt?: string) => {
       if (!activeWorkspace) {
         setActionError("You need a workspace before you can start a conversation.");
         return;
@@ -207,7 +213,8 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
           throw new Error(payload.error?.message ?? payload.detail ?? "Could not start this tool. Please try again.");
         }
 
-        router.push(`/${locale}/chat/${payload.data.id}`);
+        const destination = `/${locale}/chat/${payload.data.id}`;
+        router.push(initialPrompt?.trim() ? destination + `?prompt=${encodeURIComponent(initialPrompt.trim())}` : destination);
       } catch (error) {
         setActionError(error instanceof Error ? error.message : "Could not start this tool. Please try again.");
         setBusyMode(null);
@@ -330,38 +337,104 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
               <SummaryCard icon={Check} label="Your role" value={activeWorkspace?.workspace_members[0]?.role ?? "Member"} detail="Access level in selected workspace" tone="green" />
             </section>
 
+            <section id="pinned" className="scroll-mt-24">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.15em] text-violet-700">Keep close</p>
+                  <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">Pinned conversations</h2>
+                  <p className="mt-1 text-sm text-slate-500">Keep your important work one click away.</p>
+                </div>
+                <Link href={`/${locale}/history`} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-700 hover:text-violet-900">Manage history <ArrowRight className="h-3.5 w-3.5" /></Link>
+              </div>
+              {loadingRecent ? (
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {Array.from({ length: 2 }).map((_, index) => <div key={index} className="h-24 animate-pulse rounded-2xl bg-white ring-1 ring-slate-200" />)}
+                </div>
+              ) : pinnedConversations.length ? (
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {pinnedConversations.map((conversation) => (
+                    <Link key={conversation.id} href={`/${locale}/chat/${conversation.id}`} className="group rounded-2xl border border-violet-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-700"><MessageSquare className="h-4 w-4" /></span>
+                        <span aria-label="Pinned" title="Pinned" className="text-xs font-semibold text-violet-500">PINNED</span>
+                      </div>
+                      <p className="mt-3 truncate text-sm font-semibold text-slate-900 group-hover:text-violet-800">{conversation.title?.trim() || modeLabel(conversation.mode) + " session"}</p>
+                      <p className="mt-1 truncate text-xs text-slate-500">{modeLabel(conversation.mode)} · {formatDate(conversation.updatedAt ?? conversation.createdAt, locale)}</p>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-5 sm:flex-row sm:items-center">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-500"><MessageSquare className="h-4 w-4" /></span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-slate-800">Nothing pinned yet</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">Pin any conversation in History to keep it visible here.</p>
+                  </div>
+                  <Link href={`/${locale}/history`} className="text-xs font-semibold text-violet-700 hover:text-violet-900">Open History <ArrowRight className="ml-1 inline h-3 w-3" /></Link>
+                </div>
+              )}
+            </section>
+
             <section id="ai-tools" className="scroll-mt-24">
               <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.15em] text-violet-700">Get things done</p>
-                  <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">Your AI tools</h2>
-                  <p className="mt-1 text-sm text-slate-500">Choose a tool to open a new session, ready for your prompt.</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.15em] text-violet-700">Supa AI Studio</p>
+                  <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">What can we work on?</h2>
+                  <p className="mt-1 text-sm text-slate-500">Chat, code, write, and plan in one conversation. You can change modes without losing the thread.</p>
                 </div>
-                <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500">{TOOLS.length} tools</span>
+                <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500">One workspace · multiple capabilities</span>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {TOOLS.map((tool) => {
-                  const Icon = tool.icon;
-                  const isBusy = busyMode === tool.mode;
-                  return (
-                    <button
-                      type="button"
-                      key={tool.mode}
-                      onClick={() => void startConversation(tool.mode)}
-                      disabled={busyMode !== null || !activeWorkspace}
-                      className="group flex min-h-[170px] flex-col rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-lg hover:shadow-violet-950/5 disabled:cursor-not-allowed disabled:opacity-60"
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void startConversation(studioMode, studioPrompt);
+                }}
+                className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_20px_55px_-35px_rgba(15,23,42,0.3)] focus-within:border-violet-200"
+              >
+                <label htmlFor="dashboard-studio-prompt" className="sr-only">Ask Supa AI</label>
+                <textarea
+                  id="dashboard-studio-prompt"
+                  value={studioPrompt}
+                  onChange={(event) => setStudioPrompt(event.target.value)}
+                  placeholder="Ask Supa AI anything. Describe a task, paste some code, or share an idea…"
+                  rows={3}
+                  maxLength={32000}
+                  className="block min-h-[112px] w-full resize-y border-0 bg-transparent px-5 py-4 text-sm leading-6 text-slate-900 outline-none placeholder:text-slate-400 focus:ring-0"
+                />
+                <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/70 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label htmlFor="dashboard-studio-mode" className="text-xs font-medium text-slate-500">Work mode</label>
+                    <select
+                      id="dashboard-studio-mode"
+                      value={studioMode}
+                      onChange={(event) => setStudioMode(event.target.value as Mode)}
+                      className="h-9 max-w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
                     >
-                      <div className="flex w-full items-start justify-between gap-3">
-                        <span className={`flex h-11 w-11 items-center justify-center rounded-xl ring-1 ${tool.tone}`}>
-                          <Icon className="h-5 w-5" />
-                        </span>
-                        <ArrowUpRight className="h-4 w-4 text-slate-300 transition group-hover:text-violet-700" />
-                      </div>
-                      <span className="mt-4 text-sm font-semibold text-slate-900">{isBusy ? "Opening…" : tool.title}</span>
-                      <span className="mt-1.5 text-xs leading-5 text-slate-500">{tool.description}</span>
-                    </button>
-                  );
-                })}
+                      {TOOLS.map((tool) => <option key={tool.mode} value={tool.mode}>{tool.title}</option>)}
+                    </select>
+                    <span className="hidden text-[11px] text-slate-400 md:inline">Saved in {activeWorkspace?.name ?? "your workspace"}</span>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={busyMode !== null || !activeWorkspace}
+                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {busyMode === studioMode ? "Opening Supa AI…" : "Ask Supa AI"}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </form>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {[
+                  { label: "Explain a topic", prompt: "Explain this topic in simple language, with an example." },
+                  { label: "Write an email", prompt: "Help me draft a clear, professional email." },
+                  { label: "Debug code", prompt: "Help me debug this code. Ask me for the code or error details you need." },
+                  { label: "Plan a project", prompt: "Help me turn this idea into a practical project plan with steps and milestones." },
+                ].map((suggestion) => (
+                  <button key={suggestion.label} type="button" onClick={() => { setStudioPrompt(suggestion.prompt); if (suggestion.label === "Debug code") setStudioMode("code"); }} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-800">
+                    {suggestion.label}
+                  </button>
+                ))}
               </div>
             </section>
 

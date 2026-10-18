@@ -4,7 +4,7 @@
 
 **Updated:** 2026-10-18  
 **Repository:** `jyinka66/supa-ai-platform` · **Branch:** `main`  
-**Source at start of this implementation:** `546c5d3ac4dae37a7cf9c2058a68f532fd4853c9` (documentation/handoff commit).  
+**Source commit at last verification:** `9dfd76abbbda990ee6b4fba6e496f96701855b35` (shared workspace navigation/history/mode switch).  
 **Production:** https://supa-ai-platform.vercel.app/  
 **Supabase project ref:** `ikugfclxahxvjduowjbo`
 
@@ -34,7 +34,7 @@ Files: `apps/web/src/app/[locale]/dashboard/page.tsx` and `dashboard/dashboard-c
 
 Current Home has a welcome banner, eight mode cards, four summary cards, recent conversations, and workspace list/selector. This code change replaces the dashboard's bespoke sidebar with the shared sidebar and creates a real searchable History screen with reopen, pin, rename, and delete actions. It is still not the final full dashboard: work/library overview, files/saved outputs, projects/tasks, and usage insights remain to be integrated. Verify this commit's build before treating the UI as released.
 
-A shared `WorkspaceSidebar` and persistent active-workspace endpoint are added in the current code change. The server validates membership before setting the HTTP-only `ws` cookie; the dashboard and chat resolve the saved workspace against the caller's RLS-filtered workspace list. Verify the production build and test switching in a signed-in session. Some older Drizzle-backed APIs still need end-to-end testing.
+A shared `WorkspaceSidebar` and persistent active-workspace endpoint are added in the current code change. The server validates membership before setting the HTTP-only `ws` cookie; dashboard and chat resolve the saved workspace against the caller's RLS-filtered workspace list. Shared sidebar is present on Home and chat; a real searchable History screen supports reopen, pin/unpin, rename, and delete. The capability dropdown persists Chat/Code/Write/etc. mode on the same conversation. Home is now being changed from separate tool cards to a single prompt-first AI Studio launcher with prompt forwarding and pinned conversation shortcuts; verify the follow-up commit's build. Workspace/mode switching still needs a signed-in browser test.
 
 ### Chat
 Files:
@@ -66,32 +66,37 @@ Existing API areas found include conversations, chat stream/complete, work items
 
 ## Next actions — continue in this order
 
-### P0 — prove AI chat works end to end
+### P0 — repair direct database readiness without exposing credentials
+- Confirm the deployed `DATABASE_URL` target/host and port safely (never log credentials).
+- Supabase project region is `eu-west-1`; project metadata identifies direct host `db.ikugfclxahxvjduowjbo.supabase.co`. The live direct-db health check fails. Get the exact shared pooler URI from Supabase Dashboard → Connect (session mode if the driver requires session/prepared statements; transaction mode only after verifying driver settings), then update Vercel production `DATABASE_URL` without printing or committing the password.
+- Redeploy and verify `/api/health` reports DB and feature_flags healthy before exposing work-library/usage APIs in Home.
+
+### P1 — prove AI chat works end to end
 1. Sign in to production and send a short prompt.
 2. Verify `POST /api/chat/stream`, first token, progressive deltas, saved assistant response, and that reload restores it.
 3. If it fails, use the request ID and safe provider reason; verify Gemini/OpenRouter keys and model access server-side without exposing key values.
 4. Test cancel/stop, retry, provider fallback, idempotency, stream-buffer/reconnect behavior, and Redis TTL.
 5. Add tests for SSE frame boundaries, provider-key filtering, user-message persistence, retry, and error paths.
 
-### P1 — unified application shell and workspace
+### P2 — unified application shell and workspace
 1. Build shared authenticated layout: sidebar/mobile drawer, global header, New Chat, account menu, workspace selector.
 2. Persist selected workspace securely; validate membership on every API use and align it with the `ws` cookie expected by work APIs.
 3. Unify Chat and Code in one AI Studio; switch mode inside the same product surface.
 4. Add full History: search, rename, pin, delete, reopen.
 
-### P2 — real Home dashboard
+### P3 — real Home dashboard
 1. Add Continue Working, pinned/recent chats, saved outputs/files, projects/tasks/activity, quick capture, and useful “view all” links.
 2. Source each section from live APIs/data. Add proper loading, empty and actionable error states.
 3. Show usage/limits only when backed by reliable data.
 4. Design/test desktop and mobile layouts.
 
-### P3 — Library and AI artifacts
+### P4 — Library and AI artifacts
 - Build Files & Work Library against existing items/folders/export/share APIs after resolving workspace context.
 - Save AI answers/artifacts and connect them to source conversations.
 - Add attachments only after upload/storage/download flow is verified.
 - In Code mode, add code artifacts/diffs/run output only when sandbox execution and permission checks are proven.
 
-### P4 — remaining product modules and security
+### P5 — remaining product modules and security
 - Integrate Projects/Tasks, Templates, workspace members/invites, Settings/security sessions, usage/billing, integrations, and agents only after end-to-end API and permission checks.
 - Investigate direct DB connection and all Drizzle-backed routes.
 - Review RLS/SECURITY DEFINER advisor findings individually; do not blanket-grant access.
@@ -131,3 +136,10 @@ Test: sign in → Home → switch workspace → create chat → stream answer �
 - Added conversation-mode updates to `PATCH /api/conversations/:id` and its Supabase update helper; AI Studio can switch Chat/Code/Write/etc. without changing conversation ID.
 - Mobile navigation was added to the shared sidebar and reserved bottom space in the page layouts.
 - **Build and runtime status:** source changes are committed with this log update; the triggered Vercel build must be checked. Workspace switching and same-thread mode switching still need a signed-in browser test.
+
+
+### 2026-10-18 — Prompt-first Home and pinned conversations (source follow-up pending CI at time of log update)
+- Replaced the grid of separate AI-tool launch cards with one Supa AI Studio composer and capability selector.
+- Home submits prompt + selected mode into a new conversation; chat reads the initial prompt from the URL, removes it from the address bar, and sends it once.
+- Added pinned-conversation shortcuts pulled from the existing conversation list and linked to History; empty state explains how to pin work.
+- Production health smoke test found `/api/health` reports `db: fail`, `feature_flags: fail`, `redis: ok`; `/api/readyz` returns `not_ready`. This is now the top infrastructure blocker.

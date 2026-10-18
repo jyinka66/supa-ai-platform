@@ -156,6 +156,7 @@ export function ChatClient({ conversation, initialMessages, locale, workspaces, 
   const [isSending, setIsSending] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const abortRef = useRef<AbortController | null>(null);
+  const initialPromptConsumed = useRef(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const audioRef = useRef<AudioContext | null>(null);
 
@@ -494,6 +495,23 @@ export function ChatClient({ conversation, initialMessages, locale, workspaces, 
       abortRef.current = null;
     }
   }, [activeMode, conversation, isSending, locale, messages, playTone]);
+
+  useEffect(() => {
+    if (initialPromptConsumed.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const initialPrompt = params.get("prompt");
+    if (!initialPrompt?.trim()) return;
+
+    initialPromptConsumed.current = true;
+    params.delete("prompt");
+    const query = params.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      window.location.pathname + (query ? "?" + query : "") + window.location.hash,
+    );
+    void handleSend(initialPrompt);
+  }, [handleSend]);
 
   const handleStop = useCallback(() => {
     abortRef.current?.abort();
