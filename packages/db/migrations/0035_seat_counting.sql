@@ -18,7 +18,7 @@ stable
 security definer
 set search_path = ''
 as $$
-  select count(*)::int from memberships
+  select count(*)::int from public.memberships
   where ws_id = _ws and status in ('active', 'invited')
 $$;
 
