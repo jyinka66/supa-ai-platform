@@ -1790,7 +1790,7 @@ export const roles = pgTable(
 
 // Share links v2 — token hashed, password argon2id, perm-scoped (migration 0044).
 export const shareLinksV2 = pgTable(
-  "share_links",
+  "share_links_v2",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     workspaceId: uuid("ws_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
