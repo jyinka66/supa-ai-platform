@@ -1,86 +1,94 @@
-// POST /api/v1/auth/register — create user + send email verification.
-//
-// Flow:
-//   1. Validate body (email + password).
-//   2. Check password policy (argon2id: min 12 chars OR 4-word passphrase, zxcvbn ≥3).
-//   3. Create user via Supabase auth (argon2id hash, email verification token).
-//   4. Return 201 (don't leak whether the email already exists — uniform response).
-//
-// The email verification token is sent by Supabase (email link, 24h TTL).
-// The user can't log in until they verify their email (Supabase enforces this
-// if `email_confirm` is required in the Supabase project settings).
-
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseServer } from "@/lib/supabase/server";
-import { requirePwPolicy } from "@/lib/auth/passwords";
+import { ApiError as PasswordPolicyError, requirePwPolicy } from "@/lib/auth/passwords";
 import { errorResponse, requestId, jsonLimiter, corsHeaders } from "@/lib/http/middleware";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const RegisterBody = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-  name: z.string().optional(),
+  email: z.string().trim().email().max(254),
+  password: z.string().min(1).max(256),
+  name: z.string().trim().max(100).optional(),
+  locale: z.enum(["en", "ar", "fr", "es", "de", "pt", "zh", "ja", "ko", "hi"]).default("en"),
 });
 
+function respond(
+  req: NextRequest,
+  rid: string,
+  body: Record<string, string>,
+  status: number,
+): NextResponse {
+  const res = NextResponse.json(body, { status });
+  for (const [key, value] of Object.entries(corsHeaders(req.headers.get("origin")))) {
+    res.headers.set(key, value);
+  }
+  res.headers.set("X-Request-Id", rid);
+  return res;
+}
+
+/**
+ * Register through Supabase's public sign-up flow. Unlike auth.admin.createUser,
+ * auth.signUp triggers the configured confirmation-email flow and does not
+ * require using a service-role key for a public registration form.
+ */
 export async function POST(req: NextRequest) {
   const rid = requestId(req);
   try {
     jsonLimiter(req);
-    const body = await req.json();
+    const body: unknown = await req.json();
     const parsed = RegisterBody.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "invalid_request", detail: parsed.error.message },
-        { status: 400 },
-      );
+      return respond(req, rid, {
+        error: "invalid_request",
+        detail: parsed.error.issues[0]?.message ?? "Please check the information you entered.",
+      }, 400);
     }
 
-    const { email, password, name } = parsed.data;
-
-    // Validate password policy (throws ApiError(400) if too weak).
+    const { email, password, name, locale } = parsed.data;
     requirePwPolicy(password);
 
-    // Create user via Supabase (sends email verification link).
+    const redirectTo = new URL("/auth/callback", new URL(req.url).origin);
+    redirectTo.searchParams.set("next", `/${locale}/onboarding`);
+
     const supabase = await supabaseServer();
-    const { data, error } = await supabase.auth.admin.createUser({
-      email,
+    const { data, error } = await supabase.auth.signUp({
+      email: email.toLowerCase(),
       password,
-      email_confirm: false, // user must verify email.
-      user_metadata: { full_name: name ?? "" },
+      options: {
+        emailRedirectTo: redirectTo.toString(),
+        data: { full_name: name ?? "" },
+      },
     });
 
     if (error) {
-      // Uniform response for "email already exists" — don't leak.
-      if (error.message.includes("already") || error.message.includes("registered")) {
-        return NextResponse.json(
-          { message: "If this email is not already registered, a verification link has been sent." },
-          { status: 201 },
-        );
+      const message = error.message.toLowerCase();
+      if (message.includes("already") || message.includes("registered") || message.includes("exists")) {
+        return respond(req, rid, {
+          message: "If this address can be registered, check your inbox for the next step.",
+        }, 201);
       }
-      return NextResponse.json(
-        { error: "registration_failed", detail: error.message },
-        { status: 400 },
-      );
+      console.error("[auth.register] Supabase sign-up failed", { code: error.code, status: error.status });
+      return respond(req, rid, {
+        error: "registration_failed",
+        detail: "We couldn't create your account. Please check your details and try again.",
+      }, 400);
     }
 
-    // Send email verification link (Supabase handles this — best-effort).
-    // The createUser call above already triggers the email if the project is
-    // configured to send on signup. The generateLink call is a fallback.
-    // Swallow errors — registration succeeded; email sending is best-effort.
-
-    const res = NextResponse.json(
-      { message: "Verification link sent to your email.", user_id: data.user?.id },
-      { status: 201 },
-    );
-    for (const [k, v] of Object.entries(corsHeaders(req.headers.get("origin")))) {
-      res.headers.set(k, v);
-    }
-    res.headers.set("X-Request-Id", rid);
-    return res;
+    // Supabase may return an empty identities list for an existing address.
+    // Keep the response identical to avoid revealing whether an account exists.
+    // Do not return account IDs from this public endpoint.
+    return respond(req, rid, {
+      message: "Registration request received. If email confirmation is enabled, check your inbox for a verification link. If you don't receive one, you can try signing in.",
+    }, 201);
   } catch (err) {
+    if (err instanceof PasswordPolicyError) {
+      return respond(req, rid, {
+        error: "weak_password",
+        detail: err.message,
+      }, 400);
+    }
     return errorResponse(err, "/v1/auth/register");
   }
 }

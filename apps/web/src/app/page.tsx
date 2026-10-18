@@ -2,17 +2,7 @@ import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
 import { LOCALES, DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 
-/**
- * Root route — redirects to /<locale>/dashboard (or /<locale>/login).
- *
- * Locale resolution order (matches middleware logic):
- *   1. `locale` cookie
- *   2. `Accept-Language` header (first matching tag)
- *   3. DEFAULT_LOCALE
- *
- * This is a Server Component — default export is a React component that
- * calls `redirect()` from `next/navigation`.
- */
+/** Send visitors to the public, localized landing page. */
 export default async function RootPage() {
   const cookieStore = await cookies();
   const headerList = await headers();
@@ -22,7 +12,7 @@ export default async function RootPage() {
     resolveFromAcceptLanguage(headerList) ??
     DEFAULT_LOCALE;
 
-  redirect(`/${locale}/dashboard`);
+  redirect(`/${locale}`);
 }
 
 function resolveFromCookie(
