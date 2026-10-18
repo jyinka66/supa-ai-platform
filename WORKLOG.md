@@ -143,3 +143,11 @@ Test: sign in → Home → switch workspace → create chat → stream answer �
 - Home submits prompt + selected mode into a new conversation; chat reads the initial prompt from the URL, removes it from the address bar, and sends it once.
 - Added pinned-conversation shortcuts pulled from the existing conversation list and linked to History; empty state explains how to pin work.
 - Production health smoke test found `/api/health` reports `db: fail`, `feature_flags: fail`, `redis: ok`; `/api/readyz` returns `not_ready`. This is now the top infrastructure blocker.
+
+
+### 2026-10-18 — Database pooler support implementation (commit pending CI at time of log update)
+- Added exported `resolveDatabaseUrl()` in `packages/db/src/client.ts`.
+- If `SUPABASE_DB_POOLER_HOST` is configured, it validates the host suffix and hostname-only input, preserves the existing DB password, sets the shared-pooler username to `postgres.<project-ref>`, and defaults to port `6543` (transaction mode). Port `5432` is available for explicit session-mode use.
+- Supabase endpoints use `ssl: "require"`; Vercel instances use a client pool max of 1, `prepare: false`, 10-second connect timeout and 20-second idle timeout.
+- Added `packages/db/tests/database-url.test.ts` for passthrough, pooler rewrite, password preservation, host validation and port validation. Added optional vars to `.env.example`.
+- **This does not fix production by itself:** the production `SUPABASE_DB_POOLER_HOST` is not yet configured because its pooler cluster cannot be derived from region. Need the exact hostname from Supabase Dashboard > Connect > Transaction pooler, then set it in Vercel and verify both health endpoints return 200.
