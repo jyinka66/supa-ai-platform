@@ -70,7 +70,9 @@ export function aabb(rect: Rect, rotationDeg: number): Rect {
 export function hitTest(page: Page, x: number, y: number): LayerNode | null {
   // Iterate in reverse (top-most first).
   for (let i = page.layers.length - 1; i >= 0; i--) {
-    const hit = hitTestNode(page.layers[i]!, x, y);
+    const layer = page.layers[i];
+    if (!layer) continue;
+    const hit = hitTestNode(layer, x, y);
     if (hit) return hit;
   }
   return null;
@@ -80,7 +82,9 @@ function hitTestNode(node: LayerNode, x: number, y: number): LayerNode | null {
   // Check children first (top-most child is on top).
   if (node.children) {
     for (let i = node.children.length - 1; i >= 0; i--) {
-      const hit = hitTestNode(node.children[i]!, x, y);
+      const child = node.children[i];
+      if (!child) continue;
+      const hit = hitTestNode(child, x, y);
       if (hit) return hit;
     }
   }
@@ -101,9 +105,11 @@ function pathTo(page: Page, id: string): LayerNode[] {
   const stack: { node: LayerNode; path: LayerNode[] }[] =
     page.layers.map((n) => ({ node: n, path: [n] }));
   while (stack.length) {
-    const { node, path } = stack.pop()!;
+    const entry = stack.pop();
+    if (!entry) break;
+    const { node, path } = entry;
     if (node.id === id) return path;
     if (node.children) for (const c of node.children) stack.push({ node: c, path: [...path, c] });
   }
-  throw new Error(`pathTo: id ${id} not on page ${page.id}`);
+  throw new Error(`pathTo: id ${String(id)} not on page ${String(page.id)}`);
 }

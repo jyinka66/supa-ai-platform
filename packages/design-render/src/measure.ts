@@ -103,7 +103,7 @@ function fontStack(family: string): string {
     "Noto Sans Devanagari": '"Noto Sans Devanagari", sans-serif',
   };
 
-  return FALLBACKS[family] ?? `"${family}", system-ui, sans-serif`;
+  return FALLBACKS[family] ?? `"${String(family)}", system-ui, sans-serif`;
 }
 
 // ============ CANVAS MEASURER (client) ============
@@ -124,7 +124,7 @@ function fontStack(family: string): string {
  *   const width = measurer.measure("Hello", { family: "Inter", weight: 400, size: 16 });
  */
 export class CanvasMeasurer implements TextMeasurer {
-  private ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D;
+  private ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D | null = null;
   private cache = new LRUCache<string, number>(8000);
 
   constructor() {
@@ -132,16 +132,18 @@ export class CanvasMeasurer implements TextMeasurer {
     // Fall back to a regular canvas if OffscreenCanvas is unavailable.
     if (typeof OffscreenCanvas !== "undefined") {
       const canvas = new OffscreenCanvas(0, 0);
-      this.ctx = canvas.getContext("2d")!;
+      const context = canvas.getContext("2d");
+      if (context) this.ctx = context;
     } else if (typeof document !== "undefined") {
       const canvas = document.createElement("canvas");
       canvas.width = 0;
       canvas.height = 0;
-      this.ctx = canvas.getContext("2d")!;
+      const context = canvas.getContext("2d");
+      if (context) this.ctx = context;
     } else {
       // SSR / Node without canvas — returns 0 for all measurements.
       // The server should use ServerMeasurer (fontkit) instead.
-      this.ctx = null as unknown as OffscreenCanvasRenderingContext2D;
+      this.ctx = null;
     }
   }
 
@@ -149,7 +151,7 @@ export class CanvasMeasurer implements TextMeasurer {
     text: string,
     f: { family: string; weight: number; size: number },
   ): number {
-    const key = `${f.family}|${f.weight}|${f.size}|${text}`;
+    const key = `${String(f.family)}|${String(f.weight)}|${String(f.size)}|${String(text)}`;
     const hit = this.cache.get(key);
     if (hit !== undefined) return hit;
 
@@ -161,7 +163,7 @@ export class CanvasMeasurer implements TextMeasurer {
       return estimate;
     }
 
-    this.ctx.font = `${f.weight} ${f.size}px ${fontStack(f.family)}`;
+    this.ctx.font = `${String(f.weight)} ${String(f.size)}px ${String(fontStack(f.family))}`;
     const m = this.ctx.measureText(text).width;
     this.cache.set(key, m);
     return m;
@@ -215,7 +217,7 @@ export class ServerMeasurer implements TextMeasurer {
     text: string,
     f: { family: string; weight: number; size: number },
   ): number {
-    const key = `${f.family}|${f.weight}|${f.size}|${text}`;
+    const key = `${String(f.family)}|${String(f.weight)}|${String(f.size)}|${String(text)}`;
     const hit = this.cache.get(key);
     if (hit !== undefined) return hit;
 
@@ -327,7 +329,7 @@ export class ConsoleFontRegistry implements FontRegistry {
   }
 
   load(family: string, weight: number): LoadedFont {
-    const key = `${family.toLowerCase()}|${weight}`;
+    const key = `${String(family.toLowerCase())}|${String(weight)}`;
     const cached = this.fonts.get(key);
     if (cached) return cached;
 
@@ -336,7 +338,7 @@ export class ConsoleFontRegistry implements FontRegistry {
       this.warnOnce(
         family,
         weight,
-        `no font file matching "${family}" weight ${weight} found in [${this.searchPaths.join(", ")}]`,
+        `no font file matching "${String(family)}" weight ${String(weight)} found in [${String(this.searchPaths.join(", "))}]`,
       );
       const est = this.estimateFont();
       this.fonts.set(key, est);
@@ -348,7 +350,7 @@ export class ConsoleFontRegistry implements FontRegistry {
       this.warnOnce(
         family,
         weight,
-        `fontkit unavailable or failed to parse ${file} — install the "fontkit" package for accurate measurement`,
+        `fontkit unavailable or failed to parse ${String(file)} — install the "fontkit" package for accurate measurement`,
       );
       const est = this.estimateFont();
       this.fonts.set(key, est);
@@ -377,9 +379,9 @@ export class ConsoleFontRegistry implements FontRegistry {
     const exactWeight = matches.find((f) => {
       const lower = f.toLowerCase();
       return (
-        lower.includes(`-${weightStr}.`) ||
-        lower.includes(`-${weightStr}-`) ||
-        lower.includes(`-${weightStr}_`) ||
+        lower.includes(`-${String(weightStr)}.`) ||
+        lower.includes(`-${String(weightStr)}-`) ||
+        lower.includes(`-${String(weightStr)}_`) ||
         // Map common weight names → numbers for the loose match.
         (weight === 400 && /-regular[-.]/i.test(f)) ||
         (weight === 700 && /-bold[-.]/i.test(f)) ||
@@ -489,13 +491,13 @@ export class ConsoleFontRegistry implements FontRegistry {
    * `load`). The first warning per cause is enough.
    */
   private warnOnce(family: string, weight: number, reason: string): void {
-    const key = `${family}|${weight}|${reason}`;
+    const key = `${String(family)}|${String(weight)}|${String(reason)}`;
     if (this.warnedKeys.has(key)) return;
     this.warnedKeys.add(key);
     // eslint-disable-next-line no-console
     console.warn(
-      `[design-render] ConsoleFontRegistry: ${reason}. ` +
-        `Falling back to a per-character advance estimate for "${family}" weight ${weight}. ` +
+      `[design-render] ConsoleFontRegistry: ${String(reason)}. ` +
+        `Falling back to a per-character advance estimate for "${String(family)}" weight ${String(weight)}. ` +
         `Editor↔export parity will be impaired until the font is installed.`,
     );
   }

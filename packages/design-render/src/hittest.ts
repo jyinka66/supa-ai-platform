@@ -15,9 +15,8 @@
 //      to type).
 // ─────────────────────────────────────────────────────────────
 
-import type { Page, LayerNode, ShapeLayer, ContainerLayer } from "@supa/design-model";
-import { isContainerNode, getChildren } from "@supa/design-model";
-import { type Matrix, trs, invert, applyToPoint, worldTransform, IDENTITY, mul } from "./transform";
+import type { Page, LayerNode, ShapeLayer } from "@supa/design-model";
+import { invert, applyToPoint, worldTransform } from "./transform";
 
 /**
  * Hit test: returns the topmost selectable layer at the given page-space point.
@@ -41,7 +40,9 @@ export function hitTest(
 
   // Iterate top-down (front = last in array = drawn on top).
   for (let i = page.layers.length - 1; i >= 0; i--) {
-    const hit = hitNode(page, page.layers[i]!, pagePoint, tol);
+    const layer = page.layers[i];
+    if (!layer) continue;
+    const hit = hitNode(page, layer, pagePoint, tol);
     if (hit) return hit;
   }
   return null;
@@ -89,17 +90,17 @@ function hitNode(
 
   // Rule 4: Shape refinement — primitives are tighter than their boxes.
   if (node.type === "shape") {
-    if (!hitShapePrimitive(node as ShapeLayer, local, tol)) return null;
+    if (!hitShapePrimitive(node, local, tol)) return null;
   }
 
   // Container with clip: point must also be inside children bounds —
   // clipped-away children can't be hit, and the container itself is
   // only a hit where it paints (fill) or a child is hit.
   if (node.type === "container") {
-    const container = node as ContainerLayer;
+    const container = node;
     if (container.clip) {
       const childHit = (container.children ?? []).some(
-        (c) => hitNode(page, c, p, tol) !== null,
+        (child) => hitNode(page, child, p, tol) !== null,
       );
       const paintsFill = container.fill !== undefined;
       if (!childHit && !paintsFill) return null;
@@ -111,7 +112,9 @@ function hitNode(
   // fell in the union gap (the group body with no child hit).
   if (node.children) {
     for (let i = node.children.length - 1; i >= 0; i--) {
-      const child = hitNode(page, node.children[i]!, p, tol);
+      const childNode = node.children[i];
+      if (!childNode) continue;
+      const child = hitNode(page, childNode, p, tol);
       if (child) return child;
     }
     // No child was hit — return the node itself (group body hit).
@@ -193,9 +196,9 @@ function pointInTriangle(
   a: { x: number; y: number },
   b: { x: number; y: number },
   c: { x: number; y: number },
-  tol: number,
+  _tol: number,
 ): boolean {
-  // Expand the triangle by moving each edge outward by `tol`.
+  // Expand the triangle by moving each edge outward by `_tol`.
   // Simplification: just use the standard test without expansion (tolerance
   // is already applied to the bounding box, which covers most cases).
   const d1 = sign(p, a, b);
@@ -237,8 +240,11 @@ function pointInPolygon(
   };
 
   for (let i = 0, j = n - 1; i < n; j = i++) {
-    const xi = vertices[i]!.x, yi = vertices[i]!.y;
-    const xj = vertices[j]!.x, yj = vertices[j]!.y;
+    const vertexI = vertices[i];
+    const vertexJ = vertices[j];
+    if (!vertexI || !vertexJ) continue;
+    const xi = vertexI.x, yi = vertexI.y;
+    const xj = vertexJ.x, yj = vertexJ.y;
 
     const intersect =
       yi > p.y !== yj > p.y &&

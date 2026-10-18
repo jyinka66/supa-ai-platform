@@ -17,7 +17,7 @@
 //     not by doc rev — same text = same layout regardless of position).
 // ─────────────────────────────────────────────────────────────
 
-import type { Page, LayerNode, NodeId, TextLayer } from "@supa/design-model";
+import type { Page, NodeId, TextLayer } from "@supa/design-model";
 import type { Matrix } from "./transform";
 
 // ============ CACHE ENTRIES ============
@@ -112,7 +112,7 @@ export class RenderCache {
     nodeId: NodeId,
     compute: (page: Page, nodeId: NodeId) => Matrix,
   ): Matrix {
-    const key = `${this.rev}:${nodeId}`;
+    const key = `${String(this.rev)}:${String(nodeId)}`;
     const hit = this.worldTransforms.get(key);
     if (hit) return hit.matrix;
 

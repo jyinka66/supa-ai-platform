@@ -18,11 +18,10 @@
 //      diffs, never silent.
 // ─────────────────────────────────────────────────────────────
 
-import type { DesignDoc, Page } from "@supa/design-model";
-import { validate } from "@supa/design-model";
+import type { DesignDoc, LayerNode } from "@supa/design-model";
 import type { TextMeasurer } from "./measure";
 import { CanvasMeasurer, ServerMeasurer, NoopMeasurer } from "./measure";
-import { renderPage, type RenderOpts, type RenderResult } from "./render";
+import { renderPage, type RenderOpts } from "./render";
 
 // ============ TEST 1: DETERMINISM ============
 
@@ -50,15 +49,15 @@ export function assertDeterministic(
     // Find the first differing byte for diagnostics.
     const diffIndex = findFirstDiff(r1.svg, r2.svg);
     throw new Error(
-      `Determinism violation: SVG differs at byte ${diffIndex}.\n` +
-      `  ...${r1.svg.slice(Math.max(0, diffIndex - 20), diffIndex + 20)}\n` +
-      `  ...${r2.svg.slice(Math.max(0, diffIndex - 20), diffIndex + 20)}`,
+      `Determinism violation: SVG differs at byte ${String(diffIndex)}.\n` +
+      `  ...${String(r1.svg.slice(Math.max(0, diffIndex - 20), diffIndex + 20))}\n` +
+      `  ...${String(r2.svg.slice(Math.max(0, diffIndex - 20), diffIndex + 20))}`,
     );
   }
 
   if (r1.width !== r2.width || r1.height !== r2.height) {
     throw new Error(
-      `Determinism violation: dimensions differ (${r1.width}x${r1.height} vs ${r2.width}x${r2.height})`,
+      `Determinism violation: dimensions differ (${String(r1.width)}x${String(r1.height)} vs ${String(r2.width)}x${String(r2.height)})`,
     );
   }
 }
@@ -79,13 +78,15 @@ export function fuzzDeterministic(
 
   for (let i = 0; i < count; i++) {
     const doc = generateFuzzDoc(rng);
-    const pageId = doc.pages[0]!.id;
+    const firstPage = doc.pages[0];
+    if (!firstPage) throw new Error("Fuzz fixture must contain a page.");
+    const pageId = firstPage.id;
 
     try {
       assertDeterministic(doc, { pageId }, measurer);
     } catch (err) {
       throw new Error(
-        `Fuzz determinism failure at doc ${i} (seed ${opts.seed}): ${(err as Error).message}`,
+        `Fuzz determinism failure at doc ${String(i)} (seed ${String(opts.seed)}): ${String((err as Error).message)}`,
       );
     }
   }
@@ -127,7 +128,7 @@ export interface ParityResult {
  *     process.exit(1); // CI fails
  *   }
  */
-export async function assertParity(
+export function assertParity(
   doc: DesignDoc,
   opts: RenderOpts,
   options?: {
@@ -170,7 +171,7 @@ export async function assertParity(
 
     if (diff > 1) {
       failures.push(
-        `Text width diff > 1px: "${sample.text.slice(0, 30)}..." client=${clientWidth.toFixed(2)} server=${serverWidth.toFixed(2)} diff=${diff.toFixed(2)}`,
+        `Text width diff > 1px: "${String(sample.text.slice(0, 30))}..." client=${String(clientWidth.toFixed(2))} server=${String(serverWidth.toFixed(2))} diff=${String(diff.toFixed(2))}`,
       );
     }
   }
@@ -190,21 +191,21 @@ export async function assertParity(
 
     if (diffPercentage > 0.5) {
       failures.push(
-        `SVG byte-diff ${diffPercentage.toFixed(2)}% exceeds 0.5% gate`,
+        `SVG byte-diff ${String(diffPercentage.toFixed(2))}% exceeds 0.5% gate`,
       );
     }
   }
 
   const passed = failures.length === 0;
 
-  return {
+  return Promise.resolve({
     totalPixels: 0, // Not computed (requires rasterization — see note below)
     differingPixels: 0,
     diffPercentage: 0,
     textLineDiffs,
     passed,
     failures,
-  };
+  });
 
   // NOTE: True pixel-diff requires:
   //   1. Render client SVG in headless Chromium → PNG
@@ -308,8 +309,8 @@ export function assertRtlParity(
 
     if (diff > 1) {
       failures.push(
-        `RTL parity failure: "${sample.description}" (${sample.text.slice(0, 30)}) ` +
-        `client=${clientWidth.toFixed(2)} server=${serverWidth.toFixed(2)} diff=${diff.toFixed(2)}`,
+        `RTL parity failure: "${String(sample.description)}" (${String(sample.text.slice(0, 30))}) ` +
+        `client=${String(clientWidth.toFixed(2))} server=${String(serverWidth.toFixed(2))} diff=${String(diff.toFixed(2))}`,
       );
     }
   }
@@ -369,10 +370,11 @@ function seededRandom(seed: number): () => number {
  */
 function generateFuzzDoc(rng: () => number): DesignDoc {
   const numLayers = Math.floor(rng() * 10) + 1;
-  const layers: any[] = [];
+  const layers: LayerNode[] = [];
 
   for (let i = 0; i < numLayers; i++) {
-    const type = ["rect", "ellipse", "text"][Math.floor(rng() * 3)];
+    const shapeTypes = ["rect", "ellipse", "triangle", "polygon", "line"] as const;
+    const shape = shapeTypes[Math.floor(rng() * shapeTypes.length)] ?? "rect";
     const x = Math.floor(rng() * 500);
     const y = Math.floor(rng() * 500);
     const w = Math.floor(rng() * 200) + 50;
@@ -380,9 +382,9 @@ function generateFuzzDoc(rng: () => number): DesignDoc {
     const rotation = Math.floor(rng() * 360);
 
     layers.push({
-      id: `fuzz_${i}`,
+      id: `fuzz_${String(i)}`,
       type: "shape",
-      name: `Layer ${i}`,
+      name: `Layer ${String(i)}`,
       locked: false,
       hidden: false,
       rect: { x, y, width: w, height: h },
@@ -390,7 +392,7 @@ function generateFuzzDoc(rng: () => number): DesignDoc {
       opacity: 1,
       blend: "normal",
       constraints: {},
-      shape: type,
+      shape,
       fill: { type: "solid", color: { hex: "#3b82f6" } },
     });
   }
