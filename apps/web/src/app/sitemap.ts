@@ -22,13 +22,15 @@ export const revalidate = 3600; // ISR — regenerate at most hourly.
 // fetched from the DB in production).
 const STATIC_PAGES: Array<{ path: string; priority: number; changeFrequency: SeoPage["changeFrequency"] }> = [
   { path: "/", priority: 1.0, changeFrequency: "weekly" },
-  { path: "/pricing", priority: 0.9, changeFrequency: "monthly" },
-  { path: "/blog", priority: 0.8, changeFrequency: "daily" },
-  { path: "/help", priority: 0.8, changeFrequency: "weekly" },
-  { path: "/changelog", priority: 0.7, changeFrequency: "daily" },
+  { path: "/pricing", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/blog", priority: 0.8, changeFrequency: "weekly" },
+  { path: "/help", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/changelog", priority: 0.6, changeFrequency: "monthly" },
   { path: "/about", priority: 0.6, changeFrequency: "monthly" },
   { path: "/contact", priority: 0.6, changeFrequency: "monthly" },
-  { path: "/security", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/trust", priority: 0.6, changeFrequency: "monthly" },
+  { path: "/accessibility", priority: 0.4, changeFrequency: "yearly" },
+  { path: "/careers", priority: 0.4, changeFrequency: "monthly" },
   { path: "/privacy", priority: 0.5, changeFrequency: "yearly" },
   { path: "/terms", priority: 0.5, changeFrequency: "yearly" },
 ];

@@ -135,10 +135,53 @@ export default async function LandingPage({ params }: Props) {
       </section>
 
       <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-6 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
-          <Link href={base} aria-label="Supa home"><Wordmark /></Link>
-          <p>Make good work happen.</p>
-          <div className="flex gap-5"><Link href={`${base}/login`} className="hover:text-violet-700">Sign in</Link><Link href={`${base}/register`} className="font-semibold text-violet-700 hover:text-violet-800">Create account</Link></div>
+        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10">
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1fr]">
+            <div className="max-w-xs">
+              <Link href={base} aria-label="Supa home"><Wordmark /></Link>
+              <p className="mt-4 text-sm leading-6 text-slate-600">A connected space for ideas, projects, and everyday work.</p>
+              <p className="mt-4 text-xs text-slate-400">Make good work happen.</p>
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-slate-950">Product</h2>
+              <div className="mt-4 flex flex-col items-start gap-3 text-sm text-slate-600">
+                <Link href={base + "#workspace"} className="hover:text-violet-700">The workspace</Link>
+                <Link href={base + "#features"} className="hover:text-violet-700">Features</Link>
+                <Link href={base + "/pricing"} className="hover:text-violet-700">Pricing</Link>
+                <Link href={base + "/register"} className="hover:text-violet-700">Create account</Link>
+              </div>
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-slate-950">Company</h2>
+              <div className="mt-4 flex flex-col items-start gap-3 text-sm text-slate-600">
+                <Link href={base + "/about"} className="hover:text-violet-700">About</Link>
+                <Link href={base + "/blog"} className="hover:text-violet-700">Blog</Link>
+                <Link href={base + "/careers"} className="hover:text-violet-700">Careers</Link>
+                <Link href={base + "/contact"} className="hover:text-violet-700">Contact</Link>
+              </div>
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-slate-950">Resources</h2>
+              <div className="mt-4 flex flex-col items-start gap-3 text-sm text-slate-600">
+                <Link href={base + "/help"} className="hover:text-violet-700">Help center</Link>
+                <Link href={base + "/changelog"} className="hover:text-violet-700">Product updates</Link>
+                <Link href={base + "/trust"} className="hover:text-violet-700">Trust &amp; security</Link>
+                <Link href={base + "/accessibility"} className="hover:text-violet-700">Accessibility</Link>
+              </div>
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-slate-950">Legal</h2>
+              <div className="mt-4 flex flex-col items-start gap-3 text-sm text-slate-600">
+                <Link href={base + "/privacy"} className="hover:text-violet-700">Privacy policy</Link>
+                <Link href={base + "/terms"} className="hover:text-violet-700">Terms of use</Link>
+                <Link href={base + "/login"} className="hover:text-violet-700">Sign in</Link>
+              </div>
+            </div>
+          </div>
+          <div className="mt-10 flex flex-col gap-3 border-t border-slate-200 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+            <p>© {new Date().getFullYear()} Supa. All rights reserved.</p>
+            <p>Built to give good ideas room to grow.</p>
+          </div>
         </div>
       </footer>
     </main>

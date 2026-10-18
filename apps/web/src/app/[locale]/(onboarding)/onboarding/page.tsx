@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ComponentType } from "react";
 import { useOnboarding } from "./use-onboarding";
@@ -31,12 +32,22 @@ const STEPS: ComponentType<StepProps>[] = [
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const locale = pathname.split("/")[1] || "en";
   const t = useTranslations("onboarding");
-  const { step, data, isLoading, error, saveStep, skip } = useOnboarding(); // resumable: reads profiles.onboarding_step
+  const { step, data, isLoading, isSaving, error, saveStep, skip } = useOnboarding();
 
-  if (isLoading) {
+  // Completion is persisted in the profile before navigating away. This also
+  // handles users who revisit onboarding after finishing it on another device.
+  useEffect(() => {
+    if (!isLoading && data.onboarding_complete === true) {
+      router.replace("/" + locale + "/dashboard");
+    }
+  }, [data.onboarding_complete, isLoading, locale, router]);
+
+  if (isLoading || data.onboarding_complete === true) {
     return (
-      <div className="flex justify-center py-24">
+      <div className="flex justify-center py-24" role="status" aria-live="polite">
         <Spinner />
       </div>
     );
@@ -68,13 +79,14 @@ export default function OnboardingPage() {
       {!isLastStep && (
         <button
           type="button"
+          disabled={isSaving}
           className="link"
           onClick={() => {
             posthog.capture("onboarding_skip_all");
-            router.push("/dashboard");
+            skip();
           }}
         >
-          {t("skipAll")}
+          {isSaving ? "Finishing setup…" : t("skipAll")}
         </button>
       )}
     </div>
