@@ -199,7 +199,7 @@ function collectDefs(svgEl: Element): Map<string, Def> {
     if (!id) continue;
     const stops = parseStops(grad);
     const angle = parseGradientAngle(grad);
-    defs.set(id, { type: "linear", stops, angle });
+    defs.set(id, { type: "linear", stops, ...(angle !== undefined ? { angle } : {}) });
   }
 
   // Radial gradients.
@@ -370,9 +370,9 @@ function convertRect(el: Element, ctx: ConvertContext): LayerNode | null {
     blend: "normal",
     constraints: {},
     shape: "rect",
-    fill: fill ?? undefined,
-    stroke: stroke ?? undefined,
-    cornerRadius: rx || undefined,
+    ...(fill !== null ? { fill } : {}),
+    ...(stroke !== null ? { stroke } : {}),
+    ...(rx ? { cornerRadius: rx } : {}),
   };
 }
 
@@ -400,8 +400,8 @@ function convertCircle(el: Element, ctx: ConvertContext): LayerNode | null {
     blend: "normal",
     constraints: {},
     shape: "ellipse",
-    fill: fill ?? undefined,
-    stroke: stroke ?? undefined,
+    ...(fill !== null ? { fill } : {}),
+    ...(stroke !== null ? { stroke } : {}),
   };
 }
 
@@ -430,8 +430,8 @@ function convertEllipse(el: Element, ctx: ConvertContext): LayerNode | null {
     blend: "normal",
     constraints: {},
     shape: "ellipse",
-    fill: fill ?? undefined,
-    stroke: stroke ?? undefined,
+    ...(fill !== null ? { fill } : {}),
+    ...(stroke !== null ? { stroke } : {}),
   };
 }
 
@@ -478,10 +478,13 @@ function convertPolygon(el: Element, ctx: ConvertContext): LayerNode | null {
   // Compute bounding box.
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (let i = 0; i < points.length - 1; i += 2) {
-    minX = Math.min(minX, points[i]!);
-    minY = Math.min(minY, points[i + 1]!);
-    maxX = Math.max(maxX, points[i]!);
-    maxY = Math.max(maxY, points[i + 1]!);
+    const px = points[i];
+    const py = points[i + 1];
+    if (px === undefined || py === undefined || !Number.isFinite(px) || !Number.isFinite(py)) continue;
+    minX = Math.min(minX, px);
+    minY = Math.min(minY, py);
+    maxX = Math.max(maxX, px);
+    maxY = Math.max(maxY, py);
   }
 
   const sides = points.length / 2;
@@ -503,8 +506,8 @@ function convertPolygon(el: Element, ctx: ConvertContext): LayerNode | null {
     blend: "normal",
     constraints: {},
     shape: sides >= 3 && sides <= 12 ? "polygon" : "polygon",
-    fill: fill ?? undefined,
-    stroke: stroke ?? undefined,
+    ...(fill !== null ? { fill } : {}),
+    ...(stroke !== null ? { stroke } : {}),
     polygonSides: sides >= 3 && sides <= 12 ? sides : 6,
   };
 }
@@ -541,8 +544,8 @@ function convertPath(el: Element, ctx: ConvertContext): LayerNode | null {
     blend: "normal",
     constraints: {},
     shape: "rect",
-    fill: fill ?? undefined,
-    stroke: stroke ?? undefined,
+    ...(fill !== null ? { fill } : {}),
+    ...(stroke !== null ? { stroke } : {}),
   };
 }
 
@@ -737,17 +740,25 @@ function parseTransform(transform: string | null): ParsedTransform {
   // Parse scale()
   const scale = transform.match(/scale\(([^)]+)\)/);
   if (scale) {
-    const [sx, sy] = scale[1]!.split(/[\s,]+/).map(parseFloat);
-    result.scaleX = sx ?? 1;
-    result.scaleY = sy ?? 1;
+    const values = (scale[1] ?? "").split(/[\s,]+/).map(parseFloat);
+    const sx = values[0] ?? 1;
+    const sy = values[1] ?? sx;
+    result.scaleX = sx;
+    result.scaleY = sy;
   }
 
   // Parse matrix() — full 6-value transform.
   const matrix = transform.match(/matrix\(([^)]+)\)/);
   if (matrix) {
-    const [a, b, c, d, e, f] = matrix[1]!.split(/[\s,]+/).map(parseFloat);
-    result.x = e ?? 0;
-    result.y = f ?? 0;
+    const values = (matrix[1] ?? "").split(/[\s,]+/).map(parseFloat);
+    const a = values[0] ?? 1;
+    const b = values[1] ?? 0;
+    const c = values[2] ?? 0;
+    const d = values[3] ?? 1;
+    const e = values[4] ?? 0;
+    const f = values[5] ?? 0;
+    result.x = e;
+    result.y = f;
     result.rotation = (Math.atan2(b, a) * 180) / Math.PI;
     result.scaleX = Math.hypot(a, b);
     result.scaleY = Math.hypot(c, d);
@@ -778,7 +789,7 @@ function parseFill(el: Element, ctx: ConvertContext): Fill | null {
           gradient: {
             kind: def.type,
             stops: def.stops,
-            angle: def.angle,
+            ...(def.angle !== undefined ? { angle: def.angle } : {}),
           },
         };
       }
@@ -812,7 +823,8 @@ function parseStroke(el: Element): Stroke | null {
 function parseSvgColor(color: string, opacity?: string | null): Color {
   // Hex.
   if (color.startsWith("#")) {
-    return { hex: color.toUpperCase(), opacity: opacity ? parseFloat(opacity) : undefined };
+    const parsedOpacity = opacity ? parseFloat(opacity) : undefined;
+    return { hex: color.toUpperCase(), ...(parsedOpacity !== undefined ? { opacity: parsedOpacity } : {}) };
   }
 
   // rgb()/rgba().
@@ -824,7 +836,7 @@ function parseSvgColor(color: string, opacity?: string | null): Color {
     const b = Math.round(parts[2] ?? 0);
     const a = parts[3] ?? 1;
     const hex = `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
-    return { hex: hex.toUpperCase(), opacity: a < 1 ? a : undefined };
+    return { hex: hex.toUpperCase(), ...(a < 1 ? { opacity: a } : {}) };
   }
 
   // Named colors (basic set).
@@ -835,11 +847,12 @@ function parseSvgColor(color: string, opacity?: string | null): Color {
   };
   const named = namedColors[color.toLowerCase()];
   if (named) {
-    return { hex: named, opacity: color.toLowerCase() === "transparent" ? 0 : undefined };
+    return { hex: named, ...(color.toLowerCase() === "transparent" ? { opacity: 0 } : {}) };
   }
 
   // Fallback: black.
-  return { hex: "#000000", opacity: opacity ? parseFloat(opacity) : undefined };
+  const parsedOpacity = opacity ? parseFloat(opacity) : undefined;
+  return { hex: "#000000", ...(parsedOpacity !== undefined ? { opacity: parsedOpacity } : {}) };
 }
 
 function parseFontFamily(fontFamily: string): string {

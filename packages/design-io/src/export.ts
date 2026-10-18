@@ -154,9 +154,9 @@ export async function exportDoc(
           height,
           scale: spec.scale ?? 1,
           format: spec.format,
-          quality: spec.quality,
-          background: renderSpec.background,
-          signal,
+          ...(spec.quality !== undefined ? { quality: spec.quality } : {}),
+          ...(renderSpec.background !== undefined ? { background: renderSpec.background } : {}),
+          ...(signal !== undefined ? { signal } : {}),
         });
         mimeType = spec.format === "png" ? "image/png" : spec.format === "webp" ? "image/webp" : "image/jpeg";
         break;
@@ -166,7 +166,7 @@ export async function exportDoc(
           doc: spec.doc,
           pageIds: [pageId],
           measurer,
-          signal,
+          ...(signal !== undefined ? { signal } : {}),
         });
         mimeType = "application/pdf";
         break;
@@ -201,7 +201,7 @@ export async function exportDoc(
       doc: spec.doc,
       pageIds,
       measurer,
-      signal,
+      ...(signal !== undefined ? { signal } : {}),
     });
     return { items, blob: pdfBlob, mimeType: "application/pdf" };
   }

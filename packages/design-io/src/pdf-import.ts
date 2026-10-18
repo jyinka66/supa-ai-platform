@@ -814,7 +814,7 @@ function detectMimeType(bytes: Uint8Array): string {
     }
     // HEIC (ftyp box: "ftypheic" or "ftypheix" or "ftypmif1")
     if (bytes.length >= 12 && bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) {
-      const brand = String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11]);
+      const brand = String.fromCharCode(bytes[8] ?? 0, bytes[9] ?? 0, bytes[10] ?? 0, bytes[11] ?? 0);
       if (brand === "heic" || brand === "heix" || brand === "mif1" || brand === "hevc") {
         return "image/heic";
       }
@@ -840,7 +840,9 @@ async function getImageDimensions(bytes: Uint8Array, mime: string): Promise<{ wi
   }
 
   return new Promise((resolve) => {
-    const blob = new Blob([bytes], { type: mime });
+    const blobBytes = new Uint8Array(bytes.byteLength);
+  blobBytes.set(bytes);
+  const blob = new Blob([blobBytes.buffer], { type: mime });
     const url = URL.createObjectURL(blob);
     const img = new Image();
 

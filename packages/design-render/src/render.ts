@@ -162,12 +162,12 @@ function renderText(
       }
       segments.push({
         text: content.slice(run.start, run.end),
-        bold: run.bold,
-        italic: run.italic,
-        color: run.color,
-        link: run.link,
-        fontFamily: run.fontFamily,
-        fontSize: run.fontSize,
+        ...(run.bold !== undefined ? { bold: run.bold } : {}),
+        ...(run.italic !== undefined ? { italic: run.italic } : {}),
+        ...(run.color !== undefined ? { color: run.color } : {}),
+        ...(run.link !== undefined ? { link: run.link } : {}),
+        ...(run.fontFamily !== undefined ? { fontFamily: run.fontFamily } : {}),
+        ...(run.fontSize !== undefined ? { fontSize: run.fontSize } : {}),
       });
       pos = run.end;
     }
@@ -221,7 +221,8 @@ function renderImage(
   const asset = doc.assets[layer.assetId];
   if (!asset) return ""; // missing asset — render nothing
 
-  const { width, height, fit, altText } = layer;
+  const { width, height } = layer.rect;
+  const { fit, altText } = layer;
   let preserveAspect: string;
   switch (fit) {
     case "cover": preserveAspect = "xMidYMid slice"; break;
@@ -253,7 +254,8 @@ function renderShape(
   blend: string,
   defs: DefsBuilder,
 ): string {
-  const { width, height, fill, stroke, cornerRadius, shape, polygonSides } = layer;
+  const { width, height } = layer.rect;
+  const { fill, stroke, cornerRadius, shape, polygonSides } = layer;
   const fillAttr = fill ? renderFill(fill, defs) : "none";
   const strokeAttr = stroke ? ` stroke="${String(colorToHex(stroke.color))}" stroke-width="${String(stroke.width)}"` : "";
 
@@ -295,7 +297,8 @@ function renderIcon(
   opacity: string,
   blend: string,
 ): string {
-  const { width, height, color, library, iconId } = layer;
+  const { width, height } = layer.rect;
+  const { color, library, iconId } = layer;
   // Icons are rendered as <use> referencing a sprite sheet.
   // The sprite sheet is loaded as a <symbol> in defs.
   const ref = `${String(library)}#${String(iconId)}`;
@@ -315,7 +318,8 @@ function renderContainer(
   opacity: string,
   blend: string,
 ): string {
-  const { width, height, fill, cornerRadius, clip, children } = layer;
+  const { width, height } = layer.rect;
+  const { fill, cornerRadius, clip, children } = layer;
   const fillAttr = fill ? renderFill(fill, defs) : "none";
   const rx = cornerRadius ? ` rx="${String(cornerRadius)}" ry="${String(cornerRadius)}"` : "";
   const clipAttr = clip ? ` clip-path="inset(0 round ${String(cornerRadius ?? 0)}px)"` : "";

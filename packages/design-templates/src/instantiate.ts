@@ -39,7 +39,7 @@ export type Bindings = Record<string, SlotBinding>;
 export class InstantiateError extends Error {
   constructor(public errors: Array<{ path: string; code: string; message: string }>) {
     super(
-      `Instantiation failed with ${errors.length} error(s):\n` +
+      `Instantiation failed with ${String(errors.length)} error(s):\n` +
         errors.map((e) => `  [${e.code}] ${e.path}: ${e.message}`).join("\n"),
     );
     this.name = "InstantiateError";

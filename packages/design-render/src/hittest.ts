@@ -140,7 +140,8 @@ function hitShapePrimitive(
   local: { x: number; y: number },
   tol: number,
 ): boolean {
-  const { width, height, shape: type } = shape;
+  const { width, height } = shape.rect;
+  const type = shape.shape;
 
   switch (type) {
     case "rect":
