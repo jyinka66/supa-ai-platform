@@ -33,7 +33,10 @@
 //   This is the "rehash transparently" pattern — the user's password is
 //   upgraded to the current security baseline without requiring a password reset.
 
-import { hash, verify, argon2id } from "argon2";
+// Argon2 is loaded lazily inside hash/verify operations. Importing this module
+// must not load the native binary for routes (such as Supabase signup) that only
+// need password-policy validation.
+const argon2id = 2 as const;
 import zxcvbn from "zxcvbn";
 
 // ───────────────────────────────────────────────
@@ -158,6 +161,7 @@ function isPassphraseFormat(pw: string): boolean {
  */
 export async function hashPassword(pw: string): Promise<string> {
   requirePwPolicy(pw);
+  const { hash } = await import("argon2");
   return hash(pw, ARGON_OPTS);
 }
 
@@ -173,6 +177,7 @@ export async function hashPassword(pw: string): Promise<string> {
  */
 export async function verifyPassword(pw: string, h: string): Promise<boolean> {
   try {
+    const { verify } = await import("argon2");
     return await verify(h, pw);
   } catch {
     return false;
@@ -275,6 +280,7 @@ export async function verifyAndMaybeRehash(
     // the user already knows this password (they just verified it), so we
     // rehash even if it wouldn't pass the current policy (backward compat).
     try {
+      const { hash } = await import("argon2");
       const newHash = await hash(pw, ARGON_OPTS);
       return { valid: true, rehashed: true, newHash };
     } catch {
