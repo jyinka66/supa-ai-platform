@@ -33,11 +33,12 @@
 //   This is the "rehash transparently" pattern — the user's password is
 //   upgraded to the current security baseline without requiring a password reset.
 
+import zxcvbn from "zxcvbn";
+
 // Argon2 is loaded lazily inside hash/verify operations. Importing this module
 // must not load the native binary for routes (such as Supabase signup) that only
 // need password-policy validation.
 const argon2id = 2 as const;
-import zxcvbn from "zxcvbn";
 
 // ───────────────────────────────────────────────
 // Constants
