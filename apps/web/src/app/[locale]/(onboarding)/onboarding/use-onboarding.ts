@@ -67,7 +67,7 @@ export function useOnboarding() {
 
   return {
     step: currentStep,
-    data: profile.data ?? {},
+    data: profile.data ?? ({} as OnboardingProfile),
     isLoading: profile.isLoading,
     isSaving: save.isPending,
     error: profile.error ?? save.error,
