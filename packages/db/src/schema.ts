@@ -1712,7 +1712,7 @@ export const webhooks = pgTable(
 
 // Webhook deliveries v2 — with ws_id for direct scoping (migration 0040).
 export const webhookDeliveriesV2 = pgTable(
-  "webhook_deliveries",
+  "webhook_deliveries_v2",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     webhookId: uuid("webhook_id").notNull().references(() => webhooks.id, { onDelete: "cascade" }),
