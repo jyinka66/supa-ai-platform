@@ -47,9 +47,6 @@ create table if not exists public.profiles (
 );
 
 create index if not exists profiles_language_idx on public.profiles(language);
-create index if not exists idx_profiles_deletion
-  on public.profiles(deletion_requested_at)
-  where deletion_requested_at is not null;
 
 create table if not exists public.workspaces (
   id uuid primary key default gen_random_uuid(),
