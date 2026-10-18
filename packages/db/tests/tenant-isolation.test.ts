@@ -135,7 +135,7 @@ function hasRLSPolicy(sql: string, table: string): boolean {
   );
   const statements = [...sql.matchAll(pattern)].map((match) => match[0]);
   return statements.some((statement) =>
-    /is_ws_member|current_uid\(\)|auth\.uid\(\)|workspace_members|memberships|admin_users|to\s+supa_system/i.test(statement),
+    /is_ws_member|is_workspace_member|workspace_role\(|has_permission\(|current_uid\(\)|auth\.uid\(\)|workspace_members|memberships|admin_users|to\s+supa_system/i.test(statement),
   );
 }
 
