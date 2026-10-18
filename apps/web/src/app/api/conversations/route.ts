@@ -52,7 +52,8 @@ export async function POST(req: NextRequest) {
     });
     return ok(conv, 201);
   } catch (err) {
-    return problem(500, "create_failed", String(err));
+    console.error("[api/conversations] create_failed", err);
+    return problem(500, "create_failed", "Could not start a conversation. Please try again.");
   }
 }
 
