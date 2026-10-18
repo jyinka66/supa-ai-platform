@@ -69,9 +69,16 @@ export async function POST(req: NextRequest) {
           message: "If this address can be registered, check your inbox for the next step.",
         }, 201);
       }
-      console.error("[auth.register] Supabase sign-up failed", { code: error.code, status: error.status });
+      const safeMessage = error.message.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[redacted-email]").slice(0, 240);
+      console.error("[auth.register] Supabase sign-up failed", {
+        requestId: rid,
+        code: error.code,
+        status: error.status,
+        message: safeMessage,
+      });
       return respond(req, rid, {
         error: "registration_failed",
+        errorId: rid,
         detail: "We couldn't create your account. Please check your details and try again.",
       }, 400);
     }

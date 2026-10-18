@@ -31,7 +31,7 @@ export default function RegisterPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name.trim(), email: email.trim(), password, locale }),
       });
-      const payload: { error?: string; detail?: string; message?: string } = await response
+      const payload: { error?: string; detail?: string; message?: string; errorId?: string } = await response
         .json()
         .catch(() => ({}));
 
@@ -41,7 +41,7 @@ export default function RegisterPage() {
         } else if (payload.error === "rate_limited") {
           setError("Too many attempts. Please wait a little and try again.");
         } else {
-          setError(payload.detail ?? "We couldn't create your account. Please check your details and try again.");
+          setError((payload.detail ?? "We couldn't create your account. Please check your details and try again.") + (payload.errorId ? " (Reference: " + payload.errorId + ")" : ""));
         }
         return;
       }
