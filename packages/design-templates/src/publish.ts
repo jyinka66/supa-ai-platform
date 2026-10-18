@@ -161,9 +161,9 @@ export function publish(input: PublishInput): PublishResult {
           kind: "text",
           nodeId: candidate.nodeId,
           label: candidate.label,
-          maxLength: candidate.maxLength,
           allowRichRuns: candidate.allowRichRuns ?? false,
-          minFontSize: candidate.minFontSize,
+          ...(candidate.maxLength !== undefined ? { maxLength: candidate.maxLength } : {}),
+          ...(candidate.minFontSize !== undefined ? { minFontSize: candidate.minFontSize } : {}),
         });
         break;
 
@@ -181,7 +181,7 @@ export function publish(input: PublishInput): PublishResult {
           nodeId: candidate.nodeId,
           label: candidate.label,
           fitLock: candidate.fitLock ?? "inherit",
-          aspectHint: candidate.aspectHint,
+          ...(candidate.aspectHint !== undefined ? { aspectHint: candidate.aspectHint } : {}),
         });
         break;
 

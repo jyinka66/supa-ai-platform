@@ -7,7 +7,7 @@
 // Everything NOT in a slot is locked at instantiation.
 // ─────────────────────────────────────────────────────────────
 
-import type { DesignDoc, LayerNode, TextLayer, NodeId, RichRun } from "@supa/design-model";
+import type { DesignDoc, LayerNode, NodeId, RichRun } from "@supa/design-model";
 import { findLayerById, newId, CURRENT_SCHEMA_VERSION, validate } from "@supa/design-model";
 import type { TextMeasurer } from "@supa/design-render";
 import { autofit } from "./autofit.js";
