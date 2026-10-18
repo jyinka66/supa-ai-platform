@@ -29,7 +29,7 @@ create table slo_definitions (
   service         text not null,                    -- 'api', 'ai', 'web', 'background_jobs', 'auth', 'payments'
   slo_name        text not null,                    -- 'availability', 'latency_p95', 'first_token_p95', 'job_p95'
   description     text not null,
-  target          numeric(5,4) not null,            -- e.g. 0.999 (99.9% availability), 0.95 (95th percentile < 300ms)
+  target          numeric(12,4) not null,            -- e.g. 0.999 (99.9% availability), 0.95 (95th percentile < 300ms)
   target_unit     text not null check (target_unit in ('ratio', 'ms', 'seconds')),
   window_days     integer not null default 30,      -- the rolling window for error-budget calc.
   alert_threshold numeric(5,4) not null default 0.5,-- alert when error budget consumption > 50% (burn rate).
