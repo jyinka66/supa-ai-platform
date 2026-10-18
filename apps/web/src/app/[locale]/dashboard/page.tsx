@@ -24,11 +24,11 @@ export default async function DashboardPage({ params }: Props) {
     .eq("id", session.user.id)
     .maybeSingle();
 
-
   const workspaces = await listWorkspaces();
 
   return (
     <DashboardClient
+      locale={locale}
       profile={{
         fullName: profile?.full_name ?? null,
         avatarPath: profile?.avatar_path ?? null,
