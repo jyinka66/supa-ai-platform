@@ -1,6 +1,4 @@
-import { db } from "@supa/db";
-import { messages, messageMeta, conversations } from "@supa/db/schema";
-import { eq } from "drizzle-orm";
+import { supabaseServer } from "@/lib/supabase/server";
 
 export interface PersistMessageInput {
   conversationId: string;
@@ -22,64 +20,82 @@ export interface PersistMessageInput {
 }
 
 /**
- * Inserts a message + its metadata in a single transaction.
+ * Saves a chat message via Supabase's authenticated Data API.
  *
- * If `idempotencyKey` is provided and a row with that key already exists
- * in `message_meta`, returns the existing message id without inserting again.
- * This is the second line of defense against duplicate writes (the first
- * is the Redis idempotency key in the route handler).
+ * All writes run with the signed-in user's JWT, so RLS remains in force.
+ * Message and metadata writes are kept in sequence; on a metadata failure
+ * the just-created message is cleaned up to avoid a partial record.
  */
 export async function persistMessage(input: PersistMessageInput): Promise<string> {
-  // Idempotency check (best-effort).
+  const supabase = await supabaseServer();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) throw new Error("unauthenticated");
+
   if (input.idempotencyKey) {
-    const existing = await db
-      .select({ messageId: messageMeta.messageId })
-      .from(messageMeta)
-      .where(eq(messageMeta.idempotencyKey, input.idempotencyKey))
-      .limit(1);
-    const existingRow = existing[0];
-    if (existingRow?.messageId) {
-      return existingRow.messageId;
-    }
+    const { data: existing, error } = await supabase
+      .from("message_meta")
+      .select("message_id")
+      .eq("idempotency_key", input.idempotencyKey)
+      .maybeSingle();
+    if (error) throw error;
+    if (existing?.message_id) return existing.message_id as string;
   }
 
-  return await db.transaction(async (tx) => {
-    const [inserted] = await tx
-      .insert(messages)
-      .values({
-        conversationId: input.conversationId,
-        parentMessageId: input.parentId,
-        role: input.role,
-        content: input.content,
-        status: input.status,
-        promptVersion: input.promptVersion ?? null,
-      })
-      .returning({ id: messages.id });
+  const { data: inserted, error: insertError } = await supabase
+    .from("messages")
+    .insert({
+      conversation_id: input.conversationId,
+      parent_message_id: input.parentId,
+      role: input.role,
+      content: input.content,
+      status: input.status,
+      prompt_version: input.promptVersion ?? null,
+    })
+    .select("id")
+    .single();
 
-    const messageId = inserted!.id;
+  if (insertError) throw insertError;
+  const messageId = inserted.id as string;
 
-    await tx.insert(messageMeta).values({
-      messageId,
-      model: input.model,
-      provider: input.provider,
-      inputTokens: input.inputTokens ?? null,
-      outputTokens: input.outputTokens ?? null,
-      costUsd: input.costUsd ?? null,
-      latencyFirstTokenMs: input.firstTokenMs,
-      latencyTotalMs: input.totalMs,
-      retries: input.fallbackPath.length,
-      fallbackPath: input.fallbackPath,
-      idempotencyKey: input.idempotencyKey,
-      requestId: input.requestId ?? null,
-    } as never);
-
-    // Touch conversation.updated_at (also done by the SQL trigger, but
-    // explicit here so the change is visible in the same transaction).
-    await tx
-      .update(conversations)
-      .set({ updatedAt: new Date() })
-      .where(eq(conversations.id, input.conversationId));
-
-    return messageId;
+  const { error: metaError } = await supabase.from("message_meta").insert({
+    message_id: messageId,
+    model: input.model,
+    provider: input.provider,
+    input_tokens: input.inputTokens ?? null,
+    output_tokens: input.outputTokens ?? null,
+    cost_usd: input.costUsd ?? null,
+    latency_first_token_ms: input.firstTokenMs,
+    latency_total_ms: input.totalMs,
+    retries: input.fallbackPath.length,
+    fallback_path: input.fallbackPath,
+    idempotency_key: input.idempotencyKey ?? null,
+    request_id: input.requestId ?? null,
   });
+
+  if (metaError) {
+    // If another in-flight attempt won the idempotency race, return its row
+    // after removing this duplicate message.
+    if (input.idempotencyKey && metaError.code === "23505") {
+      const { data: existing } = await supabase
+        .from("message_meta")
+        .select("message_id")
+        .eq("idempotency_key", input.idempotencyKey)
+        .maybeSingle();
+
+      await supabase.from("messages").delete().eq("id", messageId);
+      if (existing?.message_id) return existing.message_id as string;
+    } else {
+      await supabase.from("messages").delete().eq("id", messageId);
+    }
+    throw metaError;
+  }
+
+  // Touch the conversation timestamp for reliable recent-activity ordering.
+  const { error: touchError } = await supabase
+    .from("conversations")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", input.conversationId);
+
+  if (touchError) throw touchError;
+  return messageId;
 }

@@ -1,10 +1,17 @@
-import { db } from "@supa/db";
-import {
-  conversations,
-  messages,
-  conversationFolders,
-} from "@supa/db/schema";
-import { eq, desc, and, or, sql } from "drizzle-orm";
+import { supabaseServer } from "@/lib/supabase/server";
+
+export type WorkspaceRole = "owner" | "admin" | "member" | "viewer";
+
+export interface WorkspaceWithMembership {
+  id: string;
+  slug: string;
+  name: string;
+  logo_path: string | null;
+  is_personal: boolean;
+  plan: string;
+  seat_limit: number;
+  workspace_members: { role: WorkspaceRole }[];
+}
 
 export interface ConversationRow {
   id: string;
@@ -33,122 +40,143 @@ export interface MessageRow {
   createdAt: Date;
 }
 
+type ConversationRecord = {
+  id: string;
+  workspace_id: string;
+  user_id: string;
+  mode: string;
+  title: string | null;
+  title_auto: boolean;
+  language_pref: string | null;
+  pinned: boolean;
+  folder_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type MessageRecord = {
+  id: string;
+  conversation_id: string;
+  parent_message_id: string | null;
+  role: "user" | "assistant" | "system";
+  content: string;
+  version: number;
+  language_detected: string | null;
+  prompt_version: string | null;
+  status: MessageRow["status"];
+  created_at: string;
+};
+
+const CONVERSATION_COLUMNS =
+  "id, workspace_id, user_id, mode, title, title_auto, language_pref, pinned, folder_id, created_at, updated_at";
+const MESSAGE_COLUMNS =
+  "id, conversation_id, parent_message_id, role, content, version, language_detected, prompt_version, status, created_at";
+
+function mapConversation(row: ConversationRecord): ConversationRow {
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    userId: row.user_id,
+    mode: row.mode,
+    title: row.title,
+    titleAuto: row.title_auto,
+    languagePref: row.language_pref,
+    pinned: row.pinned,
+    folderId: row.folder_id,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  };
+}
+
+function mapMessage(row: MessageRecord): MessageRow {
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    parentMessageId: row.parent_message_id,
+    role: row.role,
+    content: row.content,
+    version: row.version,
+    languageDetected: row.language_detected,
+    promptVersion: row.prompt_version,
+    status: row.status,
+    createdAt: new Date(row.created_at),
+  };
+}
+
+async function requireMatchingUser(userId: string): Promise<void> {
+  const supabase = await supabaseServer();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user || user.id !== userId) throw new Error("forbidden");
+}
+
 /**
- * Returns the conversation row if the caller owns it or is a workspace member.
- * Throws "not_found" if the conversation doesn't exist.
- * Throws "forbidden" if the caller lacks access.
- *
- * NOTE: this function uses the service-role client (bypasses RLS) because
- * the caller is already authenticated by `requireUser()`. RLS would
- * also work, but service-role is faster and avoids the per-request
- * cookie-binding overhead.
+ * Fetches a conversation through Supabase's cookie-authenticated Data API.
+ * Row-level security restricts results to the owner or a member of the
+ * conversation's workspace; the caller identity is independently checked.
  */
 export async function getConversation(
   conversationId: string,
   userId: string,
 ): Promise<ConversationRow> {
-  const rows = await db
-    .select()
-    .from(conversations)
-    .where(eq(conversations.id, conversationId))
-    .limit(1);
-  const conv = rows[0];
-  if (!conv) throw new Error("not_found");
-  if (conv.userId !== userId) {
-    // Check workspace membership via the DB function (same one RLS uses).
-    // Use parameterized SQL — never string-interpolate user-controlled values.
-    const memberRows = await db.execute(
-      sql`SELECT public.is_workspace_member(${conv.workspaceId}::uuid) AS is_member`,
-    );
-    const isMember = (memberRows[0] as { is_member?: boolean } | undefined)?.is_member;
-    if (!isMember) throw new Error("forbidden");
-  }
-  return {
-    id: conv.id,
-    workspaceId: conv.workspaceId,
-    userId: conv.userId,
-    mode: conv.mode,
-    title: conv.title,
-    titleAuto: conv.titleAuto,
-    languagePref: conv.languagePref,
-    pinned: conv.pinned,
-    folderId: conv.folderId,
-    createdAt: conv.createdAt,
-    updatedAt: conv.updatedAt,
-  };
+  await requireMatchingUser(userId);
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("conversations")
+    .select(CONVERSATION_COLUMNS)
+    .eq("id", conversationId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) throw new Error("not_found");
+  return mapConversation(data as unknown as ConversationRecord);
 }
 
 /**
- * Returns recent messages for a conversation, ordered oldest-first so the
- * LLM receives them in chronological order.
- *
- * @param limit  Max messages to return (default 50). Older messages are
- *                truncated — the caller can implement pagination if needed.
+ * Fetches recent messages through the authenticated Supabase Data API.
+ * The table's RLS policies enforce access through the parent conversation.
  */
 export async function getMessages(
   conversationId: string,
   limit = 50,
 ): Promise<MessageRow[]> {
-  const rows = await db
-    .select()
-    .from(messages)
-    .where(eq(messages.conversationId, conversationId))
-    .orderBy(desc(messages.createdAt))
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("messages")
+    .select(MESSAGE_COLUMNS)
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: false })
     .limit(limit);
-  return rows.reverse().map((r) => ({
-    id: r.id,
-    conversationId: r.conversationId,
-    parentMessageId: r.parentMessageId,
-    role: r.role as MessageRow["role"],
-    content: r.content,
-    version: r.version,
-    languageDetected: r.languageDetected,
-    promptVersion: r.promptVersion,
-    status: r.status as MessageRow["status"],
-    createdAt: r.createdAt,
-  }));
+
+  if (error) throw error;
+  return ((data ?? []) as unknown as MessageRecord[])
+    .reverse()
+    .map(mapMessage);
 }
 
-/**
- * Lists conversations for the caller, newest-first.
- * Optional filters: pinned-only, folder.
- */
+/** Lists the current user's conversations, newest first. */
 export async function listConversations(
   userId: string,
   opts?: { pinnedOnly?: boolean; folderId?: string | null },
 ): Promise<ConversationRow[]> {
-  const conditions = [eq(conversations.userId, userId)];
-  if (opts?.pinnedOnly) conditions.push(eq(conversations.pinned, true));
-  if (opts?.folderId !== undefined) {
-    // folderId can be string | null; Drizzle's eq() accepts string | null for nullable columns.
-    conditions.push(eq(conversations.folderId, opts.folderId as string) as never);
-  }
-
-  const rows = await db
-    .select()
-    .from(conversations)
-    .where(and(...conditions))
-    .orderBy(desc(conversations.updatedAt))
+  await requireMatchingUser(userId);
+  const supabase = await supabaseServer();
+  let query = supabase
+    .from("conversations")
+    .select(CONVERSATION_COLUMNS)
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false })
     .limit(100);
 
-  return rows.map((r) => ({
-    id: r.id,
-    workspaceId: r.workspaceId,
-    userId: r.userId,
-    mode: r.mode,
-    title: r.title,
-    titleAuto: r.titleAuto,
-    languagePref: r.languagePref,
-    pinned: r.pinned,
-    folderId: r.folderId,
-    createdAt: r.createdAt,
-    updatedAt: r.updatedAt,
-  }));
+  if (opts?.pinnedOnly) query = query.eq("pinned", true);
+  if (opts?.folderId === null) query = query.is("folder_id", null);
+  else if (typeof opts?.folderId === "string") query = query.eq("folder_id", opts.folderId);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return ((data ?? []) as unknown as ConversationRecord[]).map(mapConversation);
 }
 
-/**
- * Creates a new conversation. Returns the row.
- */
+/** Creates a conversation owned by the authenticated user. */
 export async function createConversation(input: {
   workspaceId: string;
   userId: string;
@@ -157,86 +185,68 @@ export async function createConversation(input: {
   languagePref?: string | null;
   folderId?: string | null;
 }): Promise<ConversationRow> {
-  const [inserted] = await db
-    .insert(conversations)
-    .values({
-      workspaceId: input.workspaceId,
-      userId: input.userId,
+  await requireMatchingUser(input.userId);
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("conversations")
+    .insert({
+      workspace_id: input.workspaceId,
+      user_id: input.userId,
       mode: input.mode,
       title: input.title ?? null,
-      titleAuto: input.title === undefined || input.title === null,
-      languagePref: input.languagePref ?? null,
-      folderId: input.folderId ?? null,
+      title_auto: input.title === undefined || input.title === null,
+      language_pref: input.languagePref ?? null,
+      folder_id: input.folderId ?? null,
     })
-    .returning();
-  if (!inserted) throw new Error("insert_failed");
-  return {
-    id: inserted.id,
-    workspaceId: inserted.workspaceId,
-    userId: inserted.userId,
-    mode: inserted.mode,
-    title: inserted.title,
-    titleAuto: inserted.titleAuto,
-    languagePref: inserted.languagePref,
-    pinned: inserted.pinned,
-    folderId: inserted.folderId,
-    createdAt: inserted.createdAt,
-    updatedAt: inserted.updatedAt,
-  };
+    .select(CONVERSATION_COLUMNS)
+    .single();
+
+  if (error) throw error;
+  return mapConversation(data as unknown as ConversationRecord);
 }
 
-/**
- * Patches a conversation (title, pinned, folderId).
- * Ownership is enforced by RLS, but we also check here so we can
- * return a clean 403 instead of a silent no-op.
- */
+/** Updates a conversation the current user owns. */
 export async function updateConversation(
   conversationId: string,
   userId: string,
   patch: { title?: string; pinned?: boolean; folderId?: string | null },
 ): Promise<ConversationRow> {
-  // Verify ownership.
   const existing = await getConversation(conversationId, userId);
   if (existing.userId !== userId) throw new Error("forbidden");
 
-  const updateSet: Record<string, unknown> = { updatedAt: new Date() };
+  const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (patch.title !== undefined) {
-    updateSet.title = patch.title;
-    updateSet.titleAuto = false;
+    update.title = patch.title;
+    update.title_auto = false;
   }
-  if (patch.pinned !== undefined) updateSet.pinned = patch.pinned;
-  if (patch.folderId !== undefined) updateSet.folderId = patch.folderId;
+  if (patch.pinned !== undefined) update.pinned = patch.pinned;
+  if (patch.folderId !== undefined) update.folder_id = patch.folderId;
 
-  const [updated] = await db
-    .update(conversations)
-    .set(updateSet)
-    .where(eq(conversations.id, conversationId))
-    .returning();
-  if (!updated) throw new Error("update_failed");
-  return {
-    id: updated.id,
-    workspaceId: updated.workspaceId,
-    userId: updated.userId,
-    mode: updated.mode,
-    title: updated.title,
-    titleAuto: updated.titleAuto,
-    languagePref: updated.languagePref,
-    pinned: updated.pinned,
-    folderId: updated.folderId,
-    createdAt: updated.createdAt,
-    updatedAt: updated.updatedAt,
-  };
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("conversations")
+    .update(update)
+    .eq("id", conversationId)
+    .select(CONVERSATION_COLUMNS)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) throw new Error("update_failed");
+  return mapConversation(data as unknown as ConversationRecord);
 }
 
-/**
- * Deletes a conversation. RLS enforces ownership; we re-check here for
- * a clean 403.
- */
+/** Deletes a conversation the current user owns. */
 export async function deleteConversation(
   conversationId: string,
   userId: string,
 ): Promise<void> {
   const existing = await getConversation(conversationId, userId);
   if (existing.userId !== userId) throw new Error("forbidden");
-  await db.delete(conversations).where(eq(conversations.id, conversationId));
+
+  const supabase = await supabaseServer();
+  const { error } = await supabase
+    .from("conversations")
+    .delete()
+    .eq("id", conversationId);
+  if (error) throw error;
 }
