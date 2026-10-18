@@ -153,7 +153,7 @@ begin
 
   -- hash = sha256(prev_hash || canonical(body)).
   -- The canonical text must be deterministic — use jsonb ::text (sorted keys).
-  v_hash := digest(
+  v_hash := extensions.digest(
     concat(v_prev_hash::text, v_canonical::text),
     'sha256'
   );
@@ -201,7 +201,7 @@ begin
     end if;
 
     -- Recompute the hash.
-    v_expected_hash := digest(
+    v_expected_hash := extensions.digest(
       concat(v_prev_hash::text,
         jsonb_build_object(
           'actor_id', v_row.actor_id,
