@@ -4,14 +4,14 @@
 -- ───────────────────────────────────────────────
 
 -- Enums
-CREATE TYPE IF NOT EXISTS job_status AS ENUM ('captured', 'proposing', 'active', 'delivered', 'paid', 'closed');
-CREATE TYPE IF NOT EXISTS listing_status AS ENUM ('draft', 'published', 'closed');
-CREATE TYPE IF NOT EXISTS application_status AS ENUM ('draft', 'submitted', 'shortlisted', 'client_info_requested', 'hired', 'withdrawn', 'rejected');
-CREATE TYPE IF NOT EXISTS contract_status AS ENUM ('draft', 'active', 'completed', 'disputed', 'cancelled');
-CREATE TYPE IF NOT EXISTS milestone_status AS ENUM ('pending', 'active', 'submitted', 'changes_requested', 'approved', 'paid');
-CREATE TYPE IF NOT EXISTS sample_tier AS ENUM ('verified', 'self_added');
-CREATE TYPE IF NOT EXISTS ledger_entry_type AS ENUM ('escrow_funded', 'escrow_released', 'fee_collected', 'payout_initiated', 'payout_confirmed', 'payout_failed', 'refund_issued', 'adjustment');
-CREATE TYPE IF NOT EXISTS payout_status AS ENUM ('in_transit', 'confirmed', 'failed');
+CREATE TYPE public.job_status AS ENUM ('captured', 'proposing', 'active', 'delivered', 'paid', 'closed');
+CREATE TYPE public.listing_status AS ENUM ('draft', 'published', 'closed');
+CREATE TYPE public.application_status AS ENUM ('draft', 'submitted', 'shortlisted', 'client_info_requested', 'hired', 'withdrawn', 'rejected');
+CREATE TYPE public.contract_status AS ENUM ('draft', 'active', 'completed', 'disputed', 'cancelled');
+CREATE TYPE public.milestone_status AS ENUM ('pending', 'active', 'submitted', 'changes_requested', 'approved', 'paid');
+CREATE TYPE public.sample_tier AS ENUM ('verified', 'self_added');
+CREATE TYPE public.ledger_entry_type AS ENUM ('escrow_funded', 'escrow_released', 'fee_collected', 'payout_initiated', 'payout_confirmed', 'payout_failed', 'refund_issued', 'adjustment');
+CREATE TYPE public.payout_status AS ENUM ('in_transit', 'confirmed', 'failed');
 
 -- ─── Freelance jobs ───
 CREATE TABLE IF NOT EXISTS freelance_jobs (
@@ -200,21 +200,30 @@ ALTER TABLE work_samples ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ledger_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payouts ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS freelance_jobs_ws_isolation ON freelance_jobs
+DROP POLICY IF EXISTS freelance_jobs_ws_isolation ON freelance_jobs;
+CREATE POLICY freelance_jobs_ws_isolation ON freelance_jobs
   USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()));
-CREATE POLICY IF NOT EXISTS listings_ws_isolation ON listings
+DROP POLICY IF EXISTS listings_ws_isolation ON listings;
+CREATE POLICY listings_ws_isolation ON listings
   USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()));
-CREATE POLICY IF NOT EXISTS applications_ws_isolation ON applications
+DROP POLICY IF EXISTS applications_ws_isolation ON applications;
+CREATE POLICY applications_ws_isolation ON applications
   USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()));
-CREATE POLICY IF NOT EXISTS contracts_ws_isolation ON contracts
+DROP POLICY IF EXISTS contracts_ws_isolation ON contracts;
+CREATE POLICY contracts_ws_isolation ON contracts
   USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()));
-CREATE POLICY IF NOT EXISTS milestones_ws_isolation ON milestones
+DROP POLICY IF EXISTS milestones_ws_isolation ON milestones;
+CREATE POLICY milestones_ws_isolation ON milestones
   USING (contract_id IN (SELECT id FROM contracts WHERE workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid())));
-CREATE POLICY IF NOT EXISTS reviews_ws_isolation ON reviews
+DROP POLICY IF EXISTS reviews_ws_isolation ON reviews;
+CREATE POLICY reviews_ws_isolation ON reviews
   USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()));
-CREATE POLICY IF NOT EXISTS work_samples_ws_isolation ON work_samples
+DROP POLICY IF EXISTS work_samples_ws_isolation ON work_samples;
+CREATE POLICY work_samples_ws_isolation ON work_samples
   USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()));
-CREATE POLICY IF NOT EXISTS ledger_entries_ws_isolation ON ledger_entries
+DROP POLICY IF EXISTS ledger_entries_ws_isolation ON ledger_entries;
+CREATE POLICY ledger_entries_ws_isolation ON ledger_entries
   USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()));
-CREATE POLICY IF NOT EXISTS payouts_ws_isolation ON payouts
+DROP POLICY IF EXISTS payouts_ws_isolation ON payouts;
+CREATE POLICY payouts_ws_isolation ON payouts
   USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()));
