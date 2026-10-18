@@ -242,51 +242,63 @@ ALTER TABLE recurring_expense_rules ENABLE ROW LEVEL SECURITY;
 -- The auth.uid() → workspace_members check is the runtime gate;
 -- the lint rule (no raw DB access outside repositories) is the structural gate;
 -- the property test is the regression gate.
-CREATE POLICY IF NOT EXISTS monetary_facts_ws_isolation ON monetary_facts
+DROP POLICY IF EXISTS monetary_facts_ws_isolation ON monetary_facts;
+CREATE POLICY monetary_facts_ws_isolation ON monetary_facts
   USING (workspace_id IN (
     SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()
   ));
-CREATE POLICY IF NOT EXISTS invoices_ws_isolation ON invoices
+DROP POLICY IF EXISTS invoices_ws_isolation ON invoices;
+CREATE POLICY invoices_ws_isolation ON invoices
   USING (workspace_id IN (
     SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()
   ));
-CREATE POLICY IF NOT EXISTS customers_ws_isolation ON customers
+DROP POLICY IF EXISTS customers_ws_isolation ON customers;
+CREATE POLICY customers_ws_isolation ON customers
   USING (workspace_id IN (
     SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()
   ));
-CREATE POLICY IF NOT EXISTS deals_ws_isolation ON deals
+DROP POLICY IF EXISTS deals_ws_isolation ON deals;
+CREATE POLICY deals_ws_isolation ON deals
   USING (workspace_id IN (
     SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()
   ));
-CREATE POLICY IF NOT EXISTS expenses_ws_isolation ON expenses
+DROP POLICY IF EXISTS expenses_ws_isolation ON expenses;
+CREATE POLICY expenses_ws_isolation ON expenses
   USING (workspace_id IN (
     SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()
   ));
-CREATE POLICY IF NOT EXISTS activity_facts_ws_isolation ON activity_facts
+DROP POLICY IF EXISTS activity_facts_ws_isolation ON activity_facts;
+CREATE POLICY activity_facts_ws_isolation ON activity_facts
   USING (workspace_id IN (
     SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()
   ));
-CREATE POLICY IF NOT EXISTS credit_notes_ws_isolation ON credit_notes
+DROP POLICY IF EXISTS credit_notes_ws_isolation ON credit_notes;
+CREATE POLICY credit_notes_ws_isolation ON credit_notes
   USING (workspace_id IN (
     SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()
   ));
-CREATE POLICY IF NOT EXISTS invoice_sequences_ws_isolation ON invoice_sequences
+DROP POLICY IF EXISTS invoice_sequences_ws_isolation ON invoice_sequences;
+CREATE POLICY invoice_sequences_ws_isolation ON invoice_sequences
   USING (workspace_id IN (
     SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()
   ));
-CREATE POLICY IF NOT EXISTS merge_records_ws_isolation ON merge_records
+DROP POLICY IF EXISTS merge_records_ws_isolation ON merge_records;
+CREATE POLICY merge_records_ws_isolation ON merge_records
   USING (workspace_id IN (
     SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()
   ));
-CREATE POLICY IF NOT EXISTS import_batches_ws_isolation ON import_batches
+DROP POLICY IF EXISTS import_batches_ws_isolation ON import_batches;
+CREATE POLICY import_batches_ws_isolation ON import_batches
   USING (workspace_id IN (
     SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()
   ));
-CREATE POLICY IF NOT EXISTS deal_invoice_links_ws_isolation ON deal_invoice_links
+DROP POLICY IF EXISTS deal_invoice_links_ws_isolation ON deal_invoice_links;
+CREATE POLICY deal_invoice_links_ws_isolation ON deal_invoice_links
   USING (workspace_id IN (
     SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()
   ));
-CREATE POLICY IF NOT EXISTS recurring_expense_rules_ws_isolation ON recurring_expense_rules
+DROP POLICY IF EXISTS recurring_expense_rules_ws_isolation ON recurring_expense_rules;
+CREATE POLICY recurring_expense_rules_ws_isolation ON recurring_expense_rules
   USING (workspace_id IN (
     SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()
   ));
