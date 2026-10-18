@@ -8,7 +8,7 @@
   ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build", "^generate"],
+      "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", "storybook-static/**"]
     },
     "generate": {
@@ -18,15 +18,9 @@
       "cache": false,
       "persistent": true
     },
-    "lint": {
-      "dependsOn": ["^generate"]
-    },
-    "typecheck": {
-      "dependsOn": ["^generate"]
-    },
-    "test": {
-      "dependsOn": ["^generate"]
-    },
+    "lint": {},
+    "typecheck": {},
+    "test": {},
     "test:e2e": {
       "cache": false,
       "dependsOn": ["^build"]
