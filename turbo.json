@@ -4,15 +4,27 @@
     "NEXT_PUBLIC_*",
     "SUPABASE_*",
     "SENTRY_*",
-    "UPSTASH_*"
+    "UPSTASH_*",
+    "OPENROUTER_API_KEY",
+    "GEMINI_API_KEY"
   ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**", "storybook-static/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "dist/**",
+        "storybook-static/**"
+      ]
     },
     "generate": {
-      "outputs": ["src/generated/**", "src/types/**"]
+      "outputs": [
+        "src/generated/**",
+        "src/types/**"
+      ]
     },
     "dev": {
       "cache": false,
@@ -23,7 +35,9 @@
     "test": {},
     "test:e2e": {
       "cache": false,
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     }
   }
 }
