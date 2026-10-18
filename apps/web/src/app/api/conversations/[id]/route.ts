@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { MODES } from "@/lib/prompts";
 import { requireUser } from "@/lib/auth/session";
 import { problem, ok } from "@/lib/api/problem";
 import {
@@ -12,6 +13,7 @@ const PatchBody = z.object({
   title: z.string().min(1).max(200).optional(),
   pinned: z.boolean().optional(),
   folderId: z.string().uuid().nullable().optional(),
+  mode: z.enum(MODES).optional(),
 });
 
 /**
@@ -40,7 +42,7 @@ export async function GET(
 /**
  * PATCH /api/conversations/:id
  *
- * Updates title, pinned, or folderId. Only the owner can patch.
+ * Updates title, pinned, folderId, or AI mode. Only the owner can patch.
  */
 export async function PATCH(
   req: NextRequest,

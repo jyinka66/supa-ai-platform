@@ -4,7 +4,7 @@
 
 **Updated:** 2026-10-18  
 **Repository:** `jyinka66/supa-ai-platform` · **Branch:** `main`  
-**Source at last check:** `eddbd38818b09158986dced0998295dacd35f502`  
+**Source at start of this implementation:** `546c5d3ac4dae37a7cf9c2058a68f532fd4853c9` (documentation/handoff commit).  
 **Production:** https://supa-ai-platform.vercel.app/  
 **Supabase project ref:** `ikugfclxahxvjduowjbo`
 
@@ -32,9 +32,9 @@ Supa should be a **connected AI workspace**, not a static dashboard full of disc
 ### Dashboard
 Files: `apps/web/src/app/[locale]/dashboard/page.tsx` and `dashboard/dashboard-client.tsx`.
 
-Current Home has a welcome banner, eight mode cards, four summary cards, recent conversations, and workspace list/selector. It is still too thin: no persistent app shell, full History, work/library overview, files/saved outputs, projects/tasks, or unified global workspace context.
+Current Home has a welcome banner, eight mode cards, four summary cards, recent conversations, and workspace list/selector. This code change replaces the dashboard's bespoke sidebar with the shared sidebar and creates a real searchable History screen with reopen, pin, rename, and delete actions. It is still not the final full dashboard: work/library overview, files/saved outputs, projects/tasks, and usage insights remain to be integrated. Verify this commit's build before treating the UI as released.
 
-The active workspace selector is local component state. Some work APIs expect a `ws` cookie. Workspace selection must become persistent and be membership-validated server-side across APIs.
+A shared `WorkspaceSidebar` and persistent active-workspace endpoint are added in the current code change. The server validates membership before setting the HTTP-only `ws` cookie; the dashboard and chat resolve the saved workspace against the caller's RLS-filtered workspace list. Verify the production build and test switching in a signed-in session. Some older Drizzle-backed APIs still need end-to-end testing.
 
 ### Chat
 Files:
@@ -47,7 +47,7 @@ Files:
 - `apps/web/src/lib/llm/provider-registry.ts`
 - `apps/web/src/lib/router/router.ts`
 
-Chat includes “Ask Supa AI”, prompt suggestions, three animated red thinking dots, optional soft beeps (enabled on a fresh visit), live status text, stop, retry, copy response, and code-fence rendering. The deeper product integration and real provider response still require testing.
+Chat includes “Ask Supa AI”, prompt suggestions, three animated red thinking dots, optional soft beeps (enabled on a fresh visit), live status text, stop, retry, copy response, and code-fence rendering. The current code change adds a mode selector within the same conversation; changing Chat/Code/Write/etc. persists the mode on the existing conversation rather than forcing a separate interface. A shared navigation/sidebar now also appears in chat. The deeper product integration and real provider response still require testing.
 
 The earlier stream failure included DB constraint `message_meta_provider_check` rejecting provider metadata for user messages. Live migration `0077_chat_provider_metadata.sql` was applied and verified; user-message persistence was changed to avoid AI-provider metadata. Core chat reads/writes were moved to the signed-in Supabase Data API after the direct PostgreSQL connection previously timed out.
 
@@ -121,3 +121,13 @@ Test: sign in → Home → switch workspace → create chat → stream answer �
 - Removed onboarding as a sign-in blocker.
 - Added identity/workspace bootstrap/backfill and repaired historical migration SQL.
 - Switched core chat persistence to Supabase Data API following direct Postgres timeout.
+
+
+### 2026-10-18 — Shared workspace navigation and same-thread modes (new commit pending CI at time of log update)
+- Added shared `WorkspaceSidebar` to dashboard and chat, with Home, AI Studio, History, New Chat, and workspace selection.
+- Added `POST /api/workspaces/active`, which checks membership through the authenticated Supabase client before setting an HTTP-only, same-site `ws` cookie.
+- Added `getActiveWorkspaceId()` to resolve the cookie only against the signed-in user's allowed workspace list; dashboard and chat now receive this saved selection.
+- Added a real localized `/history` page with search, pinned filter, reopen, rename, pin/unpin, and delete actions using the existing conversation API.
+- Added conversation-mode updates to `PATCH /api/conversations/:id` and its Supabase update helper; AI Studio can switch Chat/Code/Write/etc. without changing conversation ID.
+- Mobile navigation was added to the shared sidebar and reserved bottom space in the page layouts.
+- **Build and runtime status:** source changes are committed with this log update; the triggered Vercel build must be checked. Workspace switching and same-thread mode switching still need a signed-in browser test.

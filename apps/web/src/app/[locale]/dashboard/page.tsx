@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { listWorkspaces } from "@/lib/workspaces/queries";
+import { getActiveWorkspaceId } from "@/lib/workspaces/active";
 import { DashboardClient } from "./dashboard-client";
 
 type Props = {
@@ -25,6 +26,7 @@ export default async function DashboardPage({ params }: Props) {
     .maybeSingle();
 
   const workspaces = await listWorkspaces();
+  const activeWorkspaceId = await getActiveWorkspaceId(workspaces);
 
   return (
     <DashboardClient
@@ -35,6 +37,7 @@ export default async function DashboardPage({ params }: Props) {
         language: profile?.language ?? "en",
       }}
       workspaces={workspaces}
+      activeWorkspaceId={activeWorkspaceId}
     />
   );
 }

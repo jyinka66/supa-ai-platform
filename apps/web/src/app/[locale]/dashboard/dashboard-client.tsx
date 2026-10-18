@@ -12,7 +12,6 @@ import {
   Clock3,
   Code2,
   FileText,
-  Home,
   Layers,
   Languages,
   ListChecks,
@@ -26,6 +25,7 @@ import {
 } from "lucide-react";
 import type { Mode } from "@/lib/prompts";
 import type { WorkspaceWithMembership } from "@/lib/workspaces/queries";
+import { WorkspaceSidebar } from "@/components/workspace-sidebar";
 
 interface DashboardClientProps {
   locale: string;
@@ -35,6 +35,7 @@ interface DashboardClientProps {
     language: string;
   };
   workspaces: WorkspaceWithMembership[];
+  activeWorkspaceId: string;
 }
 
 interface RecentConversation {
@@ -123,9 +124,9 @@ function formatDate(value: string | Date, locale: string): string {
   return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(date);
 }
 
-export function DashboardClient({ locale, profile, workspaces }: DashboardClientProps) {
+export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId: initialWorkspaceId }: DashboardClientProps) {
   const router = useRouter();
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState(workspaces[0]?.id ?? "");
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState(initialWorkspaceId || workspaces[0]?.id || "");
   const [recentConversations, setRecentConversations] = useState<RecentConversation[]>([]);
   const [loadingRecent, setLoadingRecent] = useState(true);
   const [recentError, setRecentError] = useState(false);
@@ -220,41 +221,14 @@ export function DashboardClient({ locale, profile, workspaces }: DashboardClient
   return (
     <div id="top" className="min-h-dvh bg-[#f6f7fb] text-slate-950">
       <div className="flex min-h-dvh">
-        <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200 bg-white px-5 py-6 lg:flex">
-          <Link href={base} className="flex items-center gap-3 px-2" aria-label="Supa home">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-600 text-sm font-black text-white shadow-sm">s.</span>
-            <span className="text-xl font-bold tracking-tight">supa<span className="text-violet-600">.</span></span>
-          </Link>
-
-          <div className="mt-10">
-            <p className="px-3 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">Workspace</p>
-            <nav className="mt-3 space-y-1" aria-label="Dashboard navigation">
-              <a href="#top" className="flex items-center gap-3 rounded-xl bg-violet-50 px-3 py-2.5 text-sm font-semibold text-violet-800">
-                <Home className="h-4 w-4" /> Overview
-              </a>
-              <a href="#ai-tools" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">
-                <Sparkles className="h-4 w-4" /> AI tools
-              </a>
-              <a href="#recent" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">
-                <Clock3 className="h-4 w-4" /> Recent activity
-              </a>
-              <a href="#workspaces" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">
-                <Layers className="h-4 w-4" /> My workspaces
-              </a>
-            </nav>
-          </div>
-
-          <div className="mt-auto rounded-2xl border border-violet-100 bg-violet-50/70 p-4">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-violet-700 shadow-sm">
-              <Zap className="h-4 w-4" />
-            </div>
-            <p className="mt-3 text-sm font-semibold text-slate-900">Make progress faster</p>
-            <p className="mt-1 text-xs leading-5 text-slate-600">Choose a tool and get straight to work. Your conversations stay in your workspace.</p>
-            <a href="#ai-tools" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-violet-700 hover:text-violet-900">
-              Explore tools <ArrowRight className="h-3.5 w-3.5" />
-            </a>
-          </div>
-        </aside>
+        <WorkspaceSidebar
+          locale={locale}
+          workspaces={workspaces}
+          activeWorkspaceId={activeWorkspaceId}
+          activePage="home"
+          onWorkspaceChange={setActiveWorkspaceId}
+          onNewChat={() => startConversation("chat")}
+        />
 
         <div className="min-w-0 flex-1">
           <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between border-b border-slate-200 bg-white/95 px-5 backdrop-blur sm:px-8">
@@ -287,7 +261,7 @@ export function DashboardClient({ locale, profile, workspaces }: DashboardClient
             </div>
           </header>
 
-          <main className="mx-auto max-w-[1440px] space-y-8 px-5 py-7 sm:px-8 sm:py-9">
+          <main className="mx-auto max-w-[1440px] space-y-8 px-5 py-7 pb-24 sm:px-8 sm:py-9 lg:pb-9">
             <section className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-violet-700 via-indigo-700 to-slate-900 p-7 text-white shadow-[0_24px_70px_-30px_rgba(79,70,229,0.65)] sm:p-10">
               <div className="pointer-events-none absolute -right-12 -top-24 h-72 w-72 rounded-full bg-white/10 blur-2xl" />
               <div className="pointer-events-none absolute bottom-[-110px] right-[20%] h-64 w-64 rounded-full bg-fuchsia-400/15 blur-3xl" />

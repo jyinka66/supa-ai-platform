@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getConversation, getMessages } from "@/lib/chat/queries";
+import { listWorkspaces } from "@/lib/workspaces/queries";
+import { getActiveWorkspaceId } from "@/lib/workspaces/active";
 import { ChatClient } from "./chat-client";
 
 type Props = {
@@ -27,13 +29,19 @@ export default async function ChatPage({ params }: Props) {
     throw err;
   }
 
-  const messages = await getMessages(conversationId, 100);
+  const [messages, workspaces] = await Promise.all([
+    getMessages(conversationId, 100),
+    listWorkspaces(),
+  ]);
+  const activeWorkspaceId = await getActiveWorkspaceId(workspaces);
 
   return (
     <ChatClient
       conversation={conversation}
       initialMessages={messages}
       locale={locale}
+      workspaces={workspaces}
+      activeWorkspaceId={activeWorkspaceId}
     />
   );
 }

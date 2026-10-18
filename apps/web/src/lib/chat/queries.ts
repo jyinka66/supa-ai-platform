@@ -1,4 +1,5 @@
 import { supabaseServer } from "@/lib/supabase/server";
+import type { Mode } from "@/lib/prompts";
 
 export type WorkspaceRole = "owner" | "admin" | "member" | "viewer";
 
@@ -209,7 +210,7 @@ export async function createConversation(input: {
 export async function updateConversation(
   conversationId: string,
   userId: string,
-  patch: { title?: string; pinned?: boolean; folderId?: string | null },
+  patch: { title?: string; pinned?: boolean; folderId?: string | null; mode?: Mode },
 ): Promise<ConversationRow> {
   const existing = await getConversation(conversationId, userId);
   if (existing.userId !== userId) throw new Error("forbidden");
@@ -221,6 +222,7 @@ export async function updateConversation(
   }
   if (patch.pinned !== undefined) update.pinned = patch.pinned;
   if (patch.folderId !== undefined) update.folder_id = patch.folderId;
+  if (patch.mode !== undefined) update.mode = patch.mode;
 
   const supabase = await supabaseServer();
   const { data, error } = await supabase

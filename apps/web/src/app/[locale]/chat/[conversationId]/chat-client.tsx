@@ -20,11 +20,17 @@ import {
 import { MessageBubble } from "./message-bubble";
 import { Composer } from "./composer";
 import type { ConversationRow, MessageRow } from "@/lib/chat/queries";
+import type { WorkspaceWithMembership } from "@/lib/workspaces/queries";
+import type { Mode } from "@/lib/prompts";
+import { MODES } from "@/lib/prompts";
+import { WorkspaceSidebar } from "@/components/workspace-sidebar";
 
 interface ChatClientProps {
   conversation: ConversationRow;
   initialMessages: MessageRow[];
   locale: string;
+  workspaces: WorkspaceWithMembership[];
+  activeWorkspaceId: string;
 }
 
 interface StreamingMessage {
@@ -135,8 +141,13 @@ async function readApiFailure(response: Response): Promise<ChatFailure> {
   };
 }
 
-export function ChatClient({ conversation, initialMessages, locale }: ChatClientProps) {
+export function ChatClient({ conversation, initialMessages, locale, workspaces, activeWorkspaceId }: ChatClientProps) {
   const [messages, setMessages] = useState<MessageRow[]>(initialMessages);
+  const [activeMode, setActiveMode] = useState<Mode>(
+    (MODES as readonly string[]).includes(conversation.mode) ? conversation.mode as Mode : "chat",
+  );
+  const [savingMode, setSavingMode] = useState(false);
+  const [modeError, setModeError] = useState<string | null>(null);
   const [streaming, setStreaming] = useState<StreamingMessage | null>(null);
   const [statusText, setStatusText] = useState("");
   const [statusReason, setStatusReason] = useState<string | undefined>();
@@ -267,7 +278,7 @@ export function ChatClient({ conversation, initialMessages, locale }: ChatClient
           content,
           idempotencyKey,
           language: conversation.languagePref ?? locale,
-          mode: conversation.mode,
+          mode: activeMode,
         }),
         signal: controller.signal,
         cache: "no-store",
@@ -482,7 +493,7 @@ export function ChatClient({ conversation, initialMessages, locale }: ChatClient
       setIsSending(false);
       abortRef.current = null;
     }
-  }, [conversation, isSending, locale, messages, playTone]);
+  }, [activeMode, conversation, isSending, locale, messages, playTone]);
 
   const handleStop = useCallback(() => {
     abortRef.current?.abort();
@@ -492,10 +503,43 @@ export function ChatClient({ conversation, initialMessages, locale }: ChatClient
     if (failedPrompt) void handleSend(failedPrompt.content, failedPrompt.userMessage);
   }, [failedPrompt, handleSend]);
 
-  const greetingMode = modeTitle(conversation.mode);
+  const greetingMode = modeTitle(activeMode);
+
+  const changeMode = async (nextMode: Mode) => {
+    if (nextMode === activeMode || isSending || savingMode) return;
+    setSavingMode(true);
+    setModeError(null);
+    try {
+      const response = await fetch("/api/conversations/" + conversation.id, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: nextMode }),
+      });
+      const payload = await response.json().catch(() => ({})) as {
+        error?: { message?: string } | string;
+      };
+      if (!response.ok) {
+        const message = typeof payload.error === "string" ? payload.error : payload.error?.message;
+        throw new Error(message || "Could not switch AI mode.");
+      }
+      setActiveMode(nextMode);
+    } catch (cause) {
+      setModeError(cause instanceof Error ? cause.message : "Could not switch AI mode.");
+    } finally {
+      setSavingMode(false);
+    }
+  };
 
   return (
-    <main className="flex h-dvh flex-col overflow-hidden bg-[#f7f8fc] text-slate-950">
+    <div className="flex h-dvh overflow-hidden bg-[#f7f8fc] text-slate-950">
+      <WorkspaceSidebar
+        locale={locale}
+        workspaces={workspaces}
+        activeWorkspaceId={activeWorkspaceId}
+        activePage="studio"
+        conversationId={conversation.id}
+      />
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[#f7f8fc] text-slate-950">
       <header className="z-10 flex min-h-[72px] items-center justify-between border-b border-slate-200 bg-white/95 px-4 shadow-sm backdrop-blur sm:px-7">
         <div className="flex min-w-0 items-center gap-3">
           <Link
@@ -515,6 +559,18 @@ export function ChatClient({ conversation, initialMessages, locale }: ChatClient
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          <label className="flex items-center gap-2">
+            <span className="sr-only">AI capability</span>
+            <select
+              value={activeMode}
+              disabled={isSending || savingMode}
+              onChange={(event) => void changeMode(event.target.value as Mode)}
+              aria-label="AI capability"
+              className="h-10 max-w-[132px] rounded-xl border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 outline-none transition focus:border-violet-300 focus:ring-2 focus:ring-violet-100 disabled:opacity-60 sm:max-w-[180px] sm:px-3"
+            >
+              {MODES.map((mode) => <option key={mode} value={mode}>{modeTitle(mode)}</option>)}
+            </select>
+          </label>
           <span className="hidden items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 sm:inline-flex">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Ready to help
           </span>
@@ -531,6 +587,7 @@ export function ChatClient({ conversation, initialMessages, locale }: ChatClient
           </button>
         </div>
       </header>
+      {modeError && <div role="alert" className="border-b border-rose-200 bg-rose-50 px-5 py-2 text-xs text-rose-800">{modeError}</div>}
 
       <section className="flex min-h-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto">
@@ -626,7 +683,7 @@ export function ChatClient({ conversation, initialMessages, locale }: ChatClient
           </div>
         )}
 
-        <div className="border-t border-slate-200 bg-white/95 px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-7 sm:pt-4">
+        <div className="border-t border-slate-200 bg-white/95 px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-3 sm:px-7 sm:pt-4 lg:pb-4">
           <div className="mx-auto w-full max-w-4xl">
             <Composer
               onSend={(content) => void handleSend(content)}
@@ -643,5 +700,6 @@ export function ChatClient({ conversation, initialMessages, locale }: ChatClient
         </div>
       </section>
     </main>
+    </div>
   );
 }
