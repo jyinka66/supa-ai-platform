@@ -51,21 +51,24 @@ insert into regions (code, pg_dsn, s3_bucket) values
 on conflict (code) do nothing;
 
 -- ───────────────────────────────────────────────
+-- Remove the old CHECK before relabeling values to the canonical codes.
+-- Dropping it after the UPDATEs blocks the legitimate region conversion.
+alter table public.workspaces drop constraint if exists workspaces_region_check;
+
 -- Migrate existing workspaces.region values: short codes → spec codes.
 -- This is the "grandfathering" — existing ws keep their residency, just
 -- relabeled to the canonical code. Idempotent (WHERE region IN (short codes)).
 -- ───────────────────────────────────────────────
 
-update workspaces set region = 'us-east'      where region = 'us';
-update workspaces set region = 'eu-west'      where region = 'eu';
-update workspaces set region = 'ap-southeast' where region = 'apac';
+update public.workspaces set region = 'us-east'      where region = 'us';
+update public.workspaces set region = 'eu-west'      where region = 'eu';
+update public.workspaces set region = 'ap-southeast' where region = 'apac';
 
 -- ───────────────────────────────────────────────
 -- Drop the old CHECK constraint (migration 0029) — the FK below is stricter
 -- (region must reference an actual regions row, not just match a regex).
 -- ───────────────────────────────────────────────
 
-alter table workspaces drop constraint if exists workspaces_region_check;
 
 -- ───────────────────────────────────────────────
 -- Change the column DEFAULT to the spec's primary region.
@@ -73,7 +76,7 @@ alter table workspaces drop constraint if exists workspaces_region_check;
 -- (create_workspace() accepts a region param).
 -- ───────────────────────────────────────────────
 
-alter table workspaces alter column region set default 'us-east';
+alter table public.workspaces alter column region set default 'us-east';
 
 -- ───────────────────────────────────────────────
 -- Add the FK: workspaces.region → regions(code).
@@ -83,7 +86,7 @@ alter table workspaces alter column region set default 'us-east';
 -- (rare; requires a migration), the FKs follow.
 -- ───────────────────────────────────────────────
 
-alter table workspaces
+alter table public.workspaces
   add constraint workspaces_region_fk
   foreign key (region) references regions(code)
   on delete restrict on update cascade;
@@ -149,26 +152,26 @@ declare
   v_ws_id uuid;
 begin
   -- Insert the workspace (bypasses RLS via SECURITY DEFINER).
-  insert into workspaces (name, slug, region, plan, kind, billing_owner_id)
+  insert into public.workspaces (name, slug, region, plan, kind, billing_owner_id)
   values (p_name, p_slug, p_region, 'free', 'team', p_created_by)
   returning id into v_ws_id;
 
   -- Insert the owner membership (the creator is the owner).
-  insert into memberships (ws_id, user_id, role, status, joined_at)
+  insert into public.memberships (ws_id, user_id, role, status, joined_at)
   values (v_ws_id, p_created_by, 'owner', 'active', now());
 
   -- Insert the builtin 'approver' custom role.
-  insert into custom_roles (ws_id, name, perms, builtin, created_by)
+  insert into public.custom_roles (ws_id, name, perms, builtin, created_by)
   values (v_ws_id, 'approver',
           '["chat.read","work.read","approvals.decide"]'::jsonb,
           true, p_created_by);
 
   -- Insert a default retention policy.
-  insert into retention_policies (ws_id, chat_days, work_days, audit_days, legal_hold)
+  insert into public.retention_policies (ws_id, chat_days, work_days, audit_days, legal_hold)
   values (v_ws_id, 365, 3650, 3650, false);
 
   -- Audit the creation (via the security-definer append function).
-  perform enterprise_audit_log_append(
+  perform public.enterprise_audit_log_append(
     v_ws_id, 'user', p_created_by::text, 'ws.created',
     jsonb_build_object('name', p_name, 'slug', p_slug, 'region', p_region),
     null::inet, null::text
@@ -179,7 +182,7 @@ end;
 $$;
 
 -- Re-grant (CREATE OR REPLACE preserves grants, but be explicit).
-grant execute on function create_workspace(text, text, text, uuid) to supa_app;
+grant execute on function public.create_workspace(text, text, text, uuid) to supa_app;
 grant execute on function create_workspace(text, text, text, uuid) to supa_system;
 
 -- ───────────────────────────────────────────────
