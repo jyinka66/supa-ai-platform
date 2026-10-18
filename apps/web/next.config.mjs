@@ -8,18 +8,6 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-  {
-    key: "Content-Security-Policy",
-    value: [
-      "default-src 'self'",
-      "script-src 'self' 'nonce-{NONCE}' https://eu.i.posthog.com",
-      "style-src 'self' 'unsafe-inline'", // tokens-inlined CSS; tightened in Phase 0 week 3
-      "img-src 'self' data: blob:",
-      "frame-ancestors 'none'",
-      "object-src 'none'",
-      "base-uri 'self'",
-    ].join("; "),
-  },
 ];
 
 /** @type {import('next').NextConfig} */

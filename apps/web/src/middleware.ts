@@ -7,31 +7,51 @@ const AAL2_REQUIRED = ["/security", "/admin", "/workspaces/settings"];
 const isDev = process.env.NODE_ENV === "development";
 
 /**
- * Content-Security-Policy — nonce-free, strict by default.
- *
- * In dev: 'unsafe-eval' is allowed (Next.js HMR needs it).
- * In prod: no 'unsafe-inline' / 'unsafe-eval' — all styles must come from
- * compiled CSS, all scripts from Next.js's bundle.
- *
- * NOTE: this CSP is also set in next.config.mjs as a static header. This
- * middleware version lets us override per-route (e.g. add 'nonce-XXX' for
- * streamed pages in a future enhancement). The middleware version wins
- * because it runs after next.config.mjs headers.
+ * Build a request-scoped CSP. Next.js reads the nonce from the request CSP
+ * header and applies it to its framework and streamed RSC scripts. The
+ * configured Supabase origin is included for browser auth/realtime and storage;
+ * no arbitrary external origin is allowed.
  */
-const csp = [
-  `default-src 'self'`,
-  `script-src 'self'${isDev ? " 'unsafe-eval'" : ""}`,
-  `style-src 'self'${isDev ? " 'unsafe-inline'" : ""}`, // dev: Tailwind Play needs inline styles
-  `img-src 'self' data: blob:`,
-  `font-src 'self'`,
-  `connect-src 'self' https://*.upstash.io https://eu.i.posthog.com`,
-  `frame-ancestors 'none'`,
-  `base-uri 'self'`,
-  `form-action 'self'`,
-  isDev ? "" : "upgrade-insecure-requests",
-]
-  .filter(Boolean)
-  .join("; ");
+function getSupabaseOrigin(): string | undefined {
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!raw) return undefined;
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return undefined;
+    return parsed.origin;
+  } catch {
+    return undefined;
+  }
+}
+
+function buildCsp(nonce: string, supabaseOrigin?: string): string {
+  const supabaseSocketOrigin = supabaseOrigin
+    ?.replace(/^https:/, "wss:")
+    .replace(/^http:/, "ws:");
+  const connectOrigins = [
+    "'self'",
+    "https://*.upstash.io",
+    "https://eu.i.posthog.com",
+    supabaseOrigin,
+    supabaseSocketOrigin,
+  ].filter((origin): origin is string => Boolean(origin));
+
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""} https://eu.i.posthog.com`,
+    "style-src 'self' 'unsafe-inline'",
+    `img-src 'self' data: blob:${supabaseOrigin ? ` ${supabaseOrigin}` : ""}`,
+    "font-src 'self'",
+    `connect-src ${connectOrigins.join(" ")}`,
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    isDev ? "" : "upgrade-insecure-requests",
+  ]
+    .filter(Boolean)
+    .join("; ");
+}
 
 /**
  * Validate incoming x-trace-id (must be a UUID) — reject anything malformed
@@ -78,6 +98,8 @@ function stripLocalePrefix(pathname: string): string {
 
 export async function middleware(req: NextRequest) {
   const traceId = resolveTraceId(req.headers.get("x-trace-id"));
+  const nonce = btoa(crypto.randomUUID());
+  const csp = buildCsp(nonce, getSupabaseOrigin());
   const { pathname } = req.nextUrl;
   const pathWithoutLocale = stripLocalePrefix(pathname);
 
@@ -105,9 +127,11 @@ export async function middleware(req: NextRequest) {
       aal2 = false;
     }
     if (!aal2) {
-      return NextResponse.redirect(
+      const response = NextResponse.redirect(
         new URL(`/${locale}/m/challenge?next=${encodeURIComponent(pathname)}`, req.url),
       );
+      response.headers.set("Content-Security-Policy", csp);
+      return response;
     }
   }
 
@@ -116,14 +140,21 @@ export async function middleware(req: NextRequest) {
     const origin = req.headers.get("origin");
     const host = req.headers.get("host");
     if (!origin || !host || new URL(origin).host !== host) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: "CSRF: invalid origin" },
         { status: 403 },
       );
+      response.headers.set("Content-Security-Policy", csp);
+      return response;
     }
   }
 
-  const res = NextResponse.next();
+  // Provide the nonce in the request CSP header so Next.js can attach it to
+  // framework/RSC scripts, and mirror it as x-nonce for application code.
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("Content-Security-Policy", csp);
+  requestHeaders.set("x-nonce", nonce);
+  const res = NextResponse.next({ request: { headers: requestHeaders } });
 
   // ============ Trace ID + locale (existing) ============
   // Echo the request ID via both headers so clients + log drains can pick
