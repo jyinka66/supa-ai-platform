@@ -7,12 +7,11 @@
 // Everything NOT in a slot is locked at instantiation.
 // ─────────────────────────────────────────────────────────────
 
-import type { DesignDoc, LayerNode, TextLayer, ImageLayer, NodeId } from "@supa/design-model";
-import { findLayerById, findPage, newId, CURRENT_SCHEMA_VERSION, validate } from "@supa/design-model";
+import type { DesignDoc, LayerNode, TextLayer, NodeId, RichRun } from "@supa/design-model";
+import { findLayerById, newId, CURRENT_SCHEMA_VERSION, validate } from "@supa/design-model";
 import type { TextMeasurer } from "@supa/design-render";
 import { autofit } from "./autofit.js";
-import type { DesignTemplate, Slot, TextSlot, ImageSlot, ColorSlot } from "./types";
-import { getSlotForNode } from "./types";
+import type { DesignTemplate, TextSlot, ImageSlot, ColorSlot } from "./types";
 
 // ============ BINDING TYPES ============
 
@@ -20,16 +19,7 @@ export interface TextBinding {
   /** Plain text (replaces all runs if allowRichRuns is false). */
   text?: string;
   /** Rich runs (only if slot.allowRichRuns is true). */
-  runs?: Array<{
-    start: number;
-    end: number;
-    bold?: boolean;
-    italic?: boolean;
-    color?: { hex: string; opacity?: number };
-    link?: string;
-    fontFamily?: string;
-    fontSize?: number;
-  }>;
+  runs?: RichRun[];
 }
 
 export interface ImageBinding {
@@ -99,13 +89,13 @@ export class CanvasTextMeasurer implements TextMeasurer {
     text: string,
     font: { family: string; weight: number; size: number },
   ): number {
-    const key = `${font.family}|${font.weight}|${font.size}|${text}`;
+    const key = `${font.family}|${String(font.weight)}|${String(font.size)}|${text}`;
     const cached = this.cache.get(key);
     if (cached !== undefined) return cached;
 
     let width: number;
     if (this.ctx) {
-      this.ctx.font = `${font.weight} ${font.size}px ${font.family}, system-ui, sans-serif`;
+      this.ctx.font = `${String(font.weight)} ${String(font.size)}px ${font.family}, system-ui, sans-serif`;
       width = this.ctx.measureText(text).width;
     } else {
       // No canvas context — estimate the advance as 0.5em per char
@@ -160,16 +150,19 @@ export function instantiate(
   bindings: Bindings,
   measurer?: TextMeasurer,
 ): DesignDoc {
-  const doc = structuredClone(t.doc) as DesignDoc;
+  const doc = structuredClone<DesignDoc>(t.doc) as DesignDoc & { templateId?: { id: string; version: number } };
   const m = measurer ?? getDefaultMeasurer();
 
   // Assign a new ID + provenance.
   doc.id = newId();
-  (doc as any).templateId = { id: t.id, version: t.version };
+  doc.templateId = { id: t.id, version: t.version };
 
   // Apply bindings for each slot.
   for (const slot of t.slots) {
-    const binding = bindings[slot.nodeId] ?? bindings[(slot as any).id];
+    const bindingKey = slot.kind === "color"
+      ? ("nodeId" in slot.target ? slot.target.nodeId : slot.target.themeKey)
+      : slot.nodeId;
+    const binding = bindings[bindingKey];
     if (!binding) continue; // keep template default
 
     switch (slot.kind) {
@@ -208,20 +201,20 @@ function applyTextBinding(
   const node = findNodeInDoc(doc, slot.nodeId);
   if (!node || node.type !== "text") return;
 
-  const textLayer = node as TextLayer;
+  const textLayer = node;
 
   // Enforce max length.
-  if (slot.maxLength && binding.text && binding.text.length > slot.maxLength) {
-    binding.text = binding.text.slice(0, slot.maxLength);
-  }
+  const boundedText = binding.text && slot.maxLength && binding.text.length > slot.maxLength
+    ? binding.text.slice(0, slot.maxLength)
+    : binding.text;
 
   if (slot.allowRichRuns && binding.runs) {
     // Rich text: replace runs + recompute content.
-    textLayer.runs = binding.runs as any;
+    textLayer.runs = binding.runs;
     textLayer.content = plainTextFromRuns(binding.runs);
   } else {
     // Plain text: replace content + collapse runs to a single run.
-    const text = binding.text ?? "";
+    const text = boundedText ?? "";
     textLayer.content = text;
     if (textLayer.runs.length > 0) {
       // Keep the first run's style, extend to cover all text.
@@ -251,7 +244,7 @@ function applyImageBinding(doc: DesignDoc, slot: ImageSlot, binding: ImageBindin
   const node = findNodeInDoc(doc, slot.nodeId);
   if (!node || node.type !== "image") return;
 
-  const imageLayer = node as ImageLayer;
+  const imageLayer = node;
 
   // Replace asset.
   imageLayer.assetId = binding.assetId;
@@ -287,24 +280,23 @@ function applyColorBinding(doc: DesignDoc, slot: ColorSlot, binding: ColorBindin
     switch (slot.target.field) {
       case "fill":
         if (node.type === "shape") {
-          (node as any).fill = { type: "solid", color: { hex: binding.hex } };
+          node.fill = { type: "solid", color: { hex: binding.hex } };
         } else if (node.type === "container") {
-          (node as any).fill = { type: "solid", color: { hex: binding.hex } };
+          node.fill = { type: "solid", color: { hex: binding.hex } };
         }
         break;
       case "stroke":
         if (node.type === "shape") {
-          const shape = node as any;
-          if (shape.stroke) {
-            shape.stroke.color = { hex: binding.hex };
+          if (node.stroke) {
+            node.stroke.color = { hex: binding.hex };
           } else {
-            shape.stroke = { color: { hex: binding.hex }, width: 1 };
+            node.stroke = { color: { hex: binding.hex }, width: 1 };
           }
         }
         break;
       case "color":
         if (node.type === "icon") {
-          (node as any).color = { hex: binding.hex };
+          node.color = { hex: binding.hex };
         }
         break;
     }
@@ -330,7 +322,8 @@ function findNodeInDoc(doc: DesignDoc, nodeId: NodeId): LayerNode | null {
 
 function plainTextFromRuns(runs: Array<{ start: number; end: number }>): string {
   if (runs.length === 0) return "";
-  return " ".repeat(runs[runs.length - 1]!.end);
+  const lastRun = runs.at(-1);
+  return lastRun ? " ".repeat(lastRun.end) : "";
 }
 
 function defaultCropForAspect(aspectHint: number): { x: number; y: number; width: number; height: number } {

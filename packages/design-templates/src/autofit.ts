@@ -18,8 +18,6 @@
 
 import type { TextLayer } from "@supa/design-model";
 import type { TextMeasurer } from "@supa/design-render";
-import type { TextSlot } from "./types";
-
 export interface AutofitResult {
   /** The fitted font size (clamped to [floor, original]). */
   fontSize: number;
@@ -58,9 +56,6 @@ export function autofit(
 ): AutofitResult {
   const originalSize = layer.fontSize;
   const floor = options.minFontSize ?? 8;
-  const boxWidth = layer.rect.width;
-  const boxHeight = layer.rect.height;
-  const lineHeight = layer.fontSize * layer.lineHeight; // px per line at original size
 
   // Binary search: find the largest fontSize where the text fits.
   let lo = Math.floor(floor);

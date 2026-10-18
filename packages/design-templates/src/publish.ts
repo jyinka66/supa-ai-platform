@@ -16,9 +16,9 @@
 //      must still instantiate forever).
 // ─────────────────────────────────────────────────────────────
 
-import type { DesignDoc, LayerNode, Color, TextLayer, ImageLayer, ShapeLayer, IconLayer, Page } from "@supa/design-model";
+import type { DesignDoc, LayerNode, Color, Page } from "@supa/design-model";
 import { validate, findLayerById, flattenLayers } from "@supa/design-model";
-import type { DesignTemplate, Slot, TextSlot, ImageSlot, ColorSlot, Theme } from "./types";
+import type { DesignTemplate, Slot, Theme } from "./types";
 import { newId } from "@supa/design-model";
 
 // ============ PUBLISH INPUT ============
@@ -77,7 +77,7 @@ export interface PublishResult {
 export class PublishError extends Error {
   constructor(public errors: Array<{ code: string; message: string; nodeId?: string }>) {
     super(
-      `Publish failed with ${errors.length} error(s):\n` +
+      `Publish failed with ${String(errors.length)} error(s):\n` +
         errors.map((e) => `  [${e.code}] ${e.nodeId ? `(${e.nodeId}) ` : ""}${e.message}`).join("\n"),
     );
     this.name = "PublishError";
@@ -164,7 +164,7 @@ export function publish(input: PublishInput): PublishResult {
           maxLength: candidate.maxLength,
           allowRichRuns: candidate.allowRichRuns ?? false,
           minFontSize: candidate.minFontSize,
-        } as TextSlot);
+        });
         break;
 
       case "image":
@@ -182,7 +182,7 @@ export function publish(input: PublishInput): PublishResult {
           label: candidate.label,
           fitLock: candidate.fitLock ?? "inherit",
           aspectHint: candidate.aspectHint,
-        } as ImageSlot);
+        });
         break;
 
       case "color":
@@ -192,7 +192,7 @@ export function publish(input: PublishInput): PublishResult {
             kind: "color",
             target: { themeKey: candidate.themeKey },
             label: candidate.label,
-          } as ColorSlot);
+          });
         } else {
           // Node-level color slot.
           if (candidate.field === "fill" && node.type !== "shape" && node.type !== "container") {
@@ -219,11 +219,19 @@ export function publish(input: PublishInput): PublishResult {
             });
             continue;
           }
+          if (!candidate.field) {
+            errors.push({
+              code: "SLOT_FIELD_REQUIRED",
+              message: `Color slot "${candidate.label}" must specify fill, stroke, or color`,
+              nodeId: candidate.nodeId,
+            });
+            continue;
+          }
           slots.push({
             kind: "color",
-            target: { nodeId: candidate.nodeId, field: candidate.field! },
+            target: { nodeId: candidate.nodeId, field: candidate.field },
             label: candidate.label,
-          } as ColorSlot);
+          });
         }
         break;
     }
@@ -236,7 +244,7 @@ export function publish(input: PublishInput): PublishResult {
       const depth = getDepthInDoc(input.doc, slot.nodeId);
       if (depth > MAX_SLOT_DEPTH) {
         warnings.push(
-          `Slot "${slot.label}" (node ${slot.nodeId}) is nested ${depth} levels deep — consider flattening for better editor UX`,
+          `Slot "${slot.label}" (node ${slot.nodeId}) is nested ${String(depth)} levels deep — consider flattening for better editor UX`,
         );
       }
     }
@@ -347,23 +355,20 @@ function extractColors(doc: DesignDoc): Array<{ hex: string; count: number; sugg
     for (const layer of flattenLayers(page)) {
       // Shape fills + strokes.
       if (layer.type === "shape") {
-        const shape = layer as ShapeLayer;
-        if (shape.fill) addFill(shape.fill);
-        if (shape.stroke) addColor(shape.stroke.color);
+        if (layer.fill) addFill(layer.fill);
+        if (layer.stroke) addColor(layer.stroke.color);
       }
       // Container fills.
       if (layer.type === "container") {
-        const container = layer as unknown as { fill?: unknown };
-        if (container.fill) addFill(container.fill);
+        if (layer.fill) addFill(layer.fill);
       }
       // Icon colors.
       if (layer.type === "icon") {
-        addColor((layer as IconLayer).color);
+        addColor(layer.color);
       }
       // Text run colors.
       if (layer.type === "text") {
-        const text = layer as TextLayer;
-        for (const run of text.runs) {
+        for (const run of layer.runs) {
           if (run.color) addColor(run.color);
         }
       }
@@ -401,19 +406,21 @@ function suggestTheme(colors: Array<{ hex: string; count: number }>): Theme {
   const neutrals = colors.filter((c) => isNeutral(c.hex));
 
   if (nonNeutrals[0]) {
-    tokens.accent = nonNeutrals[0]!.hex;
+    tokens.accent = nonNeutrals[0].hex;
   }
   if (neutrals[0]) {
-    tokens.background = neutrals[0]!.hex;
+    tokens.background = neutrals[0].hex;
   }
   if (neutrals[1]) {
-    tokens.foreground = neutrals[1]!.hex;
+    tokens.foreground = neutrals[1].hex;
   }
 
   // Assign remaining non-neutrals as primary, secondary, etc.
-  const tokenNames = ["primary", "secondary", "tertiary"];
-  for (let i = 1; i < Math.min(nonNeutrals.length, 4); i++) {
-    tokens[tokenNames[i - 1]!] = nonNeutrals[i]!.hex;
+  const tokenNames = ["primary", "secondary", "tertiary"] as const;
+  for (let i = 1; i < Math.min(nonNeutrals.length, tokenNames.length + 1); i++) {
+    const tokenName = tokenNames[i - 1];
+    const color = nonNeutrals[i];
+    if (tokenName && color) tokens[tokenName] = color.hex;
   }
 
   // Palette: all colors as a single palette.

@@ -66,7 +66,7 @@ export class InMemoryCatalogSource implements CatalogSource {
     this.version++;
   }
 
-  async list(cursor?: string): Promise<{ items: TemplateMeta[]; next?: string }> {
+  list(cursor?: string): Promise<{ items: TemplateMeta[]; next?: string }> {
     const all = Array.from(this.metas.values()).sort((a, b) => a.name.localeCompare(b.name));
 
     // Simple cursor: offset-based.
@@ -75,16 +75,16 @@ export class InMemoryCatalogSource implements CatalogSource {
     const items = all.slice(offset, offset + PAGE);
     const next = offset + PAGE < all.length ? String(offset + PAGE) : undefined;
 
-    return { items, next };
+    return Promise.resolve({ items, next });
   }
 
-  async get(id: string): Promise<DesignTemplate> {
+  get(id: string): Promise<DesignTemplate> {
     const template = this.templates.get(id);
-    if (!template) throw new Error(`template_not_found: ${id}`);
-    return structuredClone(template);
+    if (!template) return Promise.reject(new Error(`template_not_found: ${id}`));
+    return Promise.resolve(structuredClone(template));
   }
 
-  async delta(since: number, cursor?: string): Promise<{ items: TemplateMeta[]; next?: string; version: number }> {
+  delta(since: number, cursor?: string): Promise<{ items: TemplateMeta[]; next?: string; version: number }> {
     const all = Array.from(this.metas.values())
       .filter((m) => m.catalogVersion > since)
       .sort((a, b) => a.catalogVersion - b.catalogVersion);
@@ -94,7 +94,7 @@ export class InMemoryCatalogSource implements CatalogSource {
     const items = all.slice(offset, offset + PAGE);
     const next = offset + PAGE < all.length ? String(offset + PAGE) : undefined;
 
-    return { items, next, version: this.version };
+    return Promise.resolve({ items, next, version: this.version });
   }
 }
 

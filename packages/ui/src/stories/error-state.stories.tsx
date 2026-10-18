@@ -17,7 +17,7 @@ type Story = StoryObj<typeof ErrorState>;
 export const Default: Story = {};
 
 export const WithoutRetry: Story = {
-  args: { onRetry: undefined },
+  args: { title: "No retry available" },
 };
 
 export const WithCustomCopy: Story = {
