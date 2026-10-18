@@ -1,5 +1,7 @@
 # Supa AI
 
+> **Project continuity:** Read [WORKLOG.md](./WORKLOG.md) before making changes. It records product decisions, verified status, known blockers, and the next steps for continuing in a new chat.
+
 A Bun + Turborepo monorepo with a Next.js app, shared UI library, local Supabase stack, and CI checks for type safety, unit tests, and production builds.
 
 ## Quickstart
