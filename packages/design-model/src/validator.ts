@@ -96,7 +96,7 @@ const LayerBaseSchema = z.object({
 
 // ============ LAYERS (discriminated union) ============
 
-const LayerNodeSchema: z.ZodType<LayerNode> = z.lazy(() =>
+const LayerNodeSchema = z.lazy(() =>
   z.discriminatedUnion("type", [
     // group
     z.object({ ...LayerBaseSchema.shape, type: z.literal("group") }),
@@ -161,7 +161,7 @@ const LayerNodeSchema: z.ZodType<LayerNode> = z.lazy(() =>
       color: ColorSchema,
     }),
   ]),
-);
+) as unknown as z.ZodType<LayerNode>;
 
 // ============ PAGE ============
 
@@ -175,7 +175,7 @@ const PageSchema = z.object({
   background: z.union([FillSchema, z.literal("transparent")]),
   bleed: z.number().min(0).max(1000).optional(),
   layers: z.array(LayerNodeSchema),
-});
+}) as unknown as z.ZodType<Page>;
 
 // ============ DESIGN DOC ============
 
@@ -197,7 +197,7 @@ export const DesignDocSchema = z.object({
   ),
   a11y: z.object({ issues: z.array(z.string()) }),
   brandKitId: z.string().optional(),
-});
+}) as unknown as z.ZodType<DesignDoc>;
 
 // ============ VALIDATION HELPERS ============
 
