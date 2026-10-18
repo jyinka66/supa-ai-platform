@@ -140,11 +140,10 @@ export function can(
   action: WorkspaceAction,
   _resource: Resource,
 ): boolean {
-  const requiredRole = ROLE_ACTION_MATRIX[action];
-  if (requiredRole === undefined) {
+  if (!Object.hasOwn(ROLE_ACTION_MATRIX, action)) {
     throw new UnknownActionError(`action not in role-action matrix: ${action}`);
   }
-  return roleSatisfies(scope.role, requiredRole);
+  return roleSatisfies(scope.role, ROLE_ACTION_MATRIX[action]);
 }
 
 /**
