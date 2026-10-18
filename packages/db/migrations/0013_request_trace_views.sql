@@ -47,18 +47,18 @@ comment on view request_trace is
 create or replace view failure_forensics as
 select
   mm.provider,
-  mm.request_id,
   date_trunc('hour', m.created_at)                     as hour,
   count(*)                                              as failures,
   count(*) filter (where mm.retries > 0)                as retried_failures,
   avg(mm.retries)                                       as avg_retries,
   array_agg(distinct mm.fallback_path)                  as observed_fallback_paths,
-  array_agg(distinct m.conversation_id)                 as affected_conversation_ids
+  array_agg(distinct m.conversation_id)                 as affected_conversation_ids,
+  mm.request_id
 from messages m
 inner join message_meta mm on mm.message_id = m.id
 where m.status = 'error'
   and m.created_at >= now() - interval '7 days'
-group by 1, 2, 3;
+group by 1, 2, 8;
 
 comment on view failure_forensics is
   'Failed-message forensics: provider, request_id, hour, failure count, retry stats, fallback paths.';
