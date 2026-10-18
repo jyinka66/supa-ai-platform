@@ -149,7 +149,7 @@ comment on function is_ws_member(uuid, text) is
 -- ───────────────────────────────────────────────
 
 -- supa_app can't bypass RLS.
-revoke bypassrls on system from supa_app;
+alter role supa_app nobypassrls;
 
 -- supa_app has row_security = on (can't disable it).
 alter role supa_app set row_security = on;
