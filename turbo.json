@@ -6,7 +6,8 @@
     "SENTRY_*",
     "UPSTASH_*",
     "OPENROUTER_API_KEY",
-    "GEMINI_API_KEY"
+    "GEMINI_API_KEY",
+    "APP_URL"
   ],
   "tasks": {
     "build": {
