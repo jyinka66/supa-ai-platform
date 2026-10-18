@@ -4,10 +4,10 @@
 -- ───────────────────────────────────────────────
 
 -- Enums
-DO $ BEGIN CREATE TYPE public.expense_status AS ENUM ('draft', 'recorded', 'approved', 'rejected', 'reimbursed'); EXCEPTION WHEN duplicate_object THEN NULL; END $;
-DO $ BEGIN CREATE TYPE public.invoice_status AS ENUM ('draft', 'issued', 'partial', 'paid', 'voided'); EXCEPTION WHEN duplicate_object THEN NULL; END $;
-DO $ BEGIN CREATE TYPE public.customer_status AS ENUM ('active', 'inactive', 'archived'); EXCEPTION WHEN duplicate_object THEN NULL; END $;
-DO $ BEGIN CREATE TYPE public.activity_source AS ENUM ('manual', 'system', 'ai'); EXCEPTION WHEN duplicate_object THEN NULL; END $;
+CREATE TYPE public.expense_status AS ENUM ('draft', 'recorded', 'approved', 'rejected', 'reimbursed');
+CREATE TYPE public.invoice_status AS ENUM ('draft', 'issued', 'partial', 'paid', 'voided');
+CREATE TYPE public.customer_status AS ENUM ('active', 'inactive', 'archived');
+CREATE TYPE public.activity_source AS ENUM ('manual', 'system', 'ai');
 
 -- ─── Monetary facts — THE single source of truth ───
 CREATE TABLE IF NOT EXISTS monetary_facts (
