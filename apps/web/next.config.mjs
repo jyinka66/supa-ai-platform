@@ -16,11 +16,6 @@ const nextConfig = {
   // `next build` type-checks only application code. Tests are still covered by
   // `bun run typecheck` (tsconfig.json), so type errors in them do not block deploys.
   typescript: { tsconfigPath: "tsconfig.build.json" },
-  // Ensure argon2 native bindings are included in the registration serverless bundle.
-  // The package is hoisted to the monorepo root by Bun.
-  outputFileTracingIncludes: {
-    "/api/v1/auth/register": ["../../node_modules/argon2/**/*"],
-  },
   // Vercel creates its own serverless output. Keep standalone output for the Docker deployment.
   ...(process.env.VERCEL === "1" ? {} : { output: "standalone" }),
   // The TypeScript source uses NodeNext-style ".js" specifiers for local modules.
