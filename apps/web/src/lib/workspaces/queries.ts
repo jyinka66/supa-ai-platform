@@ -16,10 +16,13 @@ export interface WorkspaceWithMembership {
 
 /**
  * Lists workspaces the current user is a member of.
- * Uses PostgREST's `!inner` to filter out workspaces where the user has no membership.
+ * This helper is used by the server-rendered dashboard, so it must use the
+ * cookie-aware server client rather than the browser client. RLS still scopes
+ * the result to the authenticated user.
  */
 export async function listWorkspaces(): Promise<WorkspaceWithMembership[]> {
-  const { data, error } = await supabaseBrowser
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
     .from("workspaces")
     .select(
       "id, slug, name, logo_path, is_personal, plan, seat_limit, workspace_members!inner(role)",
