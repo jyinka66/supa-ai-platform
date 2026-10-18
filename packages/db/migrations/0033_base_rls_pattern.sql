@@ -116,9 +116,9 @@ security definer
 set search_path = ''
 as $$
   select exists (
-    select 1 from memberships m
+    select 1 from public.memberships m
     where m.ws_id = _ws
-      and m.user_id = current_uid()
+      and m.user_id = public.current_uid()
       and m.status = 'active'
       and case min_role
             when 'viewer' then m.role in ('owner', 'admin', 'member', 'viewer', 'custom')
