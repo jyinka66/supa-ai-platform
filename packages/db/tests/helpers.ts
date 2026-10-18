@@ -1,9 +1,27 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const ADMIN = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+let adminClient: SupabaseClient | undefined;
+
+function getSupabaseUrl(): string {
+  const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) throw new Error("Set SUPABASE_URL to run database integration tests.");
+  return url;
+}
+
+function getSupabaseAnonKey(): string {
+  const key = process.env.SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!key) throw new Error("Set SUPABASE_ANON_KEY to run database integration tests.");
+  return key;
+}
+
+function getAdmin(): SupabaseClient {
+  if (!adminClient) {
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceRoleKey) throw new Error("Set SUPABASE_SERVICE_ROLE_KEY to run database integration tests.");
+    adminClient = createClient(getSupabaseUrl(), serviceRoleKey);
+  }
+  return adminClient;
+}
 
 type Role = "owner" | "admin" | "member" | "viewer";
 
@@ -38,18 +56,18 @@ export async function createTestUsers() {
   const mk = async (email: string, role?: Role, wsId?: string): Promise<Actor> => {
     // Capture password once — reuse for both createUser and signInWithPassword.
     const password = crypto.randomUUID() + "!Aa1";
-    const { data, error } = await ADMIN.auth.admin.createUser({ email, password });
+    const { data, error } = await getAdmin().auth.admin.createUser({ email, password });
     if (error) throw error;
 
     if (wsId && role) {
-      await ADMIN.from("workspace_members").insert({
+      await getAdmin().from("workspace_members").insert({
         workspace_id: wsId,
         user_id: data.user.id,
         role,
       });
     }
 
-    const userClient = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
+    const userClient = createClient(getSupabaseUrl(), getSupabaseAnonKey());
     const { error: signInError } = await userClient.auth.signInWithPassword({ email, password });
     if (signInError) throw signInError;
     return { id: data.user.id, client: userClient };
@@ -59,7 +77,7 @@ export async function createTestUsers() {
   const ownerA = await mk("owner-a@test.local");
 
   // Try to reuse an existing non-personal workspace, otherwise create one.
-  const existingWsA = await ADMIN.from("workspaces")
+  const existingWsA = await getAdmin().from("workspaces")
     .select()
     .eq("is_personal", false)
     .limit(1)
@@ -69,7 +87,7 @@ export async function createTestUsers() {
   if (existingWsA.data) {
     wsA = existingWsA.data as WorkspaceRow;
   } else {
-    const created = await ADMIN.from("workspaces")
+    const created = await getAdmin().from("workspaces")
       .insert({ slug: "ws-a", name: "A", is_personal: false, billing_owner_id: ownerA.id })
       .select()
       .single();
@@ -85,7 +103,7 @@ export async function createTestUsers() {
 
   // --- Workspace B: admin + member ---
   const adminB = await mk("admin-b@test.local");
-  const wsBResult = await ADMIN.from("workspaces")
+  const wsBResult = await getAdmin().from("workspaces")
     .insert({ slug: "ws-b", name: "B", is_personal: false, billing_owner_id: adminB.id })
     .select()
     .single();
@@ -94,7 +112,7 @@ export async function createTestUsers() {
   const memberB = await mk("member-b@test.local", "member", wsB.id);
 
   // --- Owner A's personal workspace (created by the handle_new_user trigger) ---
-  const personalWsAResult = await ADMIN.from("workspaces")
+  const personalWsAResult = await getAdmin().from("workspaces")
     .select()
     .eq("is_personal", true)
     .eq("billing_owner_id", ownerA.id)
@@ -122,7 +140,7 @@ export function setRlsActor(actor: Actor): SupabaseClient {
 }
 
 export async function purgeTenant(wsId: string) {
-  await ADMIN.from("workspaces").delete().eq("id", wsId); // cascades members, invites
+  await getAdmin().from("workspaces").delete().eq("id", wsId); // cascades members, invites
 }
 
 /**
@@ -145,7 +163,7 @@ export async function logRlsViolation(
 }
 
 export async function readAuditLog() {
-  const { data, error } = await ADMIN.from("audit_log")
+  const { data, error } = await getAdmin().from("audit_log")
     .select()
     .order("created_at", { ascending: false })
     .limit(50);

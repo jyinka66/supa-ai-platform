@@ -261,7 +261,7 @@ export class CanaryGate {
     if (failed.length > 0) {
       return {
         kind: "rollback",
-        reason: `canary failed ${failed.length} check(s): ${failed.map((f) => f.metric).join(", ")}`,
+        reason: `canary failed ${String(failed.length)} check(s): ${failed.map((f) => f.metric).join(", ")}`,
         failedChecks: failed,
       };
     }

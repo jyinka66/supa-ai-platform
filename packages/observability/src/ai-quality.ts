@@ -448,14 +448,14 @@ export function evaluateBenchmarkGate(result: BenchmarkResult): BenchmarkGateRes
   const undoDelta = c.undoRate10s - b.undoRate10s;
   if (undoDelta > THRESHOLDS.undoRate10sDeltaAbs) {
     failures.push(
-      `undoRate10s regressed: ${String(b.undoRate10s)} → ${String(c.undoRate10s)} (Δ=${round(undoDelta)} > ${THRESHOLDS.undoRate10sDeltaAbs})`,
+      `undoRate10s regressed: ${String(b.undoRate10s)} → ${String(c.undoRate10s)} (Δ=${String(round(undoDelta))} > ${String(THRESHOLDS.undoRate10sDeltaAbs)})`,
     );
   }
 
   const acceptDelta = b.acceptWithoutEditRate - c.acceptWithoutEditRate;
   if (acceptDelta > THRESHOLDS.acceptWithoutEditDeltaAbs) {
     failures.push(
-      `acceptWithoutEditRate regressed: ${String(b.acceptWithoutEditRate)} → ${String(c.acceptWithoutEditRate)} (Δ=${round(acceptDelta)} > ${THRESHOLDS.acceptWithoutEditDeltaAbs})`,
+      `acceptWithoutEditRate regressed: ${String(b.acceptWithoutEditRate)} → ${String(c.acceptWithoutEditRate)} (Δ=${String(round(acceptDelta))} > ${String(THRESHOLDS.acceptWithoutEditDeltaAbs)})`,
     );
   }
 
@@ -463,7 +463,7 @@ export function evaluateBenchmarkGate(result: BenchmarkResult): BenchmarkGateRes
     const editRel = (c.medianMsToFirstEdit - b.medianMsToFirstEdit) / b.medianMsToFirstEdit;
     if (editRel > THRESHOLDS.medianMsToFirstEditRel) {
       failures.push(
-        `medianMsToFirstEdit regressed: ${String(b.medianMsToFirstEdit)} → ${String(c.medianMsToFirstEdit)} (rel=${round(editRel)} > ${THRESHOLDS.medianMsToFirstEditRel})`,
+        `medianMsToFirstEdit regressed: ${String(b.medianMsToFirstEdit)} → ${String(c.medianMsToFirstEdit)} (rel=${String(round(editRel))} > ${String(THRESHOLDS.medianMsToFirstEditRel)})`,
       );
     }
   }

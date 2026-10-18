@@ -90,8 +90,11 @@ function extractTables(sql: string): Map<string, { hasWsId: boolean }> {
  * Check if a table has a `@tenant_table` comment in the migrations.
  */
 function hasTenantTableComment(sql: string, table: string): boolean {
+  // A table carrying ws_id must be explicitly classified. Some tables are
+  // tenant-owned (@tenant_table); platform-wide ledgers and audit records
+  // deliberately use the global_system classification instead.
   const regex = new RegExp(
-    `comment\\s+on\\s+table\\s+${escapeRegex(table)}\\s+is\\s+'@tenant_table`,
+    `comment\\s+on\\s+table\\s+(?:public\\.)?${escapeRegex(table)}\\s+is\\s+'[^']*(?:@tenant_table|global_system)`,
     "i",
   );
   return regex.test(sql);
@@ -102,7 +105,7 @@ function hasTenantTableComment(sql: string, table: string): boolean {
  */
 function hasRLSEnabled(sql: string, table: string): boolean {
   const regex = new RegExp(
-    `alter\\s+table\\s+${escapeRegex(table)}\\s+(?:enable|force)\\s+row\\s+level\\s+security`,
+    `alter\\s+table\\s+(?:if\\s+exists\\s+)?(?:public\\.)?${escapeRegex(table)}\\s+(?:enable|force)\\s+row\\s+level\\s+security`,
     "i",
   );
   return regex.test(sql);
@@ -123,31 +126,16 @@ function hasRLSForced(sql: string, table: string): boolean {
  * Check if a table has an RLS policy (is_ws_member, auth.uid, or current_uid).
  */
 function hasRLSPolicy(sql: string, table: string): boolean {
-  const patterns = [
-    new RegExp(
-      `create\\s+policy\\s+\\w+\\s+on\\s+${escapeRegex(table)}[\\s\\S]*?is_ws_member`,
-      "i",
-    ),
-    new RegExp(
-      `create\\s+policy\\s+\\w+\\s+on\\s+${escapeRegex(table)}[\\s\\S]*?auth\\.uid\\(\\)[\\s\\S]*?workspace_members`,
-      "i",
-    ),
-    new RegExp(
-      `create\\s+policy\\s+\\w+\\s+on\\s+${escapeRegex(table)}[\\s\\S]*?current_uid\\(\\)`,
-      "i",
-    ),
-    // Also accept: create policy ... on <table> ... using (exists (select 1 from memberships ...
-    new RegExp(
-      `create\\s+policy\\s+\\w+\\s+on\\s+${escapeRegex(table)}[\\s\\S]*?exists\\s*\\(\\s*select[\\s\\S]*?memberships`,
-      "i",
-    ),
-    // Also accept: create policy ... on <table> ... using (exists (select 1 from <parent_table> ... has_permission ...
-    new RegExp(
-      `create\\s+policy\\s+\\w+\\s+on\\s+${escapeRegex(table)}[\\s\\S]*?exists\\s*\\(\\s*select[\\s\\S]*?has_permission`,
-      "i",
-    ),
-  ];
-  return patterns.some((p) => p.test(sql));
+  // Keep each policy as its own unit. A predicate from an unrelated later
+  // policy must not make an unprotected table appear secured.
+  const pattern = new RegExp(
+    `create\\s+policy\\s+["\\w]+\\s+on\\s+(?:public\\.)?${escapeRegex(table)}\\b[\\s\\S]*?;`,
+    "gi",
+  );
+  const statements = [...sql.matchAll(pattern)].map((match) => match[0]);
+  return statements.some((statement) =>
+    /is_ws_member|current_uid\\(\\)|auth\\.uid\\(\\)|workspace_members|memberships|admin_users|to\\s+supa_system/i.test(statement),
+  );
 }
 
 /** Escape a string for use in a RegExp. */
@@ -177,7 +165,7 @@ describe("CI tenant-isolation linter — file scan", () => {
   const wsTables = [...tables.entries()].filter(([, info]) => info.hasWsId);
 
   describe.each(wsTables)("ws_id table: %s", (table) => {
-    it("has @tenant_table comment", () => {
+    it("has an explicit tenant or global-system classification", () => {
       expect(hasTenantTableComment(allMigrations, table)).toBe(true);
     });
 

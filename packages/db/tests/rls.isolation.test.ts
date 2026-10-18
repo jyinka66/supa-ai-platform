@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+
+const integrationDescribe = describe.skipIf(process.env.RUN_INTEGRATION !== "1");
 import {
   createTestUsers,
   setRlsActor,
@@ -11,7 +13,7 @@ import type { Actor } from "./helpers";
 
 const TABLES = ["profiles", "workspaces", "workspace_members", "invites", "user_sessions"] as const;
 
-describe.each(TABLES)("RLS isolation: %s", (table) => {
+integrationDescribe.each(TABLES)("RLS isolation: %s", (table) => {
   it("blocks reads across workspaces", async () => {
     const { userA, userB } = await createTestUsers(); // userB in workspace B
     const { data: rowsA, error } = await setRlsActor(userA as Actor).from(table).select();
@@ -35,7 +37,7 @@ describe.each(TABLES)("RLS isolation: %s", (table) => {
 });
 
 // These tests are not table-parameterised — they target specific tables.
-describe("RLS: workspace_members", () => {
+integrationDescribe("RLS: workspace_members", () => {
   it("blocks privilege escalation (member → admin)", async () => {
     const { memberA, wsA } = await createTestUsers();
     await expect(
@@ -46,7 +48,7 @@ describe("RLS: workspace_members", () => {
   });
 });
 
-describe("RLS: invites", () => {
+integrationDescribe("RLS: invites", () => {
   it("blocks viewer from writing resources", async () => {
     const { viewerA, wsA } = await createTestUsers();
     await expect(
@@ -61,7 +63,7 @@ describe("RLS: invites", () => {
   });
 });
 
-describe("RLS: workspaces", () => {
+integrationDescribe("RLS: workspaces", () => {
   it("blocks personal workspace deletion", async () => {
     const { ownerA, personalWsA } = await createTestUsers();
     await expect(
@@ -72,18 +74,18 @@ describe("RLS: workspaces", () => {
   });
 });
 
-describe("RLS: audit logging", () => {
+integrationDescribe("RLS: audit logging", () => {
   it("cross-tenant access attempts are logged", async () => {
     const { userA, wsB } = await createTestUsers();
     // Attempt cross-tenant insert — RLS will reject.
-    await setRlsActor(userA as Actor).from("invites")
+    const { error: insertError } = await setRlsActor(userA as Actor).from("invites")
       .insert({
         workspace_id: wsB.id,
         email: "x@y.z",
         token_hash: "h",
         invited_by: userA.id,
-      })
-      .catch(() => null); // expected to fail
+      });
+    expect(insertError?.code).toBe("42501"); // row-level security violation
 
     // The DB does not auto-log RLS rejections — the app layer must call
     // logRlsViolation() when it catches a PostgrestError 42501.
@@ -96,8 +98,3 @@ describe("RLS: audit logging", () => {
   });
 });
 
-// Cleanup between tests so state doesn't leak.
-afterEach(async () => {
-  // Only purge test workspaces (non-personal).  Personal workspaces
-  // are cleaned up when the user is deleted via Supabase auth admin.
-});
