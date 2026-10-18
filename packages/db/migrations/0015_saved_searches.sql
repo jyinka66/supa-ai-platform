@@ -49,12 +49,11 @@ create table if not exists public.search_history (
 
 create index if not exists idx_search_history_user
   on public.search_history(user_id, created_at desc);
+-- Avoid a time-based partial predicate: now() is not IMMUTABLE in PostgreSQL.
 create index if not exists idx_search_history_workspace
-  on public.search_history(workspace_id, created_at desc)
-  where created_at > now() - interval '90 days';
+  on public.search_history(workspace_id, created_at desc);
 create index if not exists idx_search_history_query
-  on public.search_history(workspace_id, query)
-  where created_at > now() - interval '30 days';
+  on public.search_history(workspace_id, query, created_at desc);
 
 do $$
 begin
