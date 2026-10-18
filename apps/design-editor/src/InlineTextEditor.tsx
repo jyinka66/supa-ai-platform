@@ -1,5 +1,9 @@
 import type { InlineTextState } from "./useInlineText";
 
+interface InlineTextEditorProps {
+  state: InlineTextState;
+}
+
 /** The absolutely positioned contenteditable editor over the canvas text node. */
 export function InlineTextEditor({ state }: InlineTextEditorProps) {
   if (!state.nodeId) return null;
