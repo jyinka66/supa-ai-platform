@@ -3,14 +3,14 @@
 -- Webhooks v2 — the spec's canonical design.
 --
 -- DIVERGENCE from migration 0029 (which created `webhook_endpoints` +
--- `webhook_deliveries`):
+-- `webhook_deliveries_v2`):
 --   - 0029 used a generic RLS policy (any member can read/write webhooks).
 --   - 0040 restricts to admin+ only (is_ws_member + role check).
 --   - 0029 didn't enforce HTTPS-only on the URL.
 --   - 0040 enforces `url ~ '^https://'` (no HTTP, no IP literals).
 --   - 0029 didn't have `active` flag (used `disabled_until` for circuit breaker).
 --   - 0040 uses `active boolean` (simpler — flip on/off).
---   - 0040 adds `ws_id` to `webhook_deliveries` (direct scoping — 0029 scoped
+--   - 0040 adds `ws_id` to `webhook_deliveries_v2` (direct scoping — 0029 scoped
 --     via `endpoint_id → webhook_endpoints.ws_id` join).
 --
 -- This migration creates the v2 tables alongside the existing v1 tables
@@ -46,10 +46,10 @@ create index on webhooks (ws_id) where active = true;
 alter table webhooks force row level security;
 
 -- ───────────────────────────────────────────────
--- webhook_deliveries — delivery attempts (with ws_id for direct scoping)
+-- webhook_deliveries_v2 — delivery attempts (with ws_id for direct scoping)
 -- ───────────────────────────────────────────────
 
-create table webhook_deliveries (
+create table webhook_deliveries_v2 (
   id uuid primary key default gen_random_uuid(),
   webhook_id uuid not null references webhooks(id) on delete cascade,
   ws_id uuid not null references workspaces(id) on delete cascade,
@@ -62,16 +62,16 @@ create table webhook_deliveries (
   created_at timestamptz not null default now()
 );
 
-alter table webhook_deliveries enable row level security;
+alter table webhook_deliveries_v2 enable row level security;
 -- Admin+ only (same as webhooks — deliveries contain payload data).
-create policy wd_read on webhook_deliveries for select to supa_app
+create policy wd_read on webhook_deliveries_v2 for select to supa_app
   using (is_ws_member(ws_id, 'admin'));
 
-comment on table webhook_deliveries is '@tenant_table — webhook delivery attempts (admin-only read)';
+comment on table webhook_deliveries_v2 is '@tenant_table — webhook delivery attempts (admin-only read)';
 
-create index on webhook_deliveries (webhook_id, created_at desc);
-create index on webhook_deliveries (ws_id, created_at desc);
-create index on webhook_deliveries (next_retry_at) where delivered_at is null;
+create index on webhook_deliveries_v2 (webhook_id, created_at desc);
+create index on webhook_deliveries_v2 (ws_id, created_at desc);
+create index on webhook_deliveries_v2 (next_retry_at) where delivered_at is null;
 
 -- Force RLS.
-alter table webhook_deliveries force row level security;
+alter table webhook_deliveries_v2 force row level security;
