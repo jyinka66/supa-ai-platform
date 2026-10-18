@@ -123,7 +123,8 @@ function hasRLSForced(sql: string, table: string): boolean {
 }
 
 /**
- * Check if a table has an RLS policy (is_ws_member, auth.uid, or current_uid).
+ * Check if a table has a table-specific RLS policy using a tenant/user predicate
+ * or an explicit trusted-system role.
  */
 function hasRLSPolicy(sql: string, table: string): boolean {
   // Keep each policy as its own unit. A predicate from an unrelated later
@@ -134,7 +135,7 @@ function hasRLSPolicy(sql: string, table: string): boolean {
   );
   const statements = [...sql.matchAll(pattern)].map((match) => match[0]);
   return statements.some((statement) =>
-    /is_ws_member|current_uid\\(\\)|auth\\.uid\\(\\)|workspace_members|memberships|admin_users|to\\s+supa_system/i.test(statement),
+    /is_ws_member|current_uid\(\)|auth\.uid\(\)|workspace_members|memberships|admin_users|to\s+supa_system/i.test(statement),
   );
 }
 

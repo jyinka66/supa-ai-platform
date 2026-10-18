@@ -1,15 +1,14 @@
 import { describe, it, expect } from "vitest";
-
-const integrationDescribe = describe.skipIf(process.env.RUN_INTEGRATION !== "1");
 import {
   createTestUsers,
   setRlsActor,
-  purgeTenant,
   readAuditLog,
   logRlsViolation,
   minValidRow,
 } from "./helpers";
 import type { Actor } from "./helpers";
+
+const integrationDescribe = describe.skipIf(process.env.RUN_INTEGRATION !== "1");
 
 const TABLES = ["profiles", "workspaces", "workspace_members", "invites", "user_sessions"] as const;
 
@@ -31,7 +30,7 @@ integrationDescribe.each(TABLES)("RLS isolation: %s", (table) => {
     const { userA, wsB } = await createTestUsers();
     const attempt = setRlsActor(userA as Actor).from(table);
     await expect(
-      attempt.insert({ workspace_id: wsB.id, ...minValidRow(table) }),
+      attempt.insert({ workspace_id: wsB.id, ...minValidRow(table) }).throwOnError(),
     ).rejects.toThrow(/row-level security|violates/i);
   });
 });
@@ -43,7 +42,8 @@ integrationDescribe("RLS: workspace_members", () => {
     await expect(
       setRlsActor(memberA as Actor).from("workspace_members")
         .update({ role: "admin" })
-        .eq("workspace_id", wsA.id),
+        .eq("workspace_id", wsA.id)
+        .throwOnError(),
     ).rejects.toThrow(/row-level security|violates/i);
   });
 });
@@ -58,7 +58,7 @@ integrationDescribe("RLS: invites", () => {
           email: "x@y.z",
           token_hash: "h",
           invited_by: viewerA.id,
-        }),
+        }).throwOnError(),
     ).rejects.toThrow(/row-level security|violates/i);
   });
 });
@@ -69,7 +69,8 @@ integrationDescribe("RLS: workspaces", () => {
     await expect(
       setRlsActor(ownerA as Actor).from("workspaces")
         .delete()
-        .eq("id", personalWsA.id),
+        .eq("id", personalWsA.id)
+        .throwOnError(),
     ).rejects.toThrow(/row-level security|viol/i);
   });
 });
