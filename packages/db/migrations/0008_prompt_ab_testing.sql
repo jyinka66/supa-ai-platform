@@ -14,7 +14,7 @@ create table if not exists public.prompt_versions (
   system      text not null, -- the actual system prompt text (for audit/reproducibility)
   is_active   boolean not null default false,
   created_at  timestamptz not null default now(),
-  unique (mode, language, version),
+  unique (mode, language, version)
 );
 
 -- PostgreSQL supports partial unique indexes (not filtered table constraints).
