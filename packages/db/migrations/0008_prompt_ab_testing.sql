@@ -15,8 +15,11 @@ create table if not exists public.prompt_versions (
   is_active   boolean not null default false,
   created_at  timestamptz not null default now(),
   unique (mode, language, version),
-  unique (mode, language) filter (where is_active = true)  -- only one active per slot
 );
+
+-- PostgreSQL supports partial unique indexes (not filtered table constraints).
+create unique index if not exists prompt_versions_one_active_per_slot
+  on public.prompt_versions(mode, language) where is_active = true;
 
 comment on table public.prompt_versions is
   'Prompt A/B test registry. Each (mode, language) slot has at most one active version.';
