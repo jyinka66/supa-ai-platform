@@ -381,9 +381,10 @@ export function ChatClient({ conversation, initialMessages, locale }: ChatClient
         }
       }
 
-      if (streamFailure) {
-        if (streamFailure.partial) {
-          const partial = typeof streamFailure.content === "string" ? streamFailure.content : streamedText;
+      const currentFailure = streamFailure;
+      if (currentFailure) {
+        if (currentFailure.partial) {
+          const partial = typeof currentFailure.content === "string" ? currentFailure.content : streamedText;
           if (partial.trim()) {
             setMessages((previous) => [...previous, {
               id: finalMessageId ?? assistantId,
@@ -394,17 +395,17 @@ export function ChatClient({ conversation, initialMessages, locale }: ChatClient
               version: 1,
               languageDetected: null,
               promptVersion: null,
-              status: streamFailure.aborted ? "aborted" : "error",
+              status: currentFailure.aborted ? "aborted" : "error",
               createdAt: new Date(),
             }]);
           }
           setStreaming(null);
-          const reason = getFailureReason(streamFailure.reason);
+          const reason = getFailureReason(currentFailure.reason);
           setFailure({
-            message: streamFailure.message ?? "Supa AI stopped before finishing this response.",
+            message: currentFailure.message ?? "Supa AI stopped before finishing this response.",
             reason,
-            nextStep: streamFailure.nextStep,
-            requestId: streamFailure.requestId,
+            nextStep: currentFailure.nextStep,
+            requestId: currentFailure.requestId,
           });
           setFailedPrompt({ content, userMessage: userMsg });
           setStatusText("");
@@ -412,12 +413,12 @@ export function ChatClient({ conversation, initialMessages, locale }: ChatClient
         }
 
         throw Object.assign(
-          new Error(streamFailure.message ?? "Supa AI couldn't finish this response."),
+          new Error(currentFailure.message ?? "Supa AI couldn't finish this response."),
           { chatFailure: {
-            message: streamFailure.message ?? "Supa AI couldn't finish this response.",
-            reason: getFailureReason(streamFailure.reason),
-            nextStep: streamFailure.nextStep,
-            requestId: streamFailure.requestId,
+            message: currentFailure.message ?? "Supa AI couldn't finish this response.",
+            reason: getFailureReason(currentFailure.reason),
+            nextStep: currentFailure.nextStep,
+            requestId: currentFailure.requestId,
           } satisfies ChatFailure },
         );
       }
