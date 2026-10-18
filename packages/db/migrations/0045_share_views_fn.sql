@@ -3,10 +3,10 @@
 -- Security-definer functions for the public share resolution route.
 --
 -- WHY: the public share route (GET /api/shares/[token]) has NO user context.
--- RLS on share_links/share_views denies all writes + most reads for anon.
+-- RLS on share_links_v2/share_views denies all writes + most reads for anon.
 -- But the route must:
 --   1. INSERT share_views rows (success + failed-password attempts).
---   2. Atomically increment share_links.view_count (race-safe under concurrency).
+--   2. Atomically increment share_links_v2.view_count (race-safe under concurrency).
 --   3. Count recent failed views (for the password rate-limit).
 --
 -- These are the ONLY paths that write share_views or increment view_count.
@@ -50,7 +50,7 @@ begin
   if p_ok then
     -- Atomic conditional increment — the WHERE clause is the quota gate.
     -- RETURNING true → admitted; no row → link became invalid concurrently.
-    update share_links
+    update share_links_v2
        set view_count = view_count + 1
      where id = p_share_id
        and revoked_at is null
@@ -115,7 +115,7 @@ security definer
 set search_path = public
 as $$
   with updated as (
-    update share_links
+    update share_links_v2
        set revoked_at = now()
      where expires_at is not null
        and expires_at < now()
@@ -129,13 +129,13 @@ $$;
 -- Permissions: only supa_app (the app role) can call these.
 -- ───────────────────────────────────────────────
 
-revoke execute on record_share_view from public;
-revoke execute on count_failed_views from public;
-revoke execute on revoke_expired_shares from public;
+revoke execute on function public.record_share_view(uuid, text, boolean) from public;
+revoke execute on function public.count_failed_views(uuid, integer) from public;
+revoke execute on function public.revoke_expired_shares() from public;
 
-grant execute on record_share_view to supa_app;
-grant execute on count_failed_views to supa_app;
-grant execute on revoke_expired_shares to supa_app;
+grant execute on function public.record_share_view(uuid, text, boolean) to supa_app;
+grant execute on function public.count_failed_views(uuid, integer) to supa_app;
+grant execute on function public.revoke_expired_shares() to supa_app;
 
 comment on function record_share_view(uuid, text, boolean) is
   'Security-definer: atomic view admission + share_views insert. Public route only.';
