@@ -20,14 +20,10 @@ export default async function DashboardPage({ params }: Props) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("onboarding_complete, onboarding_step, full_name, avatar_path, language")
+    .select("full_name, avatar_path, language")
     .eq("id", session.user.id)
     .maybeSingle();
 
-  // Resume onboarding where the user left off, unless they've finished.
-  if (!profile?.onboarding_complete) {
-    redirect(`/${locale}/onboarding`);
-  }
 
   const workspaces = await listWorkspaces();
 
