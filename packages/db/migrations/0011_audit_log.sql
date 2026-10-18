@@ -20,7 +20,6 @@
 --   alter table audit_log_new rename to audit_log;
 
 -- Drop old policies + indexes from migration 0001's audit_log.
-drop policy if exists audit_log_service_select on public.audit_log;
 drop index if exists public.idx_audit_log_type;
 drop index if exists public.idx_audit_log_ws;
 drop index if exists public.idx_audit_log_user;
