@@ -214,7 +214,14 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
         }
 
         const destination = `/${locale}/chat/${payload.data.id}`;
-        router.push(initialPrompt?.trim() ? destination + `?prompt=${encodeURIComponent(initialPrompt.trim())}` : destination);
+        if (initialPrompt?.trim()) {
+          try {
+            window.sessionStorage.setItem(`supa-pending-prompt:${payload.data.id}`, initialPrompt.trim());
+          } catch {
+            throw new Error("Your browser blocked secure prompt handoff. Your prompt is still here; please allow session storage and try again.");
+          }
+        }
+        router.push(destination);
       } catch (error) {
         setActionError(error instanceof Error ? error.message : "Could not start this tool. Please try again.");
         setBusyMode(null);

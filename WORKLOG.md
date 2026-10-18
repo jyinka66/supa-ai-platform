@@ -4,7 +4,7 @@
 
 **Updated:** 2026-10-18  
 **Repository:** `jyinka66/supa-ai-platform` · **Branch:** `main`  
-**Source commit at last verification:** `9dfd76abbbda990ee6b4fba6e496f96701855b35` (shared workspace navigation/history/mode switch).  
+**Latest verified source commit:** `e3259c0cef5c0ff408730042e8699bd33cac3252` (serverless DB pooler support; Vercel READY/CI success before the current prompt-handoff follow-up).  
 **Production:** https://supa-ai-platform.vercel.app/  
 **Supabase project ref:** `ikugfclxahxvjduowjbo`
 
@@ -145,9 +145,15 @@ Test: sign in → Home → switch workspace → create chat → stream answer �
 - Production health smoke test found `/api/health` reports `db: fail`, `feature_flags: fail`, `redis: ok`; `/api/readyz` returns `not_ready`. This is now the top infrastructure blocker.
 
 
-### 2026-10-18 — Database pooler support implementation (commit pending CI at time of log update)
+### 2026-10-18 — Database pooler support implementation (`e3259c0`, deployment READY)
 - Added exported `resolveDatabaseUrl()` in `packages/db/src/client.ts`.
 - If `SUPABASE_DB_POOLER_HOST` is configured, it validates the host suffix and hostname-only input, preserves the existing DB password, sets the shared-pooler username to `postgres.<project-ref>`, and defaults to port `6543` (transaction mode). Port `5432` is available for explicit session-mode use.
 - Supabase endpoints use `ssl: "require"`; Vercel instances use a client pool max of 1, `prepare: false`, 10-second connect timeout and 20-second idle timeout.
 - Added `packages/db/tests/database-url.test.ts` for passthrough, pooler rewrite, password preservation, host validation and port validation. Added optional vars to `.env.example`.
 - **This does not fix production by itself:** the production `SUPABASE_DB_POOLER_HOST` is not yet configured because its pooler cluster cannot be derived from region. Need the exact hostname from Supabase Dashboard > Connect > Transaction pooler, then set it in Vercel and verify both health endpoints return 200.
+
+
+### 2026-10-18 — Home prompt handoff privacy fix (source follow-up pending CI)
+- Changed new Home prompt handoff from a `?prompt=` query string to per-tab `sessionStorage` keyed by conversation ID, so prompt text is not written into the address bar, browser history, or request URLs.
+- Kept a compatibility path for older `?prompt=` links; the chat removes the old parameter from the address bar as soon as it consumes it.
+- This commit needs build/CI verification. Database health is still blocked until the exact Supabase transaction-pooler hostname is configured in Vercel; do not claim healthy until `/api/health` and `/api/readyz` return 200.

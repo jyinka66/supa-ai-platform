@@ -498,20 +498,35 @@ export function ChatClient({ conversation, initialMessages, locale, workspaces, 
 
   useEffect(() => {
     if (initialPromptConsumed.current) return;
-    const params = new URLSearchParams(window.location.search);
-    const initialPrompt = params.get("prompt");
-    if (!initialPrompt?.trim()) return;
 
+    let initialPrompt: string | null = null;
+    try {
+      const key = `supa-pending-prompt:${conversation.id}`;
+      initialPrompt = window.sessionStorage.getItem(key);
+      if (initialPrompt) window.sessionStorage.removeItem(key);
+    } catch {
+      // Query-string compatibility below covers old links; new Home prompts use session storage.
+    }
+
+    // Compatibility for links created by earlier builds. Newly submitted
+    // prompts are handed off via sessionStorage so the text is not kept in URLs.
+    const params = new URLSearchParams(window.location.search);
+    const legacyPrompt = params.get("prompt");
+    if (legacyPrompt) {
+      params.delete("prompt");
+      const query = params.toString();
+      window.history.replaceState(
+        window.history.state,
+        "",
+        window.location.pathname + (query ? "?" + query : "") + window.location.hash,
+      );
+      if (!initialPrompt) initialPrompt = legacyPrompt;
+    }
+
+    if (!initialPrompt?.trim()) return;
     initialPromptConsumed.current = true;
-    params.delete("prompt");
-    const query = params.toString();
-    window.history.replaceState(
-      window.history.state,
-      "",
-      window.location.pathname + (query ? "?" + query : "") + window.location.hash,
-    );
     void handleSend(initialPrompt);
-  }, [handleSend]);
+  }, [conversation.id, handleSend]);
 
   const handleStop = useCallback(() => {
     abortRef.current?.abort();
