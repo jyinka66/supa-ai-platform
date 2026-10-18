@@ -38,7 +38,7 @@ create table supa_os_marketplace_items (
   monetization          text not null check (monetization in (
                           'free', 'one_time', 'subscription', 'revenue_share'
                         )),
-  price                 numeric(10,2) not null default 0 check (price >= 0),
+  price                 numeric(10,2) not null default 0,
   version              text not null,                       -- semver (1.2.3).
   tags                  text[] not null default '{}',
   manifest             jsonb not null default '{}'::jsonb,
