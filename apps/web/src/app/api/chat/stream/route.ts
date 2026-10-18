@@ -16,432 +16,556 @@ const redis = Redis.fromEnv();
 const STREAM_TTL_SECONDS = 300;
 const IDEMPOTENCY_TTL_SECONDS = 60;
 
-/**
- * NOTE: this route runs on the Node.js runtime, NOT edge.
- *
- * Edge runtime doesn't support:
- *   - drizzle-orm/postgres-js (needs the postgres-js driver)
- *   - @upstash/redis when using REST fallback
- *   - crypto.subtle timing-safe comparison helpers
- *
- * The streaming response itself is still chunked; the only trade-off is
- * slightly higher cold-start latency vs. edge (mitigated by Vercel's
- * warm-instance reuse).
- */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60; // matches Vercel Pro plan max for streaming
+export const maxDuration = 60;
 
 const Body = z.object({
   conversationId: z.string().uuid(),
   parentId: z.string().uuid().nullable().optional(),
-  content: z.string().min(1).max(32_000),
+  clientMessageId: z.string().uuid().optional(),
+  content: z.string().trim().min(1).max(32_000),
   idempotencyKey: z.string().min(8).max(128),
   language: z.string().regex(/^[a-z]{2}(-[A-Z]{2})?$/).default("en"),
-  mode: z
-    .enum(["chat", "write", "rewrite", "summarize", "translate", "code", "image", "document", "plan"])
-    .default("chat"),
+  mode: z.enum(["chat", "write", "rewrite", "summarize", "translate", "code", "image", "document", "plan"]).default("chat"),
   needsVision: z.boolean().optional(),
-  userOverride: z.string().optional(),
+  userOverride: z.enum(["gemini", "groq", "openrouter"]).optional(),
 });
 
+type FailureDetail = { provider: Provider; reason: string };
+
+const PROVIDER_LABEL: Record<Provider, string> = {
+  gemini: "Gemini",
+  groq: "Groq",
+  openrouter: "OpenRouter",
+};
+
+const PROVIDER_MODEL: Record<Provider, string> = {
+  gemini: "gemini-3.8-flash",
+  groq: "openai/gpt-oss-120b",
+  openrouter: "openrouter/auto",
+};
+
 function sseEncode(event: string, data: unknown): Uint8Array {
-  const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-  return new TextEncoder().encode(payload);
+  return new TextEncoder().encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+}
+
+function headers(requestId?: string): HeadersInit {
+  const result: Record<string, string> = {
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
+  };
+  if (requestId) result["X-Request-Id"] = requestId;
+  return result;
+}
+
+function safeFailureReason(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  if (/API_KEY.*not set|key.*missing|missing.*api.?key/i.test(message)) {
+    return "API key is not configured";
+  }
+  if (/\b(401|403)\b|unauthorized|invalid api key|permission denied/i.test(message)) {
+    return "API key or provider permissions were rejected";
+  }
+  if (/\b429\b|quota|rate.?limit|resource_exhausted/i.test(message)) {
+    return "Provider quota or rate limit was reached";
+  }
+  if (/\b404\b|model.*not found|not supported/i.test(message)) {
+    return "Configured model or endpoint is unavailable";
+  }
+  if (/\b5\d\d\b|overloaded|temporarily unavailable/i.test(message)) {
+    return "Provider is temporarily unavailable";
+  }
+  if (/timeout|timed out|fetch failed|ECONN|ENOTFOUND|network/i.test(message)) {
+    return "Connection to the provider failed";
+  }
+  if (/empty_provider_response/i.test(message)) {
+    return "Provider returned an empty response";
+  }
+  return "Provider request failed";
 }
 
 export async function POST(req: NextRequest) {
-  // Rate-limit first (by user if authenticated, by IP if anonymous).
-  // Tier: "chat" = 20 req/min per user — strict because each call costs money.
   const denied = await guard(req, "chat");
   if (denied) return denied;
 
-  // Auth — anonymous streaming is not allowed.
   let user;
   try {
     user = await requireUser();
   } catch {
-    return problem(401, "unauthenticated");
+    return problem(401, "unauthenticated", "Please sign in again to continue chatting.");
   }
 
-  // Extract the request ID for traceability — threads through to message_meta.
-  const requestId =
-    req.headers.get("x-request-id") ??
-    req.headers.get("x-trace-id") ??
-    crypto.randomUUID();
+  const requestId = req.headers.get("x-request-id") ?? req.headers.get("x-trace-id") ?? crypto.randomUUID();
 
-  // Parse + validate body.
-  let body: unknown;
+  let rawBody: unknown;
   try {
-    body = await req.json();
+    rawBody = await req.json();
   } catch {
-    return problem(400, "invalid_json");
+    return problem(400, "invalid_json", "Your message could not be read. Please try again.");
   }
-  const parsed = Body.safeParse(body);
+
+  const parsed = Body.safeParse(rawBody);
   if (!parsed.success) {
-    return problem(400, "invalid_request", parsed.error.issues[0]?.message);
-  }
-  const { conversationId, parentId, content, idempotencyKey, language, mode, needsVision, userOverride } =
-    parsed.data;
-
-  // Idempotency: same key = same response (dedupe).
-  // Value stored is the message id, so the client can fetch the existing message.
-  const existing = await redis.get<string>(`idem:${idempotencyKey}`);
-  if (existing) {
-    return new Response(
-      new ReadableStream({
-        start(controller) {
-          controller.enqueue(sseEncode("idempotent", { messageId: existing }));
-          controller.enqueue(sseEncode("done", {}));
-          controller.close();
-        },
-      }),
-      { headers: streamHeaders() },
-    );
+    return problem(400, "invalid_request", parsed.error.issues[0]?.message ?? "Please check your message and try again.");
   }
 
-  // Claim the idempotency key BEFORE we start — prevents concurrent
-  // duplicates from racing past the GET check.
-  const claim = await redis.set(`idem:${idempotencyKey}`, "in-flight", {
-    ex: IDEMPOTENCY_TTL_SECONDS,
-    nx: true, // only set if not exists
-  });
-  if (!claim) {
-    // Another request is in flight with the same key — tell the client
-    // to retry / deduplicate on their end.
-    return problem(409, "duplicate_in_flight");
-  }
+  const {
+    conversationId,
+    parentId,
+    clientMessageId,
+    content,
+    idempotencyKey,
+    language,
+    mode,
+    needsVision,
+    userOverride,
+  } = parsed.data;
 
-  const router = new ModelRouter();
-  const streamId = crypto.randomUUID();
-  const fallbackPath: string[] = [];
-  let firstTokenMs: number | null = null;
-  let totalOutputTokens = 0;
-
-  // Load the conversation to verify access + get the actual mode/language.
   let conversation;
   try {
     conversation = await getConversation(conversationId, user.id);
-  } catch (err) {
-    const code = (err as Error).message;
-    if (code === "not_found") return problem(404, "conversation_not_found");
-    if (code === "forbidden") return problem(403, "forbidden");
-    return problem(500, "conversation_load_failed");
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "";
+    if (code === "not_found") return problem(404, "conversation_not_found", "This conversation no longer exists.");
+    if (code === "forbidden") return problem(403, "forbidden", "You don't have access to this conversation.");
+    console.error("[chat] conversation_load_failed", { requestId, error });
+    return problem(503, "conversation_load_failed", "Supa AI couldn't open this conversation. Please retry.");
   }
 
-  // Use the conversation's mode if the body didn't specify one, or if
-  // the body's mode doesn't match (the conversation's mode is canonical).
-  const effectiveMode: Mode = isMode(conversation.mode)
-    ? conversation.mode
-    : isMode(mode)
-      ? mode
-      : "chat";
-  const effectiveLanguage =
-    conversation.languagePref ?? language ?? "en";
+  // Idempotency cache errors should be visible and actionable, never swallowed.
+  // Old "error" sentinels are cleared so the user can retry a failed generation.
+  let existing: string | null = null;
+  try {
+    existing = await redis.get<string>(`idem:${idempotencyKey}`);
+    if (existing === "error") {
+      await redis.del(`idem:${idempotencyKey}`);
+      existing = null;
+    }
+  } catch (error) {
+    console.error("[chat] redis_idempotency_read_failed", { requestId, error });
+    return problem(503, "chat_cache_unavailable", "Supa AI is temporarily unavailable. Please try again in a moment.");
+  }
 
-  // Build the system prompt from the versioned prompt library.
+  if (existing === "in-flight") {
+    return problem(409, "duplicate_in_flight", "This message is already being processed. Please wait a moment.");
+  }
+
+  if (existing) {
+    try {
+      const messages = await getMessages(conversationId, 100);
+      const saved = messages.find((item) => item.id === existing);
+      if (saved) {
+        const replay = new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(sseEncode("status", { phase: "writing", message: "Loading your saved reply…" }));
+            if (saved.content) controller.enqueue(sseEncode("delta", { text: saved.content, replay: true }));
+            controller.enqueue(sseEncode("done", { messageId: saved.id, provider: "saved", fallbackPath: [] }));
+            controller.close();
+          },
+        });
+        return new Response(replay, { headers: headers(requestId) });
+      }
+      await redis.del(`idem:${idempotencyKey}`);
+    } catch (error) {
+      console.error("[chat] idempotency_replay_failed", { requestId, error });
+      return problem(503, "chat_replay_unavailable", "Supa AI couldn't resume the previous response. Please try again.");
+    }
+  }
+
+  let claimed: string | null = null;
+  try {
+    claimed = await redis.set(`idem:${idempotencyKey}`, "in-flight", {
+      ex: IDEMPOTENCY_TTL_SECONDS,
+      nx: true,
+    });
+  } catch (error) {
+    console.error("[chat] redis_idempotency_claim_failed", { requestId, error });
+    return problem(503, "chat_cache_unavailable", "Supa AI is temporarily unavailable. Please try again in a moment.");
+  }
+  if (!claimed) {
+    return problem(409, "duplicate_in_flight", "This message is already being processed. Please wait a moment.");
+  }
+
+  const effectiveMode: Mode = isMode(conversation.mode) ? conversation.mode : mode;
+  const effectiveLanguage = conversation.languagePref ?? language ?? "en";
   const { system, version: promptVersion } = getPrompt(effectiveMode, effectiveLanguage);
 
-  // Load recent conversation history so the LLM has context.
-  // We cap at 50 messages (most recent) to stay within token budgets.
-  const history = await getMessages(conversationId, 50);
+  let history: Awaited<ReturnType<typeof getMessages>>;
+  try {
+    history = await getMessages(conversationId, 50);
+  } catch (error) {
+    console.error("[chat] history_load_failed", { requestId, error });
+    await redis.del(`idem:${idempotencyKey}`).catch(() => {});
+    return problem(503, "history_load_failed", "Supa AI couldn't load this conversation's history. Please retry.");
+  }
   const historyMessages = history
-    .filter((m) => m.role !== "system" && m.status === "completed")
-    .map((m) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
+    .filter((message) => message.role !== "system" && message.status === "completed")
+    .map((message) => ({
+      role: message.role as "user" | "assistant",
+      content: message.role === "user" ? wrapUserContent(message.content) : message.content,
     }));
 
-  // Persist the user message first (so it's visible in the conversation
-  // history immediately, even if the assistant stream fails).
-  await persistMessage({
-    conversationId,
-    parentId: parentId ?? null,
-    role: "user",
-    content,
-    provider: "user",
-    model: "user",
-    status: "completed",
-    firstTokenMs: null,
-    totalMs: 0,
-    fallbackPath: [],
-    idempotencyKey: undefined,
+  let userMessageId: string;
+  try {
+    userMessageId = await persistMessage({
+      conversationId,
+      parentId: parentId ?? null,
+      messageId: clientMessageId,
+      role: "user",
+      content,
+      provider: "user",
+      model: "user",
+      status: "completed",
+      firstTokenMs: null,
+      totalMs: 0,
+      fallbackPath: [],
+    });
+  } catch (error) {
+    console.error("[chat] user_message_save_failed", { requestId, error });
+    await redis.del(`idem:${idempotencyKey}`).catch(() => {});
+    return problem(503, "message_save_failed", "Your message couldn't be saved. Please try again.");
+  }
+
+  const router = new ModelRouter();
+  const routeResult = router.route({
+    mode: effectiveMode as RouteMode,
+    needsVision,
+    userOverride,
+    language: effectiveLanguage,
   });
-
-  // Abort controller so client disconnect cancels the provider call.
+  const providers: Provider[] = [routeResult.provider, ...router.knownProviders.filter((item) => item !== routeResult.provider)];
+  const streamId = crypto.randomUUID();
+  const fallbackPath: Provider[] = [];
+  const failures: FailureDetail[] = [];
   const clientAbort = new AbortController();
-  const release = new AbortController(); // used to signal the stream is done
+  const release = new AbortController();
+  const buffer = new ThrottledStreamBuffer(streamId, redis, { intervalMs: 250, sizeThresholdBytes: 1024, ttlSeconds: STREAM_TTL_SECONDS });
 
-  // Throttled Redis buffer — coalesces per-delta writes into ~1 write per 250ms
-  // (or when 1KB accumulates). Cuts Redis write volume ~10× vs. per-token writes.
-  const buffer = new ThrottledStreamBuffer(streamId, redis);
-
-  const stream = new ReadableStream<Uint8Array>({
+  const responseStream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const cleanup = () => {
+      let closed = false;
+      let accumulated = "";
+      let firstTokenMs: number | null = null;
+      let selectedProvider: Provider | null = null;
+      let providerStartedAt = Date.now();
+
+      const send = (event: string, data: unknown) => {
+        if (closed) return;
+        try {
+          controller.enqueue(sseEncode(event, data));
+        } catch {
+          closed = true;
+        }
+      };
+      const close = () => {
+        if (closed) return;
+        closed = true;
         try {
           controller.close();
         } catch {
-          // Already closed — ignore.
+          // The client may have disconnected or the stream may already be closed.
         }
       };
-
-      // Listen for client disconnect.
-      req.signal.addEventListener("abort", () => {
+      const releaseRequest = () => {
+        req.signal.removeEventListener("abort", onRequestAbort);
+      };
+      const onRequestAbort = () => {
         clientAbort.abort();
         release.abort();
+      };
+      req.signal.addEventListener("abort", onRequestAbort, { once: true });
+
+      send("status", {
+        phase: "thinking",
+        message: "Supa AI is thinking through your request…",
       });
 
-      // Build the routing request.
-      const routeResult = router.route({
-        mode: mode as RouteMode,
-        needsVision,
-        userOverride,
-        language,
-      });
-
-      // Build the list of providers to try — primary first, then fallbacks.
-      const providersToTry: Provider[] = [routeResult.provider];
-      for (const p of router.knownProviders) {
-        if (p !== routeResult.provider) providersToTry.push(p);
-      }
-
-      let accumulated = "";
-      let lastProvider: Provider | null = null;
-
-      for (const provider of providersToTry) {
-        // Skip providers whose circuit breaker is open. The router's `route()`
-        // already does this for the primary pick, but we re-check here for
-        // fallback candidates (which may have tripped since the route call).
-        if (router.getHealthSnapshot(provider).circuitOpen) continue;
-        const started = Date.now();
-        try {
-          const providerStream = await callProvider(provider, {
-            system,
-            messages: [
-              ...historyMessages.map((m) => ({
-                role: m.role,
-                // Wrap historical user messages too so the model treats
-                // prior turns as data, not as instructions in context.
-                content: m.role === "user" ? wrapUserContent(m.content) : m.content,
-              })),
-              { role: "user" as const, content: wrapUserContent(content) },
-            ],
-            language: effectiveLanguage,
-            conversationId,
-            signal: clientAbort.signal,
-          });
-
-          for await (const chunk of providerStream) {
-            if (release.signal.aborted) break;
-
-            if (firstTokenMs === null) {
-              firstTokenMs = Date.now() - started;
-            }
-            accumulated += chunk.text;
-            totalOutputTokens++;
-
-            // Throttled buffer — coalesces writes to Redis.
-            // The buffer flushes every 250ms or when 1KB accumulates,
-            // so we don't write per-token (which would be ~10× more writes).
-            void buffer.append(chunk.text);
-
-            controller.enqueue(sseEncode("delta", { streamId, text: chunk.text }));
+      try {
+        for (const provider of providers) {
+          if (release.signal.aborted) break;
+          if (router.getHealthSnapshot(provider).circuitOpen) {
+            failures.push({ provider, reason: "Provider is temporarily paused after recent failures" });
+            continue;
           }
 
-          if (release.signal.aborted) {
-            // Client disconnected — save what we have as 'aborted'.
-            const messageId = await persistMessage({
+          providerStartedAt = Date.now();
+          accumulated = "";
+          send("status", {
+            phase: "thinking",
+            message: `Supa AI is preparing an answer with ${PROVIDER_LABEL[provider]}…`,
+            provider,
+          });
+
+          try {
+            const providerStream = await callProvider(provider, {
+              system,
+              messages: [
+                ...historyMessages,
+                { role: "user" as const, content: wrapUserContent(content) },
+              ],
+              language: effectiveLanguage,
               conversationId,
-              parentId: parentId ?? null,
-              role: "assistant",
-              content: sanitizeModelOutput(accumulated),
+              signal: clientAbort.signal,
+            });
+
+            for await (const chunk of providerStream) {
+              if (release.signal.aborted) break;
+              if (!chunk.text) continue;
+
+              if (firstTokenMs === null) {
+                firstTokenMs = Date.now() - providerStartedAt;
+                send("status", {
+                  phase: "writing",
+                  message: "Supa AI is writing your response…",
+                  provider,
+                });
+              }
+
+              accumulated += chunk.text;
+              buffer.append(chunk.text);
+              send("delta", { streamId, text: chunk.text, provider });
+            }
+
+            if (release.signal.aborted) {
+              const partial = sanitizeModelOutput(accumulated);
+              if (partial) {
+                try {
+                  await persistMessage({
+                    conversationId,
+                    parentId: userMessageId,
+                    role: "assistant",
+                    content: partial,
+                    provider,
+                    model: PROVIDER_MODEL[provider],
+                    status: "aborted",
+                    firstTokenMs,
+                    totalMs: Date.now() - providerStartedAt,
+                    fallbackPath: [...fallbackPath],
+                    promptVersion,
+                    requestId,
+                    outputTokens: Math.ceil(partial.length / 4),
+                  });
+                } catch (error) {
+                  console.error("[chat] aborted_message_save_failed", { requestId, error });
+                }
+              }
+              send("done", { status: "aborted", provider });
+              await buffer.destroy();
+              close();
+              return;
+            }
+
+            if (!accumulated.trim()) {
+              throw new Error("empty_provider_response");
+            }
+
+            selectedProvider = provider;
+            router.onResult(provider, firstTokenMs, false);
+            break;
+          } catch (error) {
+            if (release.signal.aborted || clientAbort.signal.aborted) {
+              throw error;
+            }
+
+            const reason = safeFailureReason(error);
+            failures.push({ provider, reason });
+            fallbackPath.push(provider);
+            router.onResult(provider, firstTokenMs, true);
+            console.warn("[chat] provider_attempt_failed", {
+              requestId,
               provider,
-              model: routeResult.model,
-              status: "aborted",
-              firstTokenMs,
-              totalMs: Date.now() - started,
+              reason,
+              error: error instanceof Error ? error.message : String(error),
+            });
+
+            // Once a model has emitted text, do not splice a second model's
+            // answer into it. Preserve the partial answer and explain clearly.
+            if (accumulated.trim()) {
+              const partial = sanitizeModelOutput(accumulated);
+              try {
+                await persistMessage({
+                  conversationId,
+                  parentId: userMessageId,
+                  role: "assistant",
+                  content: partial,
+                  provider,
+                  model: PROVIDER_MODEL[provider],
+                  status: "error",
+                  firstTokenMs,
+                  totalMs: Date.now() - providerStartedAt,
+                  fallbackPath: [...fallbackPath],
+                  idempotencyKey,
+                  promptVersion,
+                  requestId,
+                  outputTokens: Math.ceil(partial.length / 4),
+                });
+              } catch (persistError) {
+                console.error("[chat] partial_response_save_failed", { requestId, persistError });
+              }
+              send("error", {
+                partial: true,
+                content: partial,
+                message: "Supa AI's connection ended before the response was complete. The text above is the partial answer.",
+                reason,
+                provider,
+                fallbackPath,
+              });
+              await buffer.destroy();
+              close();
+              return;
+            }
+
+            const nextAvailable = providers.some((candidate) =>
+              candidate !== provider && !fallbackPath.includes(candidate) && !router.getHealthSnapshot(candidate).circuitOpen,
+            );
+            send("fallback", {
+              from: provider,
+              reason,
+              message: nextAvailable
+                ? `${PROVIDER_LABEL[provider]} couldn't respond (${reason.toLowerCase()}). Trying another AI provider…`
+                : `${PROVIDER_LABEL[provider]} couldn't respond (${reason.toLowerCase()}). No other provider is available.`,
               fallbackPath,
+            });
+          }
+        }
+
+        if (release.signal.aborted) {
+          await buffer.destroy();
+          close();
+          return;
+        }
+
+        if (!selectedProvider) {
+          try {
+            await persistMessage({
+              conversationId,
+              parentId: userMessageId,
+              role: "assistant",
+              content: "",
+              provider: failures[failures.length - 1]?.provider ?? "none",
+              model: failures.length ? PROVIDER_MODEL[failures[failures.length - 1]!.provider] : "none",
+              status: "error",
+              firstTokenMs,
+              totalMs: 0,
+              fallbackPath: [...fallbackPath],
               idempotencyKey,
               promptVersion,
               requestId,
-              outputTokens: totalOutputTokens,
             });
-            await redis.set(`idem:${idempotencyKey}`, messageId, {
-              ex: IDEMPOTENCY_TTL_SECONDS,
-            });
-            await buffer.destroy().catch(() => {});
-            cleanup();
-            return;
+          } catch (error) {
+            console.error("[chat] failed_response_record_failed", { requestId, error });
           }
 
-          // Successful completion.
-          const messageId = await persistMessage({
+          await redis.set(`idem:${idempotencyKey}`, "error", { ex: IDEMPOTENCY_TTL_SECONDS }).catch((error) => {
+            console.warn("[chat] idempotency_error_mark_failed", { requestId, error });
+          });
+          send("error", {
+            allProvidersFailed: true,
+            message: "Supa AI couldn't get a response from the configured AI providers.",
+            reason: failures,
+            fallbackPath,
+            nextStep: "Check the provider API keys, quotas, and model access in your deployment settings.",
+          });
+          await buffer.destroy();
+          close();
+          return;
+        }
+
+        const finalContent = sanitizeModelOutput(accumulated);
+        let messageId: string;
+        try {
+          messageId = await persistMessage({
             conversationId,
-            parentId: parentId ?? null,
+            parentId: userMessageId,
             role: "assistant",
-            content: sanitizeModelOutput(accumulated),
-            provider,
-            model: routeResult.model,
+            content: finalContent,
+            provider: selectedProvider,
+            model: PROVIDER_MODEL[selectedProvider],
             status: "completed",
             firstTokenMs,
-            totalMs: Date.now() - started,
-            fallbackPath,
+            totalMs: Date.now() - providerStartedAt,
+            fallbackPath: [...fallbackPath],
             idempotencyKey,
             promptVersion,
             requestId,
-            outputTokens: totalOutputTokens,
+            outputTokens: Math.ceil(finalContent.length / 4),
           });
-          await redis.set(`idem:${idempotencyKey}`, messageId, {
-            ex: IDEMPOTENCY_TTL_SECONDS,
+        } catch (error) {
+          console.error("[chat] completed_response_save_failed", {
+            requestId,
+            provider: selectedProvider,
+            error,
           });
-          controller.enqueue(sseEncode("done", { messageId, provider, fallbackPath }));
-          // Final flush of the throttled buffer before closing the stream.
-          await buffer.destroy().catch(() => {});
-          cleanup();
-          router.onResult(provider, firstTokenMs, false);
+          send("error", {
+            partial: true,
+            content: finalContent,
+            message: "Supa AI generated your response, but couldn't save it to conversation history.",
+            reason: "The response is visible above. Copy it before leaving this page, then retry if needed.",
+            provider: selectedProvider,
+            fallbackPath,
+          });
+          await buffer.destroy();
+          close();
           return;
-        } catch (err) {
-          router.onResult(provider, firstTokenMs, true);
-          fallbackPath.push(provider);
-          lastProvider = provider;
-
-          // Partial content from this provider — don't lose it.
-          if (accumulated.length > 0) {
-            await persistMessage({
-              conversationId,
-              parentId: parentId ?? null,
-              role: "assistant",
-              content: sanitizeModelOutput(accumulated),
-              provider,
-              model: routeResult.model,
-              status: "error",
-              firstTokenMs,
-              totalMs: Date.now() - started,
-              fallbackPath,
-              idempotencyKey,
-              promptVersion,
-              requestId,
-              outputTokens: totalOutputTokens,
-            });
-            controller.enqueue(
-              sseEncode("error", {
-                partial: true,
-                content: sanitizeModelOutput(accumulated),
-                provider,
-                fallbackPath,
-                message: err instanceof Error ? err.message : "unknown",
-              }),
-            );
-            await buffer.destroy().catch(() => {});
-            cleanup();
-            return;
-          }
-
-          // No content yet — try the next provider.
-          controller.enqueue(
-            sseEncode("fallback", {
-              from: provider,
-              to: "next",
-              reason: err instanceof Error ? err.message : "unknown",
-            }),
-          );
-          // Don't reset firstTokenMs — we want to track the very first
-          // token across the whole request lifecycle for latency metrics.
-          continue;
         }
-      }
 
-      // All providers failed.
-      await persistMessage({
-        conversationId,
-        parentId: parentId ?? null,
-        role: "assistant",
-        content: accumulated,
-        provider: lastProvider ?? "none",
-        model: "none",
-        status: "error",
-        firstTokenMs,
-        totalMs: 0,
-        fallbackPath,
-        idempotencyKey,
-        promptVersion,
-        requestId,
-        outputTokens: totalOutputTokens,
-      });
-      await redis.set(`idem:${idempotencyKey}`, "error", {
-        ex: IDEMPOTENCY_TTL_SECONDS,
-      });
-      controller.enqueue(
-        sseEncode("error", {
-          allProvidersFailed: true,
+        await redis.set(`idem:${idempotencyKey}`, messageId, { ex: IDEMPOTENCY_TTL_SECONDS }).catch((error) => {
+          console.warn("[chat] idempotency_save_failed", { requestId, error });
+        });
+        send("done", {
+          messageId,
+          provider: selectedProvider,
+          model: PROVIDER_MODEL[selectedProvider],
           fallbackPath,
-        }),
-      );
-      await buffer.destroy().catch(() => {});
-      cleanup();
+        });
+        await buffer.destroy();
+        close();
+      } catch (error) {
+        console.error("[chat] stream_unhandled_failure", { requestId, error });
+        send("error", {
+          message: "Supa AI couldn't finish this response.",
+          reason: "A chat service error interrupted this request. Please try again.",
+          requestId,
+        });
+        await buffer.destroy().catch(() => {});
+        close();
+      } finally {
+        releaseRequest();
+      }
     },
     async cancel() {
-      // Client disconnected — propagate to provider call.
       clientAbort.abort();
       release.abort();
-      // Flush any pending buffer content so the client can resume.
       await buffer.destroy().catch(() => {});
     },
   });
 
-  // GET response — no requestId on resume (the streamId IS the correlation key).
-  return new Response(stream, { headers: streamHeaders() });
+  return new Response(responseStream, { headers: headers(requestId) });
 }
 
-/**
- * GET /api/chat/stream?streamId=...
- *
- * Resumes a previously-started stream by replaying the accumulated content
- * from Redis. Returns a `resume` event with the full buffer; the client
- * then optionally reconnects to the live stream if it's still in flight.
- *
- * If the buffer has expired (TTL > 5 min), returns an `expired` event.
- */
 export async function GET(req: Request) {
   const streamId = new URL(req.url).searchParams.get("streamId");
-  if (!streamId) {
-    return problem(400, "missing_stream_id");
-  }
-
-  // Validate format — must be a UUID.
+  if (!streamId) return problem(400, "missing_stream_id");
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(streamId)) {
     return problem(400, "invalid_stream_id");
   }
 
-  const accumulated = await redis.get<string>(`stream:${streamId}`);
-
-  const stream = new ReadableStream<Uint8Array>({
-    start(controller) {
-      if (accumulated) {
-        controller.enqueue(sseEncode("resume", { streamId, text: accumulated }));
-      } else {
-        controller.enqueue(sseEncode("expired", { streamId }));
-      }
-      controller.enqueue(sseEncode("done", {}));
-      controller.close();
-    },
-  });
-
-  // GET response — no requestId on resume (the streamId IS the correlation key).
-  return new Response(stream, { headers: streamHeaders() });
-}
-
-function streamHeaders(requestId?: string): HeadersInit {
-  const headers: Record<string, string> = {
-    "Content-Type": "text/event-stream; charset=utf-8",
-    "Cache-Control": "no-cache, no-transform",
-    Connection: "keep-alive",
-    "X-Accel-Buffering": "no", // disable nginx buffering
-  };
-  if (requestId) {
-    // Echo the request ID so clients can include it in support tickets.
-    headers["X-Request-Id"] = requestId;
+  try {
+    const accumulated = await redis.get<string>(`stream:${streamId}`);
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        if (accumulated) controller.enqueue(sseEncode("resume", { streamId, text: accumulated }));
+        else controller.enqueue(sseEncode("expired", { streamId }));
+        controller.enqueue(sseEncode("done", {}));
+        controller.close();
+      },
+    });
+    return new Response(stream, { headers: headers() });
+  } catch (error) {
+    console.error("[chat] stream_resume_failed", { streamId, error });
+    return problem(503, "stream_resume_failed", "Supa AI couldn't resume this response. Please retry.");
   }
-  return headers;
 }

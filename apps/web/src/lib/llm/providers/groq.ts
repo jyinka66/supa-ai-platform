@@ -3,7 +3,7 @@ import type { Provider } from "@/lib/router/router";
 import { parseSse } from "../sse-parser";
 import { checkMockFail } from "@/lib/test/check-mock-fail";
 
-const MODEL = "llama-3.3-70b-versatile"; // matches router CATALOG
+const MODEL = "openai/gpt-oss-120b"; // matches router CATALOG
 const ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
 
 export const groqAdapter: ProviderAdapter = {

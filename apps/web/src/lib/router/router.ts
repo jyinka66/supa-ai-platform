@@ -24,7 +24,7 @@ export interface RouteRequest {
 
 export interface RouteResult {
   provider: Provider;
-  /** Concrete model identifier (e.g. "gemini-2.0-flash", not just "gemini"). */
+  /** Concrete model identifier (e.g. "gemini-3.8-flash", not just "gemini"). */
   model: string;
   reason:
     | "user_override"
@@ -51,14 +51,14 @@ const CATALOG: Record<Provider, ProviderConfig> = {
     capabilities: ["text", "vision", "multilingual"] as const,
     costPer1k: 0.005,
     priority: 1,
-    model: "gemini-2.0-flash",
+    model: "gemini-3.8-flash",
     supportsImageGeneration: false,
   },
   groq: {
     capabilities: ["text", "fast"] as const,
     costPer1k: 0.001,
     priority: 2,
-    model: "llama-3.3-70b-versatile",
+    model: "openai/gpt-oss-120b",
     supportsImageGeneration: false,
   },
   openrouter: {

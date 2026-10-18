@@ -76,9 +76,15 @@ export async function POST(req: NextRequest) {
   const { conversationId, parentId, content, idempotencyKey, mode, userOverride } = parsed.data;
 
   // 3. Idempotency — same key returns cached final response.
-  const cached = await redis.get<CompleteResponse>(`idem-final:${idempotencyKey}`);
-  if (cached) {
-    return ok(cached);
+  const cached = await redis.get<CompleteResponse | string>(`idem-final:${idempotencyKey}`);
+  if (cached && cached !== "error" && cached !== "in-flight") {
+    return ok(cached as CompleteResponse);
+  }
+  if (cached === "in-flight") {
+    return problem(409, "duplicate_in_flight", "This message is already being processed. Please wait a moment.");
+  }
+  if (cached === "error") {
+    await redis.del(`idem-final:${idempotencyKey}`);
   }
 
   // 4. Claim the idempotency key (prevents concurrent duplicates).
@@ -133,7 +139,7 @@ export async function POST(req: NextRequest) {
     }));
 
   // 10. Persist the user message first.
-  await persistMessage({
+  const userMessageId = await persistMessage({
     conversationId,
     parentId: parentId ?? null,
     role: "user",
@@ -192,7 +198,7 @@ export async function POST(req: NextRequest) {
       // same transaction by persistMessage — no separate recordCost call).
       const messageId = await persistMessage({
         conversationId,
-        parentId: parentId ?? null,
+        parentId: userMessageId,
         role: "assistant",
         content: full,
         provider,
@@ -236,7 +242,7 @@ export async function POST(req: NextRequest) {
   // 14. All providers failed — record an error message and return 503.
   await persistMessage({
     conversationId,
-    parentId: parentId ?? null,
+    parentId: userMessageId,
     role: "assistant",
     content: "",
     provider: "none",
@@ -253,15 +259,21 @@ export async function POST(req: NextRequest) {
     ex: IDEMPOTENCY_TTL_SECONDS,
   });
 
-  return problem(
-    503,
-    "all_providers_failed",
-    undefined,
-    {
-      fallbackPath,
-      lastError: lastError instanceof Error ? lastError.message : "unknown",
-    },
-  );
+  const failureMessage = lastError instanceof Error ? lastError.message : "";
+  const safeReason =
+    /API_KEY.*not set|key.*missing/i.test(failureMessage)
+      ? "An AI provider API key is not configured."
+      : /\\b(401|403)\\b|unauthorized|invalid api key/i.test(failureMessage)
+        ? "An AI provider rejected its API key or permissions."
+        : /\\b429\\b|quota|rate.?limit/i.test(failureMessage)
+          ? "An AI provider quota or rate limit was reached."
+          : /timeout|fetch failed|ECONN|network/i.test(failureMessage)
+            ? "A connection to an AI provider failed."
+            : "All configured AI providers failed to return a response.";
+
+  return problem(503, "all_providers_failed", safeReason, {
+    fallbackPath,
+  });
 }
 
 /**

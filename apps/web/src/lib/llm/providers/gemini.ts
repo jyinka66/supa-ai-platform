@@ -3,7 +3,7 @@ import type { Provider } from "@/lib/router/router";
 import { parseSse } from "../sse-parser";
 import { checkMockFail } from "@/lib/test/check-mock-fail";
 
-const MODEL = "gemini-2.0-flash"; // matches router CATALOG
+const MODEL = "gemini-3.8-flash"; // matches router CATALOG
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse`;
 
 export const geminiAdapter: ProviderAdapter = {
@@ -29,8 +29,6 @@ export const geminiAdapter: ProviderAdapter = {
         })),
         generationConfig: {
           temperature: 0.7,
-          // Surface language preference if non-default.
-          ...(req.language !== "en" ? { responseLanguage: req.language } : {}),
         },
       }),
       signal: req.signal,
