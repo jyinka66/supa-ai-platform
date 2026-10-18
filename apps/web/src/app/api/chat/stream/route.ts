@@ -1,5 +1,5 @@
 import { ModelRouter, type Provider, type RouteMode } from "@/lib/router/router";
-import { callProvider } from "@/lib/llm/provider-registry";
+import { callProvider, isProviderConfigured } from "@/lib/llm/provider-registry";
 import { persistMessage } from "@/lib/llm/persist-message";
 import { requireUser } from "@/lib/auth/session";
 import { guard } from "@/lib/ratelimit/guard";
@@ -236,10 +236,25 @@ export async function POST(req: NextRequest) {
     userOverride,
     language: effectiveLanguage,
   });
-  const providers: Provider[] = [routeResult.provider, ...router.knownProviders.filter((item) => item !== routeResult.provider)];
+  // Only attempt providers that have an API key configured in this deployment.
+  const configuredProviders = router.knownProviders.filter(isProviderConfigured);
+  const preferredProvider = configuredProviders.includes(routeResult.provider)
+    ? routeResult.provider
+    : configuredProviders[0];
+  const providers: Provider[] = preferredProvider
+    ? [preferredProvider, ...configuredProviders.filter((item) => item !== preferredProvider)]
+    : [];
+  const unconfiguredProviders = router.knownProviders.filter((item) => !isProviderConfigured(item));
   const streamId = crypto.randomUUID();
+  // Replay buffers are private to the user who started the request.
+  await redis.set(`stream-owner:${streamId}`, user.id, { ex: STREAM_TTL_SECONDS }).catch((error) => {
+    console.warn("[chat] stream_owner_persist_failed", { requestId, error });
+  });
   const fallbackPath: Provider[] = [];
-  const failures: FailureDetail[] = [];
+  const failures: FailureDetail[] = unconfiguredProviders.map((provider) => ({
+    provider,
+    reason: "API key is not configured",
+  }));
   const clientAbort = new AbortController();
   const release = new AbortController();
   const buffer = new ThrottledStreamBuffer(streamId, redis, { intervalMs: 250, sizeThresholdBytes: 1024, ttlSeconds: STREAM_TTL_SECONDS });
@@ -553,7 +568,22 @@ export async function GET(req: Request) {
     return problem(400, "invalid_stream_id");
   }
 
+  let user;
   try {
+    user = await requireUser();
+  } catch {
+    return problem(401, "unauthenticated", "Please sign in to resume this response.");
+  }
+
+  try {
+    const owner = await redis.get<string>(`stream-owner:${streamId}`);
+    if (!owner) {
+      return problem(410, "stream_expired", "This response can no longer be resumed. Please start a new message.");
+    }
+    if (owner !== user.id) {
+      return problem(403, "forbidden", "You don't have access to this response.");
+    }
+
     const accumulated = await redis.get<string>(`stream:${streamId}`);
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {

@@ -27,6 +27,17 @@ export function getProviderAdapter(provider: Provider): ProviderAdapter {
   return adapter;
 }
 
+const PROVIDER_API_KEY_ENV: Record<Provider, string> = {
+  gemini: "GEMINI_API_KEY",
+  groq: "GROQ_API_KEY",
+  openrouter: "OPENROUTER_API_KEY",
+};
+
+/** True only when this deployment has a non-empty key for the provider. */
+export function isProviderConfigured(provider: Provider): boolean {
+  return Boolean(process.env[PROVIDER_API_KEY_ENV[provider]]?.trim());
+}
+
 export interface CallProviderOptions extends StreamRequest {}
 
 export interface ProviderStreamChunk {

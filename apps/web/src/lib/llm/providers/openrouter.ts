@@ -30,7 +30,7 @@ export const openrouterAdapter: ProviderAdapter = {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+        "HTTP-Referer": process.env.APP_URL ?? "https://supa-ai-platform.vercel.app",
         "X-Title": "Supa AI",
       },
       body: JSON.stringify({

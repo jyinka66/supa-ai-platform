@@ -18,18 +18,18 @@ export const geminiAdapter: ProviderAdapter = {
       throw new Error("GEMINI_API_KEY is not set");
     }
 
-    const res = await fetch(`${ENDPOINT}&key=${apiKey}`, {
+    const res = await fetch(ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
       body: JSON.stringify({
-        system_instruction: req.system ? { parts: [{ text: req.system }] } : undefined,
+        systemInstruction: req.system ? { parts: [{ text: req.system }] } : undefined,
         contents: req.messages.map((m) => ({
           role: m.role === "assistant" ? "model" : "user",
           parts: [{ text: m.content }],
         })),
-        generationConfig: {
-          temperature: 0.7,
-        },
       }),
       signal: req.signal,
     });
