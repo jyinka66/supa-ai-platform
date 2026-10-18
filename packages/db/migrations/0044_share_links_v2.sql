@@ -1,8 +1,8 @@
 -- ───────────────────────────────────────────────
--- 0044_share_links_v2.sql
+-- 0044_share_links_v2_v2.sql
 -- Share links v2 — the spec's canonical design.
 --
--- DIVERGENCE from migration 0021 (existing work_share_links):
+-- DIVERGENCE from migration 0021 (existing work_share_links_v2):
 --   - 0044 uses `files` table (migration 0039) — 0021 used `work_items`.
 --   - 0044 uses `has_permission(ws_id, 'file:share')` — 0021 used `is_ws_member`.
 --   - 0044 has `allowed_email` (optional email-gated sharing) — 0021 didn't.
@@ -14,7 +14,7 @@
 --   canonical permission check from migration 0043 (not the non-existent has_role).
 -- ───────────────────────────────────────────────
 
-create table share_links (
+create table share_links_v2 (
   id            uuid primary key default gen_random_uuid(),
   ws_id         uuid not null references workspaces(id) on delete cascade,
   file_id       uuid not null references files(id) on delete cascade,
@@ -31,27 +31,27 @@ create table share_links (
   check (expires_at is null or expires_at > created_at)
 );
 
-create index on share_links (ws_id, file_id) where revoked_at is null;
+create index on share_links_v2 (ws_id, file_id) where revoked_at is null;
 
-alter table share_links enable row level security;
+alter table share_links_v2 enable row level security;
 -- file:share permission required (not just any member — sharing is a
 -- deliberate action that grants external access).
-create policy share_owner on share_links for all to supa_app
+create policy share_owner on share_links_v2 for all to supa_app
   using (has_permission(ws_id, 'file:share'))
   with check (has_permission(ws_id, 'file:share'));
 
-comment on table share_links is
+comment on table share_links_v2 is
   '@tenant_table — share links (token hashed, password argon2id, perm-scoped, has_permission RLS)';
 
 -- Force RLS.
-alter table share_links force row level security;
+alter table share_links_v2 force row level security;
 
 -- ───────────────────────────────────────────────
 -- share_views — view log (for analytics + exhaustion tracking)
 -- ───────────────────────────────────────────────
 
 create table share_views (
-  share_id  uuid not null references share_links(id) on delete cascade,
+  share_id  uuid not null references share_links_v2(id) on delete cascade,
   viewed_at timestamptz not null default now(),
   ip_hash   text not null,                     -- truncated hash (16 chars), retention 90d.
   ok        boolean not null                   -- true = access granted, false = denied (password/expiry/views).
@@ -64,7 +64,7 @@ alter table share_views enable row level security;
 create policy share_views_read on share_views for select to supa_app
   using (
     exists (
-      select 1 from share_links sl
+      select 1 from share_links_v2 sl
       where sl.id = share_views.share_id
         and has_permission(sl.ws_id, 'file:share')
     )
