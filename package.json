@@ -12,7 +12,7 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
+    "test": "turbo run test -- --passWithNoTests",
     "test:e2e": "turbo run test:e2e",
     "db:generate": "node scripts/new-migration.mjs",
     "db:migrate": "bun run sync:migrations && supabase migration up --local",

@@ -166,10 +166,10 @@ export class CanaryGate {
       this.canary = metrics;
     }
     // Try to evaluate after each snapshot — the gate is self-driving.
-    void this.maybeEvaluate();
+    this.maybeEvaluate();
   }
 
-  private async maybeEvaluate(): Promise<void> {
+  private maybeEvaluate(): void {
     const control = this.control;
     const canary = this.canary;
     if (!control || !canary) return;
@@ -200,7 +200,7 @@ export class CanaryGate {
     if (canary.sessionCount < this.thresholds.minSessions) {
       return {
         kind: "observe",
-        reason: `canary has ${canary.sessionCount} sessions, need ${this.thresholds.minSessions}`,
+        reason: `canary has ${String(canary.sessionCount)} sessions, need ${String(this.thresholds.minSessions)}`,
       };
     }
 
@@ -268,7 +268,7 @@ export class CanaryGate {
 
     return {
       kind: "promote",
-      reason: `canary passed all checks over ${canary.sessionCount} sessions`,
+      reason: `canary passed all checks over ${String(canary.sessionCount)} sessions`,
     };
   }
 

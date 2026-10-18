@@ -97,12 +97,12 @@ const SESSION_KEYS = new Set<keyof SessionEvent>([
   "bundleVersion",
 ]);
 
-function scrub<T extends Record<string, unknown>>(
-  ev: T,
+function scrub(
+  ev: Record<string, unknown>,
   allowed: Set<string>,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  const src = ev as Record<string, unknown>;
+  const src = ev;
   for (const k of Object.keys(src)) {
     if (allowed.has(k)) {
       // Never allow string payload fields to slip through with content.
@@ -177,7 +177,7 @@ export class FetchTransport implements Transport {
     this.beacon =
       opts.beacon ??
       ((url, body) => {
-        if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+        if (typeof navigator !== "undefined" && "sendBeacon" in navigator) {
           return navigator.sendBeacon(url, body);
         }
         return false;
@@ -212,8 +212,6 @@ export class FetchTransport implements Transport {
 // ───────────────────────────────────────────────
 // Latency aggregates (100% sample)
 // ───────────────────────────────────────────────
-
-const P_TARGETS = [50, 95, 99] as const;
 
 /**
  * T-Digest-style histogram would be ideal, but for ~5min session
@@ -277,7 +275,9 @@ class RafFpsMeter implements FpsMeter {
     this.frames.push(now);
     // Keep only last 1s.
     const cutoff = now - 1000;
-    while (this.frames.length > 0 && this.frames[0]! < cutoff) {
+    while (this.frames.length > 0) {
+      const firstFrame = this.frames[0];
+      if (firstFrame === undefined || firstFrame >= cutoff) break;
       this.frames.shift();
     }
     this.lastBucket = this.classify(this.frames.length);
@@ -354,9 +354,9 @@ export class TelemetryClient {
 
   start(): void {
     if (this.flushTimer) return;
-    this.flushTimer = setInterval(() => this.flush(), this.flushIntervalMs);
+    this.flushTimer = setInterval(() => { this.flush(); }, this.flushIntervalMs);
     // Heartbeat every 30s — gives us the denominator.
-    this.heartbeatTimer = setInterval(() => this.emitHeartbeat(), 30_000);
+    this.heartbeatTimer = setInterval(() => { this.emitHeartbeat(); }, 30_000);
     // Initial heartbeat at session start so we always have one.
     this.emitHeartbeat();
     this.bindPagehide();

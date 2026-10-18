@@ -16,7 +16,7 @@ import type {
   Money,
   Rate,
 } from "./money.js";
-import { asCurrency, convert, fromMinor, zero } from "./money.js";
+import { asCurrency, convert, zero } from "./money.js";
 
 // ───────────────────────────────────────────────
 // Workspace currency config

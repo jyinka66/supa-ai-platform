@@ -176,7 +176,7 @@ export class AIQualityTracker {
   onGenerationAccepted(signal: GenerationAcceptedSignal): void {
     // 2% review queue sampling — independent of any implicit signal.
     if (this.random() < this.sampleRate) {
-      this.enqueueReview({
+      void this.enqueueReview({
         eventId: signal.generationId,
         ts: signal.acceptedAt,
         docId: signal.docId,
@@ -271,7 +271,7 @@ export class AIQualityTracker {
     if (direction === "up") this.thumbsUp++;
     else this.thumbsDown++;
 
-    this.enqueueReview({
+    void this.enqueueReview({
       eventId: ctx.generationId,
       ts: this.now(),
       docId: ctx.docId,
@@ -397,9 +397,12 @@ function median(arr: number[]): number {
   if (arr.length === 0) return 0;
   const sorted = [...arr].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? Math.round((sorted[mid - 1]! + sorted[mid]!) / 2)
-    : Math.round(sorted[mid]!);
+  if (sorted.length % 2 === 0) {
+    const lower = sorted[mid - 1] ?? 0;
+    const upper = sorted[mid] ?? 0;
+    return Math.round((lower + upper) / 2);
+  }
+  return Math.round(sorted[mid] ?? 0);
 }
 
 // ───────────────────────────────────────────────
@@ -445,14 +448,14 @@ export function evaluateBenchmarkGate(result: BenchmarkResult): BenchmarkGateRes
   const undoDelta = c.undoRate10s - b.undoRate10s;
   if (undoDelta > THRESHOLDS.undoRate10sDeltaAbs) {
     failures.push(
-      `undoRate10s regressed: ${b.undoRate10s} → ${c.undoRate10s} (Δ=${round(undoDelta)} > ${THRESHOLDS.undoRate10sDeltaAbs})`,
+      `undoRate10s regressed: ${String(b.undoRate10s)} → ${String(c.undoRate10s)} (Δ=${round(undoDelta)} > ${THRESHOLDS.undoRate10sDeltaAbs})`,
     );
   }
 
   const acceptDelta = b.acceptWithoutEditRate - c.acceptWithoutEditRate;
   if (acceptDelta > THRESHOLDS.acceptWithoutEditDeltaAbs) {
     failures.push(
-      `acceptWithoutEditRate regressed: ${b.acceptWithoutEditRate} → ${c.acceptWithoutEditRate} (Δ=${round(acceptDelta)} > ${THRESHOLDS.acceptWithoutEditDeltaAbs})`,
+      `acceptWithoutEditRate regressed: ${String(b.acceptWithoutEditRate)} → ${String(c.acceptWithoutEditRate)} (Δ=${round(acceptDelta)} > ${THRESHOLDS.acceptWithoutEditDeltaAbs})`,
     );
   }
 
@@ -460,7 +463,7 @@ export function evaluateBenchmarkGate(result: BenchmarkResult): BenchmarkGateRes
     const editRel = (c.medianMsToFirstEdit - b.medianMsToFirstEdit) / b.medianMsToFirstEdit;
     if (editRel > THRESHOLDS.medianMsToFirstEditRel) {
       failures.push(
-        `medianMsToFirstEdit regressed: ${b.medianMsToFirstEdit} → ${c.medianMsToFirstEdit} (rel=${round(editRel)} > ${THRESHOLDS.medianMsToFirstEditRel})`,
+        `medianMsToFirstEdit regressed: ${String(b.medianMsToFirstEdit)} → ${String(c.medianMsToFirstEdit)} (rel=${round(editRel)} > ${THRESHOLDS.medianMsToFirstEditRel})`,
       );
     }
   }

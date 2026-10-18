@@ -20,7 +20,8 @@ export {
   type ResizeHandle,
 } from "./pointer";
 export { EditorCanvas, OverlayLayer } from "./EditorCanvas";
-export { useInlineText, InlineTextEditor, type InlineTextState } from "./useInlineText";
+export { useInlineText, type InlineTextState } from "./useInlineText";
+export { InlineTextEditor } from "./InlineTextEditor";
 export { Inspector } from "./inspector";
 export { LayersPanel } from "./LayersPanel";
 export { BindPanel } from "./BindPanel";

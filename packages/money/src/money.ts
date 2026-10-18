@@ -116,25 +116,141 @@ export function money(major: string | number, currency: Currency | string): Mone
   // of exactly `scale` digits.
   const re = scale === 0
     ? /^-?\d+$/
-    : new RegExp(`^-?\\d+(\\.\\d{1,${scale}})?$`);
+    : new RegExp(`^-?\\d+(\\.\\d{1,${String(scale)}})?/**
+ * @supa/money/money
+ * ----------------------------------------------------------------
+ * Money: { minor: bigint, currency: ISO4217 } — never a float,
+ *   never a bare number. Every amount in the system is this type;
+ *   the compiler makes "parseFloat on a total" a review
+ *   conversation. Minor units (kobo, centimes, cents) everywhere;
+ *   formatting to major units is a display concern (Intl.NumberFormat,
+ *   locale from the workspace, currency shown alongside — NGN formats
+ *   differently in en-NG vs ha-NG, and the test suite pins that).
+ *
+ *   Arithmetic: only same-currency addition/subtraction. Cross-
+ *   currency requires an explicit Rate: { from, to, rate: Decimal,
+ *   asOf: timestamp, source: 'manual'|'provider' } — rates are DATA
+ *   with timestamps, never ambient state. The retrospective rule
+ *   from the design system applies verbatim: honesty as a feature.
+ *   A report that converted ₦50,000 at a rate silently is lying.
+ *
+ *   Rounding: one place. Line items sum → invoice subtotal is exact
+ *   bigint math; tax computed per the workspace's tax mode (per-line
+ *   vs per-invoice) with banker's rounding, and the rounding
+ *   remainder is an explicit line so invoices always balance to
+ *   the kobo. Property test: every invoice's
+ *   Σ(lines) − Σ(discounts) + Σ(tax) + roundRemainder === total,
+ *   for any input, forever.
+ *
+ * THE RULE (stated once, obeyed everywhere):
+ *   A monetary fact is written exactly once, by exactly one path,
+ *   and never mutated — corrected by a new fact. Everything else
+ *   is a query.
+ * ----------------------------------------------------------------
+ */
+
+// ───────────────────────────────────────────────
+// Money — the primitive
+// ───────────────────────────────────────────────
+
+/**
+ * ISO 4217 currency code (3 uppercase letters). Stored as a string
+ * alias so the compiler can catch "50000" vs "NGN" mix-ups at the
+ * type level. The runtime check lives in `assertCurrency`.
+ */
+export type Currency = string & { readonly __brand: unique symbol };
+
+/** ISO 4217 currency codes we explicitly support. */
+export const SUPPORTED_CURRENCIES = [
+  "NGN", // Nigerian Naira — kobo (100)
+  "USD", // US Dollar — cent (100)
+  "EUR", // Euro — cent (100)
+  "GBP", // British Pound — pence (100)
+  "GHS", // Ghanaian Cedi — pesewa (100)
+  "KES", // Kenyan Shilling — cent (100)
+  "ZAR", // South African Rand — cent (100)
+  "EGP", // Egyptian Pound — piastre (100)
+  "MAD", // Moroccan Dirham — santim (100)
+  "XOF", // West African CFA Franc — centime (100, no minor unit in practice)
+  "XAF", // Central African CFA Franc — centime (100, no minor unit in practice)
+] as const;
+
+export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
+
+const CURRENCY_SET: ReadonlySet<string> = new Set(SUPPORTED_CURRENCIES);
+
+/** Brand a string as a Currency after validating it. */
+export function asCurrency(code: string): Currency {
+  if (!CURRENCY_SET.has(code)) {
+    throw new CurrencyError(`unsupported currency: ${code}`);
+  }
+  return code as Currency;
+}
+
+export class CurrencyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CurrencyError";
+  }
+}
+
+export class MoneyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "MoneyError";
+  }
+}
+
+/**
+ * The primitive type. NEVER constructed directly — use `money()` or
+ * `fromMinor()`. `minor` is always a bigint (no float, no number),
+ * always non-negative for amounts (use `negate()` for credits/refunds
+ * which carry their own sign on the transaction, not on Money).
+ */
+export interface Money {
+  readonly minor: bigint;
+  readonly currency: Currency;
+}
+
+// ───────────────────────────────────────────────
+// Constructors
+// ───────────────────────────────────────────────
+
+/**
+ * Construct Money from a major-unit string ("50000.00") or number.
+ * Internally parses to minor units (bigint) using the currency's
+ * minor-unit scale (e.g. NGN → 2 decimals → 50000.00 = 5_000_000n).
+ *
+ * NEVER accept a bare number that could be a float — the string
+ * form is the contract; numbers are only allowed when they're
+ * integers (the constructor asserts this).
+ */
+export function money(major: string | number, currency: Currency | string): Money {
+  const cur = typeof currency === "string" ? asCurrency(currency) : currency;
+  const scale = minorUnitScale(cur);
+  const str = typeof major === "number" ? major.toString() : major;
+
+  // Validate: optional sign, integer part, optional fractional part
+  // of exactly `scale` digits.
+  const re = scale === 0
+    ? /^-?\d+$/
+    : );
   if (!re.test(str)) {
-    throw new MoneyError(`invalid major-unit amount for ${cur} (scale ${scale}): "${str}"`);
+    throw new MoneyError(`invalid major-unit amount for ${cur} (scale ${String(scale)}): "${str}"`);
   }
 
-  const [intPart, fracPart = ""] = str.split(".");
+  const [rawIntPart, fracPart = ""] = str.split(".");
+  const intPart = rawIntPart ?? "0";
   const padded = fracPart.padEnd(scale, "0").slice(0, scale);
   const minorStr = `${intPart}${padded}`;
   let minor = BigInt(minorStr);
-  if (intPart!.startsWith("-")) {
-    // BigInt handles the sign already; the string carries it.
-  }
   // For zero-decimal currencies, minor === major (e.g. JPY).
   if (scale === 0) {
     minor = BigInt(str);
   }
 
   if (minor < 0n) {
-    throw new MoneyError(`Money amounts must be non-negative; use signed transactions for credits. Got: ${minor}`);
+    throw new MoneyError(`Money amounts must be non-negative; use signed transactions for credits. Got: ${String(minor)}`);
   }
   return { minor, currency: cur };
 }
@@ -143,7 +259,7 @@ export function money(major: string | number, currency: Currency | string): Mone
 export function fromMinor(minor: bigint, currency: Currency | string): Money {
   const cur = typeof currency === "string" ? asCurrency(currency) : currency;
   if (minor < 0n) {
-    throw new MoneyError(`Money amounts must be non-negative; got: ${minor}`);
+    throw new MoneyError(`Money amounts must be non-negative; got: ${String(minor)}`);
   }
   return { minor, currency: cur };
 }
@@ -179,7 +295,7 @@ export function subtract(a: Money, b: Money): Money {
 export function multiply(amount: Money, scalar: bigint | number): Money {
   const s = typeof scalar === "number" ? BigInt(Math.floor(scalar)) : scalar;
   if (s < 0n) {
-    throw new MoneyError(`scalar must be non-negative; got: ${s}`);
+    throw new MoneyError(`scalar must be non-negative; got: ${String(s)}`);
   }
   return { minor: amount.minor * s, currency: amount.currency };
 }
@@ -254,7 +370,6 @@ export function convert(amount: Money, rate: Rate): { converted: Money; remainde
   // rate is a decimal string. Parse to a scaled bigint.
   const { numerator, denominator } = parseDecimalRate(rate.rate);
   const targetScale = minorUnitScale(rate.to);
-  const sourceScale = minorUnitScale(rate.from);
   // Adjust for scale differences: NGN (2) → USD (2) at 0.00065.
   // amount.minor is in kobo. We want result in cents.
   // 1 NGN = 0.00065 USD → 100 kobo = 0.065 cents → 1 kobo = 0.00065 cents.
@@ -267,7 +382,6 @@ export function convert(amount: Money, rate: Rate): { converted: Money; remainde
   const remainder = (amount.minor * scaledNumerator) % scaledDenominator;
   // Banker's rounding on the remainder.
   const { rounded, roundRemainder } = bankersRound(exact, remainder, scaledDenominator, targetScale);
-  void sourceScale; // sourceScale is folded into scaleAdjustment
   return {
     converted: fromMinor(rounded, rate.to),
     remainder: fromMinor(roundRemainder >= 0n ? roundRemainder : -roundRemainder, rate.to),
@@ -367,12 +481,10 @@ function bankersRound(
   // diff = true - rounded = (exact * denom + remainder) - rounded * denom
   //      = remainder - (rounded - exact) * denom
   //      = remainder - roundAdjustment * denom
-  const diffScaled = remainder - roundAdjustment * denominator;
   // Convert back to minor units: diffScaled / denominator.
   // We return it as a bigint minor — but it might be fractional.
   // For the property-test invariant, we keep the scaled form so
   // callers can sum it precisely.
-  void diffScaled;
   return { rounded, roundRemainder: roundAdjustment };
 }
 
@@ -426,7 +538,9 @@ export function computeInvoiceTotals(items: LineItem[], taxMode: TaxMode): Invoi
       lines: [],
     };
   }
-  const currency = items[0]!.net.currency;
+  const firstItem = items[0];
+  if (!firstItem) throw new MoneyError("Expected at least one line item.");
+  const currency = firstItem.net.currency;
   for (const item of items) {
     if (item.net.currency !== currency) {
       throw new MoneyError(`line item currency mismatch: ${item.net.currency} vs ${currency}`);
@@ -439,14 +553,12 @@ export function computeInvoiceTotals(items: LineItem[], taxMode: TaxMode): Invoi
   const lineBreakdown: { net: Money; tax: Money; discount: Money }[] = [];
   let subtotalMinor = 0n;
   let taxMinor = 0n;
-  let totalDiscountMinor = 0n;
 
   for (const item of items) {
     const lineNet = multiply(item.net, item.quantity);
     const lineDiscount = item.discount ?? zero(currency);
     const lineNetAfterDiscount = subtract(lineNet, lineDiscount);
     subtotalMinor += lineNetAfterDiscount.minor;
-    totalDiscountMinor += lineDiscount.minor;
 
     if (taxMode === "per-line" && item.taxRate) {
       const { tax } = applyTaxRate(lineNetAfterDiscount, item.taxRate);
@@ -511,8 +623,7 @@ export function applyTaxRate(amount: Money, rateStr: string): { tax: Money; rema
   // tax = amount.minor * numerator / denominator, banker's rounded.
   const exact = (amount.minor * numerator) / denominator;
   const remainder = (amount.minor * numerator) % denominator;
-  const { rounded, roundRemainder } = bankersRound(exact, remainder, denominator, minorUnitScale(amount.currency));
-  void roundRemainder; // per-line tax remainder is absorbed into the invoice roundRemainder
+  const { rounded } = bankersRound(exact, remainder, denominator, minorUnitScale(amount.currency));
   return {
     tax: fromMinor(rounded, amount.currency),
     remainder: zero(amount.currency),

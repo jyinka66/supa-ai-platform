@@ -330,7 +330,7 @@ export class CrashReporter {
       // Common when the render worker's OffscreenCanvas is detached.
       return "E_RENDERER";
     }
-    const msg = (error as Error)?.message ?? String(error);
+    const msg = error instanceof Error ? error.message : String(error);
     if (/transport|websocket|network/i.test(msg)) return "E_SYNC";
     if (/provider|gemini|groq|openrouter|timeout/i.test(msg)) return "E_AI";
     return "E_EDITOR";
@@ -352,7 +352,7 @@ export class CrashReporter {
     if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
       return crypto.randomUUID();
     }
-    return `${this.installId}-${this.now().getTime()}-${Math.random().toString(36).slice(2, 10)}`;
+    return `${this.installId}-${String(this.now().getTime())}-${Math.random().toString(36).slice(2, 10)}`;
   }
 
   private async submit(report: CrashReport): Promise<void> {

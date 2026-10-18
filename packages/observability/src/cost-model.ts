@@ -372,7 +372,7 @@ export class CostAlertEvaluator {
         severity: "critical",
         value: usdToday,
         threshold: this.thresholds.renderQueueSpendCritical,
-        message: `render queue spend $${usdToday.toFixed(2)}/day crossed critical ($${this.thresholds.renderQueueSpendCritical})`,
+        message: `render queue spend $${usdToday.toFixed(2)}/day crossed critical (${this.thresholds.renderQueueSpendCritical.toFixed(2)})`,
       });
     } else if (usdToday >= this.thresholds.renderQueueSpendWarn) {
       this.fire({
@@ -380,7 +380,7 @@ export class CostAlertEvaluator {
         severity: "warn",
         value: usdToday,
         threshold: this.thresholds.renderQueueSpendWarn,
-        message: `render queue spend $${usdToday.toFixed(2)}/day crossed warn ($${this.thresholds.renderQueueSpendWarn})`,
+        message: `render queue spend $${usdToday.toFixed(2)}/day crossed warn (${this.thresholds.renderQueueSpendWarn.toFixed(2)})`,
       });
     }
   }
@@ -399,7 +399,7 @@ export class CostAlertEvaluator {
           value: next,
           threshold: this.thresholds.aiSpendAccountCritical,
           accountId,
-          message: `account ${accountId} AI spend $${next.toFixed(2)}/day crossed critical ($${this.thresholds.aiSpendAccountCritical}) — anomaly = abuse or a prompt loop`,
+          message: `account ${accountId} AI spend $${next.toFixed(2)}/day crossed critical (${this.thresholds.aiSpendAccountCritical.toFixed(2)}) — anomaly = abuse or a prompt loop`,
         });
       }
     } else if (next >= this.thresholds.aiSpendAccountWarn) {
@@ -410,7 +410,7 @@ export class CostAlertEvaluator {
           value: next,
           threshold: this.thresholds.aiSpendAccountWarn,
           accountId,
-          message: `account ${accountId} AI spend $${next.toFixed(2)}/day crossed warn ($${this.thresholds.aiSpendAccountWarn})`,
+          message: `account ${accountId} AI spend $${next.toFixed(2)}/day crossed warn (${this.thresholds.aiSpendAccountWarn.toFixed(2)})`,
         });
       }
     }
@@ -424,7 +424,7 @@ export class CostAlertEvaluator {
         severity: "critical",
         value: gbAddedToday,
         threshold: this.thresholds.storageGrowthCriticalGbPerDay,
-        message: `storage growth ${gbAddedToday.toFixed(1)} GB/day crossed critical (${this.thresholds.storageGrowthCriticalGbPerDay} GB/day)`,
+        message: `storage growth ${gbAddedToday.toFixed(1)} GB/day crossed critical (${this.thresholds.storageGrowthCriticalGbPerDay.toFixed(1)} GB/day)`,
       });
     } else if (gbAddedToday >= this.thresholds.storageGrowthWarnGbPerDay) {
       this.fire({
@@ -432,7 +432,7 @@ export class CostAlertEvaluator {
         severity: "warn",
         value: gbAddedToday,
         threshold: this.thresholds.storageGrowthWarnGbPerDay,
-        message: `storage growth ${gbAddedToday.toFixed(1)} GB/day crossed warn (${this.thresholds.storageGrowthWarnGbPerDay} GB/day)`,
+        message: `storage growth ${gbAddedToday.toFixed(1)} GB/day crossed warn (${this.thresholds.storageGrowthWarnGbPerDay.toFixed(1)} GB/day)`,
       });
     }
   }

@@ -23,7 +23,6 @@ import type {
   DesignDoc,
   Page,
   TextLayer,
-  NodeId,
 } from "@supa/design-model";
 import {
   newId,
@@ -247,9 +246,9 @@ export async function generateDesignFromPrompt(
  * is clearly derivable from the prompt so users can tell.
  */
 function synthesizeDraftDoc(prompt: string): DesignDoc {
-  const pageId = `p_${newId()}` as NodeId;
-  const headingId = `n_${newId()}` as NodeId;
-  const bodyId = `n_${newId()}` as NodeId;
+  const pageId = `p_${newId()}`;
+  const headingId = `n_${newId()}`;
+  const bodyId = `n_${newId()}`;
 
   const heading = prompt.slice(0, 60).trim() || "Untitled design";
   const bodyText = prompt.trim() || "Generated draft — edit me.";
