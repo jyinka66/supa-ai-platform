@@ -110,10 +110,10 @@ security definer
 set search_path = ''
 as $$
   select exists (
-    select 1 from memberships m
-    join roles r on r.id = m.role_id
+    select 1 from public.memberships m
+    join public.roles r on r.id = m.role_id
     where m.ws_id = _ws
-      and m.user_id = current_uid()
+      and m.user_id = public.current_uid()
       and m.status = 'active'
       and (_permission = any (r.permissions)
            or r.name = 'owner')  -- owner is implied-all.
