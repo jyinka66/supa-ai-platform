@@ -153,7 +153,15 @@ Test: sign in → Home → switch workspace → create chat → stream answer �
 - **This does not fix production by itself:** the production `SUPABASE_DB_POOLER_HOST` is not yet configured because its pooler cluster cannot be derived from region. Need the exact hostname from Supabase Dashboard > Connect > Transaction pooler, then set it in Vercel and verify both health endpoints return 200.
 
 
-### 2026-10-18 — Home prompt handoff privacy fix (source follow-up pending CI)
+### 2026-10-18 — Home prompt handoff privacy fix (`f94095b`, deployment READY)
 - Changed new Home prompt handoff from a `?prompt=` query string to per-tab `sessionStorage` keyed by conversation ID, so prompt text is not written into the address bar, browser history, or request URLs.
 - Kept a compatibility path for older `?prompt=` links; the chat removes the old parameter from the address bar as soon as it consumes it.
-- This commit needs build/CI verification. Database health is still blocked until the exact Supabase transaction-pooler hostname is configured in Vercel; do not claim healthy until `/api/health` and `/api/readyz` return 200.
+- Vercel build and CI passed. Unauthenticated HTTP smoke fetches for Home and History returned 200 HTML but resolved to the sign-in page because the fetch tool has no user session; that is not a signed-in UI test. Database health is still blocked until the exact Supabase transaction-pooler hostname is configured in Vercel; do not claim healthy until `/api/health` and `/api/readyz` return 200.
+
+
+### 2026-10-18 — Post-deployment check (f94095b)
+- Vercel deployment dpl_G662hE1mSwMssrWAx7Kv4YpfeBNL is READY; CI passed and the production alias resolved.
+- Live /api/health: HTTP 503 with db: fail, feature_flags: fail, redis: ok.
+- Live /api/readyz: HTTP 503 with db: fail, redis: ok.
+- No chat/workspace/conversation runtime error clusters were found in the last 15 minutes. This is not evidence that signed-in AI chat succeeds.
+- Next action: user must provide only the hostname from Supabase Dashboard > Connect > Transaction pooler, then set SUPABASE_DB_POOLER_HOST in Vercel. Do not ask the user for a password or full URI. After setting it, redeploy and verify health endpoints.
