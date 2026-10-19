@@ -247,7 +247,7 @@ export async function mintSample(
     if (!isConsentActive(consent) && !allRedacted(input.deliverableRefs)) {
       const unredacted = input.deliverableRefs.filter((d) => !d.redacted);
       throw new Error(
-        `unredacted deliverables require client consent — ${unredacted.length} deliverable(s) not redacted, no active consent fact`,
+        `unredacted deliverables require client consent — ${String(unredacted.length)} deliverable(s) not redacted, no active consent fact`,
       );
     }
 
