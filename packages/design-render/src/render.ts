@@ -216,7 +216,7 @@ function renderImage(
   id: string,
   opacity: string,
   blend: string,
-  defs: DefsBuilder,
+  _defs: DefsBuilder,
 ): string {
   const asset = doc.assets[layer.assetId];
   if (!asset) return ""; // missing asset — render nothing
