@@ -50,8 +50,8 @@ export function assertDeterministic(
     const diffIndex = findFirstDiff(r1.svg, r2.svg);
     throw new Error(
       `Determinism violation: SVG differs at byte ${String(diffIndex)}.\n` +
-      `  ...${String(r1.svg.slice(Math.max(0, diffIndex - 20), diffIndex + 20))}\n` +
-      `  ...${String(r2.svg.slice(Math.max(0, diffIndex - 20), diffIndex + 20))}`,
+      `  ...${r1.svg.slice(Math.max(0, diffIndex - 20), diffIndex + 20)}\n` +
+      `  ...${r2.svg.slice(Math.max(0, diffIndex - 20), diffIndex + 20)}`,
     );
   }
 
@@ -86,7 +86,7 @@ export function fuzzDeterministic(
       assertDeterministic(doc, { pageId }, measurer);
     } catch (err) {
       throw new Error(
-        `Fuzz determinism failure at doc ${String(i)} (seed ${String(opts.seed)}): ${String((err as Error).message)}`,
+        `Fuzz determinism failure at doc ${String(i)} (seed ${String(opts.seed)}): ${(err as Error).message}`,
       );
     }
   }
@@ -171,7 +171,7 @@ export function assertParity(
 
     if (diff > 1) {
       failures.push(
-        `Text width diff > 1px: "${String(sample.text.slice(0, 30))}..." client=${String(clientWidth.toFixed(2))} server=${String(serverWidth.toFixed(2))} diff=${String(diff.toFixed(2))}`,
+        `Text width diff > 1px: "${sample.text.slice(0, 30)}..." client=${clientWidth.toFixed(2)} server=${serverWidth.toFixed(2)} diff=${diff.toFixed(2)}`,
       );
     }
   }
@@ -191,7 +191,7 @@ export function assertParity(
 
     if (diffPercentage > 0.5) {
       failures.push(
-        `SVG byte-diff ${String(diffPercentage.toFixed(2))}% exceeds 0.5% gate`,
+        `SVG byte-diff ${diffPercentage.toFixed(2)}% exceeds 0.5% gate`,
       );
     }
   }
@@ -309,8 +309,8 @@ export function assertRtlParity(
 
     if (diff > 1) {
       failures.push(
-        `RTL parity failure: "${String(sample.description)}" (${String(sample.text.slice(0, 30))}) ` +
-        `client=${String(clientWidth.toFixed(2))} server=${String(serverWidth.toFixed(2))} diff=${String(diff.toFixed(2))}`,
+        `RTL parity failure: "${sample.description}" (${sample.text.slice(0, 30)}) ` +
+        `client=${clientWidth.toFixed(2)} server=${serverWidth.toFixed(2)} diff=${diff.toFixed(2)}`,
       );
     }
   }
