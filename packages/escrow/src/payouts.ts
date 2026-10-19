@@ -5,7 +5,6 @@ import { z } from "zod";
 import { db } from "@supa/db";
 import { activityFacts, ledgerEntries, payouts } from "@supa/db/schema";
 import { and, eq } from "drizzle-orm";
-import { Money } from "@supa/freelance-core/job";
 import {
   LedgerEntry,
   computeBalance,
