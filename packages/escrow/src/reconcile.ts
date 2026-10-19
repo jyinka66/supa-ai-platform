@@ -14,7 +14,7 @@
 import { z } from "zod";
 import { db } from "@supa/db";
 import { activityFacts } from "@supa/db/schema";
-import { LedgerEntry, computeBalance } from "./ledger.js";
+import { LedgerEntry } from "./ledger.js";
 
 // FIX: inlined helper (same pattern as all files).
 async function recordActivity(
@@ -115,7 +115,7 @@ export function checkLedgerSelfBalance(
     if (debits !== credits) {
       mismatches.push({
         id: key,
-        description: `debits (${debits}) !== credits (${credits}), delta = ${debits - credits}`,
+        description: `debits (${String(debits)}) !== credits (${String(credits)}), delta = ${String(debits - credits)}`,
       });
     }
   }
@@ -127,7 +127,7 @@ export function checkLedgerSelfBalance(
     passed,
     details: passed
       ? "sum of debits === sum of credits per currency, per ws — balanced"
-      : `${mismatches.length} currency/ws pair(s) out of balance — CRITICAL: money integrity at stake`,
+      : `${String(mismatches.length)} currency/ws pair(s) out of balance — CRITICAL: money integrity at stake`,
     mismatches,
   };
 }
@@ -192,7 +192,7 @@ export function checkLedgerProviderSync(
     passed,
     details: passed
       ? "every in_transit payout has a provider record; every provider record has a ledger entry"
-      : `${mismatches.length} mismatches between ledger and provider records — ops alert`,
+      : `${String(mismatches.length)} mismatches between ledger and provider records — ops alert`,
     mismatches,
   };
 }
@@ -258,7 +258,7 @@ export function checkLedgerMilestoneSync(
     passed,
     details: passed
       ? "every paid milestone has a release; every release has a paid milestone"
-      : `${mismatches.length} orphan(s) — should be impossible by construction`,
+      : `${String(mismatches.length)} orphan(s) — should be impossible by construction`,
     mismatches,
   };
 }
