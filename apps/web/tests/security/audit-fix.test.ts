@@ -223,7 +223,7 @@ describe("C11/C12: Share password security", () => {
   it("safeEqual uses timingSafeEqual (not Buffer.equals)", async () => {
     const fs = await import("node:fs");
     const source = readFileSync(
-      resolve(webRoot + "/src/app/api/work/share/[token]/route.ts"),
+      resolve(webRoot + "/src/app/api/work/share/[id]/route.ts"),
       "utf8",
     );
     expect(source).toContain("timingSafeEqual");
