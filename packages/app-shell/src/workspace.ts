@@ -233,7 +233,8 @@ export class SessionStore {
 
   /** any → error (load failure, etc.). */
   fail(error: string): void {
-    this.state = { kind: "error", docId: this.state.kind === "loading" ? this.state.docId : this.state.doc.ref.id, error };
+    const docId = "docId" in this.state ? this.state.docId : this.state.doc.ref.id;
+    this.state = { kind: "error", docId, error };
     this.emit();
   }
 
