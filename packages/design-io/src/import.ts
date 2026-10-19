@@ -344,6 +344,7 @@ function convertRect(el: Element, ctx: ConvertContext): LayerNode | null {
   const height = parseFloat(el.getAttribute("height") ?? "100");
   const rx = parseFloat(el.getAttribute("rx") ?? "0");
 
+  const fill = parseFill(el, ctx);
   const stroke = parseStroke(el);
   const transform = parseTransform(el.getAttribute("transform"));
 
@@ -560,7 +561,6 @@ function convertText(el: Element, ctx: ConvertContext): LayerNode | null {
   const fontSize = parseFloat(el.getAttribute("font-size") ?? "16");
   const fontWeight = parseInt(el.getAttribute("font-weight") ?? "400", 10);
   const lineHeight = parseFloat(el.getAttribute("line-height") ?? "1.2");
-  const fill = parseFill(el, ctx);
   const textAlign = el.getAttribute("text-anchor") === "middle" ? "center" : el.getAttribute("text-anchor") === "end" ? "right" : "left";
   const direction = el.getAttribute("direction") === "rtl" ? "rtl" : el.getAttribute("dir") === "rtl" ? "rtl" : "auto";
 
@@ -779,7 +779,7 @@ function parseFill(el: Element, ctx: ConvertContext): Fill | null {
     const match = fillAttr.match(/url\(#([^)]+)\)/);
     if (match) {
       const defId = match[1];
-      if (!defId) continue;
+      if (!defId) return null;
       const def = ctx.defs.get(defId);
       if (def) {
         return {
