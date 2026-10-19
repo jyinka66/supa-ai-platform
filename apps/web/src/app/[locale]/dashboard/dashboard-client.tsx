@@ -15,6 +15,7 @@ import {
   FolderOpen,
   ShieldCheck,
   Users,
+  type LucideIcon,
 } from "lucide-react";
 import type { Mode } from "@/lib/prompts";
 import type { WorkspaceWithMembership } from "@/lib/workspaces/queries";
