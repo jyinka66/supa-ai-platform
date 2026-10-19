@@ -27,14 +27,12 @@ import { z } from "zod";
 import { db } from "@supa/db";
 import { activityFacts } from "@supa/db/schema";
 import {
-  buildProvenance,
   type DraftStore,
   type LlmClient,
-  type DraftId,
 } from "./verbs.js";
 import { runProposal, type ProposalInput, type ProposalDraft } from "./proposal.js";
 import { runPricing, type PricingInput, type PricingSuggestion } from "./pricing.js";
-import { matchOpportunities, type ListingOpportunity, type MarketIntel } from "./market.js";
+import type { ListingOpportunity } from "./market.js";
 
 async function recordActivity(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
@@ -134,7 +132,7 @@ function checkBudgetFloor(
   if (listing.budget.amountMinor < guardrails.minimumBudgetMinor) {
     return {
       passed: false,
-      reason: `budget ${listing.budget.amountMinor} below floor ${guardrails.minimumBudgetMinor}`,
+      reason: `budget ${String(listing.budget.amountMinor)} below floor ${String(guardrails.minimumBudgetMinor)}`,
     };
   }
   return { passed: true, reason: "budget above floor" };
@@ -147,7 +145,7 @@ function checkRateFloor(
   if (pricing.suggestedRate.amountMinor < guardrails.minimumRateMinor) {
     return {
       passed: false,
-      reason: `suggested rate ${pricing.suggestedRate.amountMinor} below minimum ${guardrails.minimumRateMinor}`,
+      reason: `suggested rate ${String(pricing.suggestedRate.amountMinor)} below minimum ${String(guardrails.minimumRateMinor)}`,
     };
   }
   return { passed: true, reason: "rate above minimum" };
@@ -158,10 +156,10 @@ function checkApplicantCount(
   guardrails: AutoBidGuardrails,
 ): GateResult {
   if (applicantCount < guardrails.minApplicants) {
-    return { passed: false, reason: `only ${applicantCount} applicants (min ${guardrails.minApplicants})` };
+    return { passed: false, reason: `only ${String(applicantCount)} applicants (min ${String(guardrails.minApplicants)})` };
   }
   if (applicantCount > guardrails.maxApplicants) {
-    return { passed: false, reason: `${applicantCount} applicants (max ${guardrails.maxApplicants}) — too competitive` };
+    return { passed: false, reason: `${String(applicantCount)} applicants (max ${String(guardrails.maxApplicants)}) — too competitive` };
   }
   return { passed: true, reason: "applicant count in range" };
 }
@@ -172,7 +170,7 @@ function checkActiveHours(
 ): GateResult {
   const hour = now.getHours();
   if (hour < guardrails.activeHourStart || hour >= guardrails.activeHourEnd) {
-    return { passed: false, reason: `current hour ${hour} outside active window [${guardrails.activeHourStart}, ${guardrails.activeHourEnd})` };
+    return { passed: false, reason: `current hour ${String(hour)} outside active window [${String(guardrails.activeHourStart)}, ${String(guardrails.activeHourEnd)})` };
   }
   return { passed: true, reason: "within active hours" };
 }
@@ -182,7 +180,7 @@ function checkDailyCap(
   guardrails: AutoBidGuardrails,
 ): GateResult {
   if (proposalsSubmittedToday >= guardrails.maxProposalsPerDay) {
-    return { passed: false, reason: `daily cap reached (${proposalsSubmittedToday}/${guardrails.maxProposalsPerDay})` };
+    return { passed: false, reason: `daily cap reached (${String(proposalsSubmittedToday)}/${String(guardrails.maxProposalsPerDay)})` };
   }
   return { passed: true, reason: "within daily cap" };
 }
@@ -403,7 +401,7 @@ export async function runAutoBid(
         decision: "submit",
         reasons: [
           "all guardrails passed",
-          `rate ${pricing.suggestedRate.amountMinor} ${pricing.suggestedRate.currency}`,
+          `rate ${String(pricing.suggestedRate.amountMinor)} ${pricing.suggestedRate.currency}`,
           `match ${opportunity.matchScore}/100`,
           `demand ${opportunity.demandIndex}/100`,
         ],
