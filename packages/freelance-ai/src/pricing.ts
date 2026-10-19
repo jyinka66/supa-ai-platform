@@ -169,7 +169,7 @@ export async function runPricing(
         currency: input.freelancerHistory.typicalRateCurrency,
       },
       isBelowMinimum: false, // we corrected it — but flag the original was below
-      rationale: `Original suggestion was below your minimum rate. Adjusted to your floor of ${input.freelancerHistory.minimumRateMinor}. ${suggestion.rationale}`,
+      rationale: `Original suggestion was below your minimum rate. Adjusted to your floor of ${String(input.freelancerHistory.minimumRateMinor)}. ${suggestion.rationale}`,
     };
   }
 
