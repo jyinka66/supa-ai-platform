@@ -22,6 +22,13 @@ export interface PersistMessageInput {
   costUsd?: number | null;
 }
 
+/** First line of the message, whitespace collapsed, capped at 60 characters. */
+export function deriveConversationTitle(content: string): string | null {
+  const flat = content.replace(/\s+/g, " ").trim();
+  if (!flat) return null;
+  return flat.length > 60 ? `${flat.slice(0, 59).trimEnd()}…` : flat;
+}
+
 /**
  * Persists a chat message with the caller's Supabase session, so database
  * row-level security remains active. Provider/usage metadata is only written
@@ -109,6 +116,22 @@ export async function persistMessage(input: PersistMessageInput): Promise<string
   }
 
   const messageId = inserted.id as string;
+
+  // Give a new conversation a readable title from its first user message.
+  // The conditional update only touches conversations that still have no title
+  // and have not been renamed, so it never overwrites a name. Best effort: a
+  // failure here must not discard the saved message.
+  if (input.role === "user") {
+    const title = deriveConversationTitle(input.content);
+    if (title) {
+      await supabase
+        .from("conversations")
+        .update({ title })
+        .eq("id", input.conversationId)
+        .is("title", null)
+        .eq("title_auto", true);
+    }
+  }
 
   // User messages deliberately do not create message_meta records: provider
   // metadata is meaningful only for model output, and has strict provider IDs.
