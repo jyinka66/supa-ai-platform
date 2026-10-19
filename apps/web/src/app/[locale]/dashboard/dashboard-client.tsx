@@ -147,14 +147,11 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
 
   // The API returns every conversation the user owns. Show only those in the
   // selected workspace, matching the "saved to the selected workspace" copy.
-  const { recentConversations, pinnedConversations } = useMemo(() => {
+  const recentConversations = useMemo(() => {
     const inWorkspace = allConversations.filter(
       (conversation) => !activeWorkspace || conversation.workspaceId === activeWorkspace.id,
     );
-    return {
-      recentConversations: inWorkspace.slice(0, 6),
-      pinnedConversations: inWorkspace.filter((conversation) => conversation.pinned).slice(0, 4),
-    };
+    return inWorkspace.slice(0, 6);
   }, [allConversations, activeWorkspace]);
 
   const displayName = profile.fullName?.trim() || "";
@@ -384,43 +381,7 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
               <SummaryCard icon={Check} label={t("sro")} value={activeWorkspace?.workspace_members[0]?.role ?? "member"} detail={t("srod")} tone="green" />
             </section>
 
-            <section id="pinned" className="scroll-mt-24">
-              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.15em] text-violet-700">{t("pe")}</p>
-                  <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">{t("pt")}</h2>
-                  <p className="mt-1 text-sm text-slate-500">{t("ps")}</p>
-                </div>
-                <Link href={`/${locale}/history`} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-700 hover:text-violet-900">{t("pm")} <ArrowRight className="h-3.5 w-3.5" /></Link>
-              </div>
-              {loadingRecent ? (
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  {Array.from({ length: 2 }).map((_, index) => <div key={index} className="h-24 animate-pulse rounded-2xl bg-white ring-1 ring-slate-200" />)}
-                </div>
-              ) : pinnedConversations.length ? (
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  {pinnedConversations.map((conversation) => (
-                    <Link key={conversation.id} href={`/${locale}/chat/${conversation.id}`} className="group rounded-2xl border border-violet-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-700"><MessageSquare className="h-4 w-4" /></span>
-                        <span aria-label={t("pb")} title={t("pb")} className="text-xs font-semibold text-violet-500">{t("pb")}</span>
-                      </div>
-                      <p className="mt-3 truncate text-sm font-semibold text-slate-900 group-hover:text-violet-800">{conversation.title?.trim() || t("rs", { mode: modeLabel(conversation.mode) })}</p>
-                      <p className="mt-1 truncate text-xs text-slate-500">{modeLabel(conversation.mode)} · {formatDate(conversation.updatedAt ?? conversation.createdAt, locale)}</p>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-5 sm:flex-row sm:items-center">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-500"><MessageSquare className="h-4 w-4" /></span>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-slate-800">{t("pet")}</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500">{t("peb")}</p>
-                  </div>
-                  <Link href={`/${locale}/history`} className="text-xs font-semibold text-violet-700 hover:text-violet-900">{t("po")} <ArrowRight className="ml-1 inline h-3 w-3" /></Link>
-                </div>
-              )}
-            </section>
+            
 
             <section id="ai-tools" className="scroll-mt-24">
               <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
@@ -485,71 +446,8 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
               </div>
             </section>
 
-            <div className="grid gap-8 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
-              <section id="recent" className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-slate-400">
-                      <Clock3 className="h-3.5 w-3.5" /> {t("re")}
-                    </div>
-                    <h2 className="mt-2 text-lg font-semibold text-slate-950">{t("rt")}</h2>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => void startConversation("chat")}
-                    disabled={busyMode !== null || !activeWorkspace}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:opacity-60"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> {t("rn")}
-                  </button>
-                </div>
-
-                {loadingRecent ? (
-                  <div className="mt-5 space-y-3" aria-label={t("rl")}>
-                    {Array.from({ length: 3 }).map((_, index) => (
-                      <div key={index} className="h-[58px] animate-pulse rounded-xl bg-slate-100" />
-                    ))}
-                  </div>
-                ) : recentError ? (
-                  <div className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-                    {t("rer")}
-                  </div>
-                ) : recentConversations.length === 0 ? (
-                  <div className="mt-5 rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-5 py-8 text-center">
-                    <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-violet-700 shadow-sm ring-1 ring-slate-200">
-                      <MessageSquare className="h-5 w-5" />
-                    </span>
-                    <p className="mt-3 text-sm font-semibold text-slate-800">{t("ret")}</p>
-                    <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-slate-500">{t("reb")}</p>
-                    <button type="button" onClick={() => void startConversation("chat")} disabled={busyMode !== null || !activeWorkspace} className="mt-4 text-sm font-semibold text-violet-700 hover:text-violet-900">
-                      {t("rf")} <ArrowRight className="ml-1 inline h-4 w-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <ul className="mt-4 divide-y divide-slate-100">
-                    {recentConversations.map((conversation) => (
-                      <li key={conversation.id}>
-                        <Link
-                          href={`/${locale}/chat/${conversation.id}`}
-                          className="group flex items-center gap-3 rounded-xl px-2 py-3 transition hover:bg-slate-50"
-                        >
-                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700 ring-1 ring-violet-100">
-                            <MessageSquare className="h-4 w-4" />
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-semibold text-slate-800 group-hover:text-violet-800">
-                              {conversation.title?.trim() || t("rs", { mode: modeLabel(conversation.mode) })}
-                            </span>
-                            <span className="mt-1 block text-xs text-slate-500">{modeLabel(conversation.mode)}</span>
-                          </span>
-                          <span className="shrink-0 text-xs text-slate-400">{formatDate(conversation.updatedAt ?? conversation.createdAt, locale)}</span>
-                          <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-300 group-hover:text-violet-700" />
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
+            <div className="grid gap-8">
+              
 
               <section id="workspaces" className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
                 <div className="flex items-start justify-between gap-3">
