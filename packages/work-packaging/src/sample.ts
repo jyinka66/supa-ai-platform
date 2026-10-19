@@ -307,7 +307,7 @@ export async function createSelfAddedSample(
       ));
     const current = capRows[0]?.value ?? 0;
     if (current >= SELF_ADDED_CAP) {
-      throw new Error(`self-added sample cap reached (${current}/${SELF_ADDED_CAP})`);
+      throw new Error(`self-added sample cap reached (${String(current)}/${String(SELF_ADDED_CAP)})`);
     }
 
     const now = new Date().toISOString();
