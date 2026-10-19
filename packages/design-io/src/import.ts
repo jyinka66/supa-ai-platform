@@ -29,11 +29,8 @@ import type {
   Fill,
   Stroke,
   Rect,
-  Gradient,
   GradientStop,
   RichRun,
-  AutoLayout,
-  NodeId,
 } from "@supa/design-model";
 import { newId, validate } from "@supa/design-model";
 
@@ -145,7 +142,7 @@ export async function importSvg(
     for (const err of errors) {
       issues.push({
         nodeId: err.path,
-        reason: `${err.code}: ${err.message}`,
+        reason: `${String(err.code)}: ${String(err.message)}`,
         action: "dropped",
       });
     }
@@ -279,7 +276,7 @@ async function convertElement(
       }
       ctx.issues.push({
         nodeId: el.getAttribute("id") ?? "unknown",
-        reason: `Unsupported element: <${tag}>`,
+        reason: `Unsupported element: <${String(tag)}>`,
         action: "dropped",
       });
       return null;
@@ -347,7 +344,6 @@ function convertRect(el: Element, ctx: ConvertContext): LayerNode | null {
   const height = parseFloat(el.getAttribute("height") ?? "100");
   const rx = parseFloat(el.getAttribute("rx") ?? "0");
 
-  const fill = parseFill(el, ctx);
   const stroke = parseStroke(el);
   const transform = parseTransform(el.getAttribute("transform"));
 
@@ -680,14 +676,14 @@ async function convertImage(el: Element, ctx: ConvertContext): Promise<LayerNode
 
 // ============ BAKE (unsupported → image) ============
 
-async function bakeElement(el: Element, ctx: ConvertContext): Promise<LayerNode | null> {
+function bakeElement(el: Element, ctx: ConvertContext): Promise<LayerNode | null> {
   const id = el.getAttribute("id") ?? newId();
   const bbox = computeRectFromChildren(el) ?? { x: 0, y: 0, width: 100, height: 100 };
 
   ctx.onBaked();
   ctx.issues.push({
     nodeId: id,
-    reason: `Element <${el.tagName}> baked to image`,
+    reason: `Element <${String(el.tagName)}> baked to image`,
     action: "baked",
   });
 
@@ -697,10 +693,10 @@ async function bakeElement(el: Element, ctx: ConvertContext): Promise<LayerNode 
   // 3. Upload the resulting PNG as an asset
   // 4. Return an image node referencing the asset
 
-  return {
+  return Promise.resolve({
     id,
     type: "image",
-    name: `Baked ${el.tagName}`,
+    name: `Baked ${String(el.tagName)}`,
     locked: false,
     hidden: false,
     rect: bbox,
@@ -710,8 +706,8 @@ async function bakeElement(el: Element, ctx: ConvertContext): Promise<LayerNode 
     constraints: {},
     assetId: "baked_placeholder",
     fit: "contain",
-    altText: `Baked from <${el.tagName}>`,
-  };
+    altText: `Baked from <${String(el.tagName)}>`,
+  });
 }
 
 // ============ SVG PARSING HELPERS ============
