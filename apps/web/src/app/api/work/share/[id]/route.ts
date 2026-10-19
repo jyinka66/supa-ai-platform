@@ -76,7 +76,7 @@ export async function PATCH(
   if (parsed.data.password !== undefined) {
     updateSet.passwordHash = parsed.data.password === null
       ? null
-      : createHash("sha256").update(parsed.data.password).digest("hex");
+      : await hashSharePassword(parsed.data.password);
   }
 
   if (parsed.data.expiresInDays !== undefined) {
