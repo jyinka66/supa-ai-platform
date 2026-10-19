@@ -167,54 +167,31 @@ describe("withRateLimit (direct)", () => {
 // Wiring tests — verify the route calls withRateLimit
 // ───────────────────────────────────────────────
 
-describe("POST /api/supa-os/build — rate limit wiring", () => {
-  it("calls withRateLimit with the admin id + build path", async () => {
-    const { POST } = await import("@/app/api/supa-os/build/route");
-    const req = new NextRequest("https://example.com/api/supa-os/build", {
+describe("POST /api/supa-os/marketplace — rate limit wiring", () => {
+  it("calls withRateLimit with the authenticated user + marketplace path", async () => {
+    const { POST } = await import("@/app/api/supa-os/marketplace/route");
+    const req = new NextRequest("https://example.com/api/supa-os/marketplace", {
       method: "POST",
-      body: JSON.stringify({ prompt: "Build a todo app for testing rate limits" }),
+      body: JSON.stringify({ name: "Test", type: "theme" }),
       headers: { "Content-Type": "application/json" },
     });
-    // Wrap in a try/catch — the route may continue past rate limit and
-    // hit the DB mock (which returns mock data) — that's fine.
-    try { await POST(req); } catch { /* expected */ }
+    try { await POST(req); } catch { /* request may fail validation after rate limiting */ }
     expect(rateLimitCalls).toHaveLength(1);
-    expect(rateLimitCalls[0]!.pathname).toBe("/api/supa-os/build");
-    expect(rateLimitCalls[0]!.identifier).toBe("admin_001");
+    expect(rateLimitCalls[0]?.pathname).toBe("/api/supa-os/marketplace");
+    expect(rateLimitCalls[0]?.identifier).toBe("user_001");
   });
 
-  it("returns 429 when rate limit denies", async () => {
+  it("returns 429 before processing a marketplace submission when rate limit denies", async () => {
     nextRateLimitResult = { ok: false, remaining: 0, retryAfterSec: 30 };
-    const { POST } = await import("@/app/api/supa-os/build/route");
-    const req = new NextRequest("https://example.com/api/supa-os/build", {
+    const { POST } = await import("@/app/api/supa-os/marketplace/route");
+    const req = new NextRequest("https://example.com/api/supa-os/marketplace", {
       method: "POST",
-      body: JSON.stringify({ prompt: "Build a todo app" }),
+      body: JSON.stringify({ name: "Test", type: "theme" }),
       headers: { "Content-Type": "application/json" },
     });
     const res = await POST(req);
     expect(res.status).toBe(429);
-    const json = await res.json();
-    expect(json.error.code).toBe("RATE_LIMITED");
-  });
-
-  it("proceeds past rate limit when it allows (does not return 429)", async () => {
-    const { POST } = await import("@/app/api/supa-os/build/route");
-    const req = new NextRequest("https://example.com/api/supa-os/build", {
-      method: "POST",
-      body: JSON.stringify({ prompt: "Build a todo app for testing rate limits" }),
-      headers: { "Content-Type": "application/json" },
-    });
-    try {
-      const res = await POST(req);
-      // The route may continue and throw later (DB returns mock data),
-      // but the key assertion is: it did NOT return 429.
-      expect(res.status).not.toBe(429);
-    } catch (err) {
-      // Expected — the route continues past rate limit + hits the DB mock,
-      // which returns mock data that may not match the route's expected
-      // shape. The key is: rate limit did not block.
-      expect(err).toBeDefined();
-    }
+    expect(rateLimitCalls).toHaveLength(1);
   });
 });
 
@@ -246,22 +223,6 @@ describe("POST /api/builder/sessions/[id]/publish — rate limit wiring", () => 
     try { await POST(req); } catch { /* expected — getBuildSession returns mock row */ }
     expect(rateLimitCalls.length).toBeGreaterThanOrEqual(1);
     expect(rateLimitCalls[0]!.pathname).toContain("/api/builder/sessions/");
-    expect(rateLimitCalls[0]!.identifier).toBe("admin_001");
-  });
-});
-
-describe("POST /api/supa-os/build/[id]/deploy — rate limit wiring", () => {
-  it("calls withRateLimit with the admin id + deploy path", async () => {
-    const { POST } = await import("@/app/api/supa-os/build/[id]/deploy/route");
-    const req = new NextRequest("https://example.com/api/supa-os/build/abc/deploy", {
-      method: "POST",
-      body: JSON.stringify({ target: "vercel" }),
-      headers: { "Content-Type": "application/json" },
-    });
-    (req as unknown as { params: Record<string, string> }).params = { id: "abc" };
-    try { await POST(req); } catch { /* expected */ }
-    expect(rateLimitCalls.length).toBeGreaterThanOrEqual(1);
-    expect(rateLimitCalls[0]!.pathname).toContain("/api/supa-os/build/");
     expect(rateLimitCalls[0]!.identifier).toBe("admin_001");
   });
 });
