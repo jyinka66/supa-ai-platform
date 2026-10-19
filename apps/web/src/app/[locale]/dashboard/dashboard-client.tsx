@@ -6,25 +6,17 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   ArrowRight,
-  BookOpen,
   Check,
-  Code2,
-  FileText,
   Layers,
-  Languages,
-  ListChecks,
   LogOut,
   MessageSquare,
-  PenLine,
-  Plus,
-  RefreshCw,
   Sparkles,
   Zap,
-  type LucideIcon,
 } from "lucide-react";
 import type { Mode } from "@/lib/prompts";
 import type { WorkspaceWithMembership } from "@/lib/workspaces/queries";
 import { WorkspaceSidebar } from "@/components/workspace-sidebar";
+import { WorkLibraryPanel } from "@/components/work-library-panel";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 interface DashboardClientProps {
@@ -48,80 +40,12 @@ interface RecentConversation {
   pinned: boolean;
 }
 
-interface ToolCard {
-  mode: Mode;
-  titleKey: string;
-  descKey: string;
-  icon: LucideIcon;
-  tone: string;
-}
-
-const TOOLS: ToolCard[] = [
-  {
-    mode: "chat",
-    titleKey: "tc",
-    descKey: "tcd",
-    icon: MessageSquare,
-    tone: "bg-violet-50 text-violet-700 ring-violet-100",
-  },
-  {
-    mode: "write",
-    titleKey: "tw",
-    descKey: "twd",
-    icon: PenLine,
-    tone: "bg-sky-50 text-sky-700 ring-sky-100",
-  },
-  {
-    mode: "rewrite",
-    titleKey: "trw",
-    descKey: "trwd",
-    icon: RefreshCw,
-    tone: "bg-amber-50 text-amber-700 ring-amber-100",
-  },
-  {
-    mode: "summarize",
-    titleKey: "tsu",
-    descKey: "tsud",
-    icon: BookOpen,
-    tone: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-  },
-  {
-    mode: "translate",
-    titleKey: "ttr",
-    descKey: "ttrd",
-    icon: Languages,
-    tone: "bg-rose-50 text-rose-700 ring-rose-100",
-  },
-  {
-    mode: "code",
-    titleKey: "tco",
-    descKey: "tcod",
-    icon: Code2,
-    tone: "bg-indigo-50 text-indigo-700 ring-indigo-100",
-  },
-  {
-    mode: "document",
-    titleKey: "tdo",
-    descKey: "tdod",
-    icon: FileText,
-    tone: "bg-orange-50 text-orange-700 ring-orange-100",
-  },
-  {
-    mode: "plan",
-    titleKey: "tpl",
-    descKey: "tpld",
-    icon: ListChecks,
-    tone: "bg-teal-50 text-teal-700 ring-teal-100",
-  },
-];
 
 export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId: initialWorkspaceId }: DashboardClientProps) {
   const router = useRouter();
   const t = useTranslations("dashboard.home");
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(initialWorkspaceId || workspaces[0]?.id || "");
   const [allConversations, setAllConversations] = useState<RecentConversation[]>([]);
-  const [studioPrompt, setStudioPrompt] = useState("");
-  const [studioMode, setStudioMode] = useState<Mode>("chat");
   const [loadingRecent, setLoadingRecent] = useState(true);
   const [busyMode, setBusyMode] = useState<Mode | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -365,68 +289,7 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
             </section>
 
 
-            <section id="ai-tools" className="scroll-mt-24">
-              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.15em] text-violet-700">{t("se")}</p>
-                  <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">{t("stt")}</h2>
-                  <p className="mt-1 text-sm text-slate-500">{t("ss")}</p>
-                </div>
-                <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500">{t("sbd")}</span>
-              </div>
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void startConversation(studioMode, studioPrompt);
-                }}
-                className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_20px_55px_-35px_rgba(15,23,42,0.3)] focus-within:border-violet-200"
-              >
-                <label htmlFor="dashboard-studio-prompt" className="sr-only">{t("sl")}</label>
-                <textarea
-                  id="dashboard-studio-prompt"
-                  value={studioPrompt}
-                  onChange={(event) => setStudioPrompt(event.target.value)}
-                  placeholder={t("sph")}
-                  rows={3}
-                  maxLength={32000}
-                  className="block min-h-[112px] w-full resize-y border-0 bg-transparent px-5 py-4 text-sm leading-6 text-slate-900 outline-none placeholder:text-slate-400 focus:ring-0"
-                />
-                <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/70 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <label htmlFor="dashboard-studio-mode" className="text-xs font-medium text-slate-500">{t("sm")}</label>
-                    <select
-                      id="dashboard-studio-mode"
-                      value={studioMode}
-                      onChange={(event) => setStudioMode(event.target.value as Mode)}
-                      className="h-9 max-w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
-                    >
-                      {TOOLS.map((tool) => <option key={tool.mode} value={tool.mode}>{t(tool.titleKey)}</option>)}
-                    </select>
-                    <span className="hidden text-[11px] text-slate-400 md:inline">{t("ssv", { workspace: activeWorkspace?.name ?? t("sfw") })}</span>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={busyMode !== null || !activeWorkspace}
-                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {busyMode === studioMode ? t("so") : t("sa")}
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </form>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {[
-                  { id: "s1", label: "Explain a topic", prompt: "Explain this topic in simple language, with an example." },
-                  { id: "s2", label: "Write an email", prompt: "Help me draft a clear, professional email." },
-                  { id: "s3", label: "Debug code", prompt: "Help me debug this code. Ask me for the code or error details you need." },
-                  { id: "s4", label: "Plan a project", prompt: "Help me turn this idea into a practical project plan with steps and milestones." },
-                ].map((suggestion) => (
-                  <button key={suggestion.id} type="button" onClick={() => { setStudioPrompt(suggestion.prompt); if (suggestion.id === "s3") setStudioMode("code"); }} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-800">
-                    {t(suggestion.id)}
-                  </button>
-                ))}
-              </div>
-            </section>
+            {activeWorkspace && <WorkLibraryPanel workspaceId={activeWorkspace.id} />}
 
             <div className="grid gap-8">
               <section id="workspaces" className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
