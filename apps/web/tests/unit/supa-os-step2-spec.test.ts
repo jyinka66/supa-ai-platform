@@ -236,7 +236,7 @@ describe("2 — Automated Compliance & Security Rules", () => {
     const result = encryptSensitiveField({
       value: "123-45-6789",
       fieldType: "ssn",
-      encryptionKey: "test-key",
+      encryptionKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
     });
     expect(result.ciphertext).toBeTruthy();
     expect(result.iv).toBeTruthy();
