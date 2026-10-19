@@ -100,7 +100,6 @@ interface ClassifiedQuery {
  *   });
  */
 export async function searchWorkItems(params: SearchParams): Promise<SearchResult> {
-  return undefined as never;
   const classified = classify(params.query);
 
   switch (classified.tier) {
