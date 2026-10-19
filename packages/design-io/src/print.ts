@@ -15,7 +15,7 @@
 //     for prints).
 // ─────────────────────────────────────────────────────────────
 
-import type { DesignDoc, Page, LayerNode, Rect, TextLayer, ImageLayer, ShapeLayer, ContainerLayer } from "@supa/design-model";
+import type { Page, Rect } from "@supa/design-model";
 import { flattenLayers } from "@supa/design-model";
 
 // ============ UNITS ============
@@ -175,7 +175,7 @@ export function extendBleed(
       if (tooClose) {
         unsafeElements.push({
           nodeId: layer.id,
-          reason: `Text is within ${config.safeZoneMm}mm of the trim edge`,
+          reason: `Text is within ${String(config.safeZoneMm)}mm of the trim edge`,
         });
       }
     }
@@ -282,15 +282,15 @@ export function renderPrintChrome(
   // Trim marks.
   for (const mark of trimMarks) {
     parts.push(
-      `<line x1="${mark.x1}" y1="${mark.y1}" x2="${mark.x2}" y2="${mark.y2}" ` +
-      `stroke="#000" stroke-width="${mark.strokeWidth}" />`,
+      `<line x1="${String(mark.x1)}" y1="${String(mark.y1)}" x2="${String(mark.x2)}" y2="${String(mark.y2)}" ` +
+      `stroke="#000" stroke-width="${String(mark.strokeWidth)}" />`,
     );
   }
 
   // Color bar.
   for (const rect of colorBar.rects) {
     parts.push(
-      `<rect x="${rect.x}" y="${rect.y}" width="${rect.width}" height="${rect.height}" fill="${rect.fill}" />`,
+      `<rect x="${String(rect.x)}" y="${String(rect.y)}" width="${String(rect.width)}" height="${String(rect.height)}" fill="${String(rect.fill)}" />`,
     );
   }
 
@@ -364,22 +364,22 @@ export function renderPreviewOverlay(
 
   // Bleed zone (shaded).
   parts.push(
-    `<rect x="${overlay.bleedZone.x}" y="${overlay.bleedZone.y}" ` +
-    `width="${overlay.bleedZone.width}" height="${overlay.bleedZone.height}" ` +
+    `<rect x="${String(overlay.bleedZone.x)}" y="${String(overlay.bleedZone.y)}" ` +
+    `width="${String(overlay.bleedZone.width)}" height="${String(overlay.bleedZone.height)}" ` +
     `fill="rgba(0,0,0,0.05)" stroke="none" />`,
   );
 
   // Trim line (dashed).
   parts.push(
-    `<rect x="${overlay.trimLine.x}" y="${overlay.trimLine.y}" ` +
-    `width="${overlay.trimLine.width}" height="${overlay.trimLine.height}" ` +
+    `<rect x="${String(overlay.trimLine.x)}" y="${String(overlay.trimLine.y)}" ` +
+    `width="${String(overlay.trimLine.width)}" height="${String(overlay.trimLine.height)}" ` +
     `fill="none" stroke="#ff0000" stroke-width="1" stroke-dasharray="4 2" />`,
   );
 
   // Unsafe elements (red highlight).
   for (const { rect } of overlay.unsafeHighlights) {
     parts.push(
-      `<rect x="${rect.x}" y="${rect.y}" width="${rect.width}" height="${rect.height}" ` +
+      `<rect x="${String(rect.x)}" y="${String(rect.y)}" width="${String(rect.width)}" height="${String(rect.height)}" ` +
       `fill="rgba(255,0,0,0.1)" stroke="#ff0000" stroke-width="1" stroke-dasharray="2 2" />`,
     );
   }
