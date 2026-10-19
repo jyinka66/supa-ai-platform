@@ -342,7 +342,7 @@ async function resolveContentStreams(
         results.push(bytesToLatin1(inflated));
       } catch (err) {
         issues.push({
-          nodeId: `page-${pageIndex + 1}`,
+          nodeId: `page-${String(pageIndex + 1)}`,
           reason: `FlateDecode inflation failed: ${
             (err as Error).message
           }`,
@@ -351,7 +351,7 @@ async function resolveContentStreams(
       }
     } else if (/\/Filter/.test(dict)) {
       issues.push({
-        nodeId: `page-${pageIndex + 1}`,
+        nodeId: `page-${String(pageIndex + 1)}`,
         reason: `Unsupported stream filter in object ${String(ref)}`,
         action: "dropped",
       });
