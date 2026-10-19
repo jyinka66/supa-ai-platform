@@ -165,7 +165,7 @@ async function generateGdprExport(userId: string): Promise<string | null> {
   };
 
   // TODO: upload to S3 with a 7-day expiry; return signed URL.
-  const exportPath = `gdpr-exports/${userId}/${Date.now()}.json`;
+  const exportPath = `gdpr-exports/${userId}/${String(Date.now())}.json`;
   console.info(
     JSON.stringify({
       event: "gdpr_export_generated",
