@@ -10,11 +10,12 @@ import {
   LoaderCircle,
   MessageSquarePlus,
   Sparkles,
+  Users,
   Zap,
 } from "lucide-react";
 import type { WorkspaceWithMembership } from "@/lib/workspaces/queries";
 
-export type WorkspaceNavPage = "home" | "studio" | "history";
+export type WorkspaceNavPage = "home" | "studio" | "history" | "team";
 
 interface WorkspaceSidebarProps {
   locale: string;
@@ -157,6 +158,9 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
             <Link href={base + "/history"} className={navClass(props.activePage === "history")}>
               <Clock3 className="h-4 w-4" /> History
             </Link>
+            <Link href={base + "/team"} className={navClass(props.activePage === "team")}>
+              <Users className="h-4 w-4" /> Team
+            </Link>
           </nav>
         </div>
 
@@ -203,7 +207,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
         {error && <p role="alert" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs leading-5 text-rose-800">{error}</p>}
       </aside>
 
-      <nav aria-label="Mobile navigation" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-slate-200 bg-white/95 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_20px_-18px_rgba(15,23,42,0.4)] backdrop-blur lg:hidden">
+      <nav aria-label="Mobile navigation" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-slate-200 bg-white/95 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_20px_-18px_rgba(15,23,42,0.4)] backdrop-blur lg:hidden">
         <Link href={base + "/dashboard"} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (props.activePage === "home" ? "font-semibold text-violet-700" : "text-slate-500")}>
           <Home className="h-4 w-4" /> Home
         </Link>
@@ -212,6 +216,9 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
         </button>
         <Link href={base + "/history"} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (props.activePage === "history" ? "font-semibold text-violet-700" : "text-slate-500")}>
           <Clock3 className="h-4 w-4" /> History
+        </Link>
+        <Link href={base + "/team"} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (props.activePage === "team" ? "font-semibold text-violet-700" : "text-slate-500")}>
+          <Users className="h-4 w-4" /> Team
         </Link>
       </nav>
     </>
