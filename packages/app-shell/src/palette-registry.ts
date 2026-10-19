@@ -190,7 +190,7 @@ const PALETTE_COMMANDS: PaletteCommand[] = [
       };
       const css = emitCssCustomProperties(emptyMap);
       if (typeof navigator !== "undefined") {
-        const clipboard = (navigator as Navigator & { clipboard?: Clipboard }).clipboard;
+        const clipboard = (navigator as Omit<Navigator, "clipboard"> & { clipboard?: Clipboard }).clipboard;
         if (clipboard) void clipboard.writeText(css).catch((error: unknown) => console.error("palette: clipboard write failed", error));
       }
     },
