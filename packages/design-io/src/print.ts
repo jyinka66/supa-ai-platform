@@ -290,7 +290,7 @@ export function renderPrintChrome(
   // Color bar.
   for (const rect of colorBar.rects) {
     parts.push(
-      `<rect x="${String(rect.x)}" y="${String(rect.y)}" width="${String(rect.width)}" height="${String(rect.height)}" fill="${String(rect.fill)}" />`,
+      `<rect x="${String(rect.x)}" y="${String(rect.y)}" width="${String(rect.width)}" height="${String(rect.height)}" fill="${rect.fill}" />`,
     );
   }
 
