@@ -154,7 +154,7 @@ export async function logRlsViolation(
   userId: string,
   tableName: string,
 ): Promise<void> {
-  await ADMIN.rpc("log_audit_event", {
+  await getAdmin().rpc("log_audit_event", {
     p_type: "rls_violation",
     p_user_id: userId,
     p_workspace_id: workspaceId,
