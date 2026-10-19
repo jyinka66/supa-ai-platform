@@ -22,7 +22,7 @@ import { useState, useMemo, useCallback, useRef, useEffect, type ReactNode } fro
 import type { DesignTemplate, Slot, TextSlot, ImageSlot, ColorSlot, Theme } from "@supa/design-templates";
 import type { DesignDoc } from "@supa/design-model";
 import { instantiate, autofit, type Bindings, type TextBinding, type ImageBinding, type ColorBinding } from "@supa/design-templates";
-import type { CanvasMeasurer } from "@supa/design-render";
+import { CanvasMeasurer } from "@supa/design-render";
 
 interface BindPanelProps {
   template: DesignTemplate;
@@ -132,18 +132,23 @@ export function BindPanel({
       {/* Slots */}
       <div className="flex-1 overflow-y-auto p-3">
         <div className="space-y-4">
-          {template.slots.map((slot) => (
+          {template.slots.map((slot) => {
+            const bindingKey = slot.kind === "color"
+              ? ("nodeId" in slot.target ? slot.target.nodeId : slot.target.themeKey)
+              : slot.nodeId;
+            return (
             <SlotInput
-              key={slot.nodeId}
+              key={bindingKey}
               slot={slot}
               template={template}
-              binding={draftBindings[slot.nodeId]}
-              onTextBind={(b) => updateTextBinding(slot.nodeId, b)}
-              onImageBind={(b) => updateImageBinding(slot.nodeId, b)}
-              onColorBind={(b) => updateColorBinding(slot.nodeId, b)}
+              binding={draftBindings[bindingKey]}
+              onTextBind={(b) => updateTextBinding(bindingKey, b)}
+              onImageBind={(b) => updateImageBinding(bindingKey, b)}
+              onColorBind={(b) => updateColorBinding(bindingKey, b)}
               measurer={measurerInstance.current}
             />
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -309,7 +314,7 @@ function ImageSlotInput({
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onPick={(assetId) => {
-            onBind({ assetId, crop: slot.aspectHint ? defaultCropForAspect(slot.aspectHint) : undefined });
+            onBind({ assetId, ...(slot.aspectHint ? { crop: defaultCropForAspect(slot.aspectHint) } : {}) });
             setShowAssetPicker(false);
           }}
           onUpload={() => {
