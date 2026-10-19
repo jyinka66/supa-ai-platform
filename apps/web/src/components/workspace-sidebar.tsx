@@ -377,7 +377,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
           </div>
         </div>
       )}
-      <nav aria-label="Mobile navigation" className={"fixed inset-x-0 bottom-0 z-30 grid " + (props.conversationId ? "grid-cols-4" : "grid-cols-3") border-t border-slate-200 bg-white/95 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_20px_-18px_rgba(15,23,42,0.4)] backdrop-blur lg:hidden">
+      <nav aria-label="Mobile navigation" className={"fixed inset-x-0 bottom-0 z-30 grid " + (props.conversationId ? "grid-cols-4" : "grid-cols-3") + " border-t border-slate-200 bg-white/95 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_20px_-18px_rgba(15,23,42,0.4)] backdrop-blur lg:hidden"}>
         <Link href={base + "/dashboard"} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (props.activePage === "home" ? "font-semibold text-violet-700" : "text-slate-500")}>
           <Home className="h-4 w-4" /> Home
         </Link>
