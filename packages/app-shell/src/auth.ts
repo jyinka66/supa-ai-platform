@@ -16,8 +16,6 @@
 // in design history and would pollute undo/fidelity).
 // ─────────────────────────────────────────────────────────────
 
-import type { Account } from "./workspace";
-
 // ============ AUTH SESSION ============
 
 export interface AuthSession {
@@ -101,7 +99,7 @@ export async function checkAuthGate(
       authenticated: false,
       session: null,
       isShareLink: true,
-      shareToken: shareMatch[1]!,
+      shareToken: shareMatch[1] ?? "",
     };
   }
 
@@ -168,13 +166,17 @@ export interface ShareSession {
   /** Whether a password is required. */
   requiresPassword: boolean;
   /** Whether the share link is for a single page or all pages. */
-  pageScope: "all" | string;
+  pageScope: string;
 }
 
 /**
  * Fetches share session info from the server.
  * The server validates the token + returns the role + doc ID.
  */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export async function resolveShareSession(
   token: string,
   password?: string,
@@ -188,17 +190,20 @@ export async function resolveShareSession(
   });
 
   if (!res.ok) {
-    throw new Error(`share_resolve_failed: ${res.status}`);
+    throw new Error(`share_resolve_failed: ${String(res.status)}`);
   }
 
-  const data = await res.json();
-  return {
-    token,
-    docId: data.data?.itemId ?? data.data?.folderId ?? "",
-    role: data.data?.role ?? "viewer",
-    requiresPassword: data.data?.requiresPassword ?? false,
-    pageScope: "all",
-  };
+  const payload: unknown = await res.json();
+  if (!isRecord(payload) || !isRecord(payload.data)) {
+    throw new Error("share_resolve_invalid_response");
+  }
+  const data = payload.data;
+  const roleValue = data.role;
+  const role: DocRole = roleValue === "owner" || roleValue === "editor" || roleValue === "commenter" || roleValue === "viewer"
+    ? roleValue
+    : "viewer";
+  const docId = typeof data.itemId === "string" ? data.itemId : typeof data.folderId === "string" ? data.folderId : "";
+  return { token, docId, role, requiresPassword: data.requiresPassword === true, pageScope: "all" };
 }
 
 // ============ COMMENTS (sidecar — never in the DesignDoc) ============
@@ -244,7 +249,7 @@ export interface CommentThread {
 export async function loadComments(docId: string): Promise<CommentPin[]> {
   const res = await fetch(`/api/docs/${docId}/comments`);
   if (!res.ok) {
-    throw new Error(`loadComments: failed to fetch comments for doc ${docId} (${res.status})`);
+    throw new Error(`loadComments: failed to fetch comments for doc ${docId} (${String(res.status)})`);
   }
   const json = (await res.json()) as { data?: CommentPin[] };
   return json.data ?? [];
