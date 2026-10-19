@@ -234,7 +234,8 @@ function checkCycles(page: Page, errors: ValidationError[]): void {
   }
 
   for (let i = 0; i < page.layers.length; i++) {
-    check(page.layers[i]!, `pages[${page.id}].layers[${String(i)}]`);
+    const layer = page.layers[i];
+    if (layer) check(layer, `pages[${page.id}].layers[${String(i)}]`);
   }
 }
 
