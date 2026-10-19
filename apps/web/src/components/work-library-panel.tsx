@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import {
   Check,
   FileText,
@@ -71,7 +71,7 @@ export function WorkLibraryPanel({ workspaceId }: Props) {
   const [body, setBody] = useState("");
   const [folderName, setFolderName] = useState("");
 
-  const load = useCallback(async (search = query) => {
+  const load = useCallback(async (search: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -102,11 +102,11 @@ export function WorkLibraryPanel({ workspaceId }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [query, workspaceId]);
+  }, [workspaceId]);
 
-  useEffect(() => { void load(""); }, [load, workspaceId]);
+  useEffect(() => { void load(""); }, [load]);
 
-  async function createNote(event: React.FormEvent<HTMLFormElement>) {
+  async function createNote(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!title.trim()) return;
     setBusy(true);
