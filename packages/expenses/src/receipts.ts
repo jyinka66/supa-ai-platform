@@ -39,20 +39,20 @@ export interface ReceiptStore {
 export class InMemoryReceiptStore implements ReceiptStore {
   private readonly blobs = new Map<string, Uint8Array>();
 
-  async store(bytes: Uint8Array): Promise<string> {
+  store(bytes: Uint8Array): Promise<string> {
     const hash = hashBytes(bytes);
     if (!this.blobs.has(hash)) {
       this.blobs.set(hash, bytes);
     }
-    return hash;
+    return Promise.resolve(hash);
   }
 
-  async fetch(hash: string): Promise<Uint8Array | null> {
-    return this.blobs.get(hash) ?? null;
+  fetch(hash: string): Promise<Uint8Array | null> {
+    return Promise.resolve(this.blobs.get(hash) ?? null);
   }
 
-  async exists(hash: string): Promise<boolean> {
-    return this.blobs.has(hash);
+  exists(hash: string): Promise<boolean> {
+    return Promise.resolve(this.blobs.has(hash));
   }
 }
 
@@ -106,7 +106,7 @@ export function validateReceipt(
     return {
       ok: false,
       hash: null,
-      reason: `file size ${bytes.length} exceeds cap ${limits.maxFileSize}`,
+      reason: `file size ${String(bytes.length)} exceeds cap ${String(limits.maxFileSize)}`,
     };
   }
   if (!limits.allowedMimeTypes.includes(mimeType)) {
