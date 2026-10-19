@@ -116,7 +116,7 @@ export async function importPdf(
 
     docPages.push({
       id: newId(),
-      name: `Page ${i + 1}`,
+      name: `Page ${String(i + 1)}`,
       size: { width: pageW, height: pageH },
       background: "transparent",
       layers: textLayers,
@@ -328,7 +328,7 @@ async function resolveContentStreams(
     const obj = objects.get(ref);
     if (!obj || !obj.streamBytes) {
       issues.push({
-        nodeId: `page-${pageIndex + 1}`,
+        nodeId: `page-${String(pageIndex + 1)}`,
         reason: `Content stream object ${String(ref)} not found or has no stream`,
         action: "dropped",
       });
