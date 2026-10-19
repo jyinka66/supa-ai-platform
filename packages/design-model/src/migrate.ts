@@ -9,7 +9,7 @@ import type { DesignDoc } from "./types";
 
 export const CURRENT_SCHEMA_VERSION = 1;
 
-type Migration = { from: number; to: number; fn: (doc: any) => any };
+type Migration = { from: number; to: number; fn: (doc: DesignDoc) => DesignDoc };
 
 const MIGRATIONS: Migration[] = [
   // Example of the shape (registered the day we ship v2):
@@ -39,10 +39,10 @@ const MIGRATIONS: Migration[] = [
  *         or the doc is newer than the current build.
  */
 export function migrate(raw: unknown): DesignDoc {
-  const doc = raw as DesignDoc;
-  if (typeof doc?.schemaVersion !== "number") {
+  if (typeof raw !== "object" || raw === null || !("schemaVersion" in raw) || typeof raw.schemaVersion !== "number") {
     throw new Error("migrate: missing schemaVersion");
   }
+  const doc = raw as DesignDoc;
 
   let current = doc;
 
@@ -50,13 +50,13 @@ export function migrate(raw: unknown): DesignDoc {
     const step = MIGRATIONS.find((m) => m.from === current.schemaVersion);
     if (!step) {
       throw new Error(
-        `migrate: no path from v${current.schemaVersion} → v${CURRENT_SCHEMA_VERSION}`,
+        `migrate: no path from v${String(current.schemaVersion)} → v${String(CURRENT_SCHEMA_VERSION)}`,
       );
     }
     current = step.fn(current);
     if (current.schemaVersion !== step.to) {
       throw new Error(
-        `migrate: step v${step.from} did not set schemaVersion=${step.to}`,
+        `migrate: step v${String(step.from)} did not set schemaVersion=${String(step.to)}`,
       );
     }
   }
@@ -75,8 +75,8 @@ export function migrate(raw: unknown): DesignDoc {
  */
 export function canMigrate(raw: unknown): boolean {
   try {
+    if (typeof raw !== "object" || raw === null || !("schemaVersion" in raw) || typeof raw.schemaVersion !== "number") return false;
     const doc = raw as DesignDoc;
-    if (typeof doc?.schemaVersion !== "number") return false;
     if (doc.schemaVersion > CURRENT_SCHEMA_VERSION) return false;
     // Check that all migration steps exist.
     let v = doc.schemaVersion;
