@@ -179,7 +179,7 @@ export function buildPublicProfile(
     completed: d.completed,
     earned: { amountMinor: d.earnedMinor, currency: d.currency },
     evidenceLabel: d.completed > 0
-      ? `${d.completed} completed contract${d.completed === 1 ? "" : "s"} in ${d.discipline}`
+      ? `${String(d.completed)} completed contract${d.completed === 1 ? "" : "s"} in ${d.discipline}`
       : `no verified work yet in ${d.discipline}`,
   }));
 
@@ -220,6 +220,6 @@ function median(arr: number[]): number {
   const sorted = [...arr].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 === 0
-    ? (sorted[mid - 1]! + sorted[mid]!) / 2
-    : sorted[mid]!;
+    ? ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2
+    : (sorted[mid] ?? 0);
 }
