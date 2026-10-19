@@ -267,7 +267,7 @@ export async function addComment(
     body: JSON.stringify({ pageId, position, text }),
   });
   if (!res.ok) {
-    throw new Error(`addComment: failed to post comment for doc ${docId} (${res.status})`);
+    throw new Error(`addComment: failed to post comment for doc ${docId} (${String(res.status)})`);
   }
   const json = (await res.json()) as { data?: CommentPin };
   if (!json.data) {
@@ -282,7 +282,7 @@ export async function resolveComment(docId: string, commentId: string): Promise<
   });
   if (!res.ok) {
     throw new Error(
-      `resolveComment: failed to resolve comment ${commentId} for doc ${docId} (${res.status})`,
+      `resolveComment: failed to resolve comment ${commentId} for doc ${docId} (${String(res.status)})`,
     );
   }
 }
