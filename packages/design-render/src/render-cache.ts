@@ -112,7 +112,7 @@ export class RenderCache {
     nodeId: NodeId,
     compute: (page: Page, nodeId: NodeId) => Matrix,
   ): Matrix {
-    const key = `${String(this.rev)}:${String(nodeId)}`;
+    const key = `${String(this.rev)}:${nodeId}`;
     const hit = this.worldTransforms.get(key);
     if (hit) return hit.matrix;
 
