@@ -66,13 +66,9 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
   const [renameValue, setRenameValue] = useState("");
   const [busyConversationId, setBusyConversationId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const nextId = props.activeWorkspaceId || props.workspaces[0]?.id || "";
-    if (nextId && nextId !== selectedId) setSelectedId(nextId);
-  }, [props.activeWorkspaceId, props.workspaces, selectedId]);
-
+  const effectiveSelectedId = props.activeWorkspaceId || selectedId;
   const selectedWorkspace =
-    props.workspaces.find((workspace) => workspace.id === selectedId) ??
+    props.workspaces.find((workspace) => workspace.id === effectiveSelectedId) ??
     props.workspaces[0];
   const base = "/" + props.locale;
 
@@ -332,7 +328,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
               </div>
               <select
                 id="supa-workspace-select"
-                value={selectedId}
+                value={effectiveSelectedId}
                 disabled={savingWorkspace}
                 onChange={(event) => void saveWorkspace(event.target.value)}
                 className="block w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs text-slate-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100 disabled:opacity-60"
