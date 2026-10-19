@@ -145,8 +145,6 @@ export function buildDoubleEntry(
 // Balance query — derived from entries (never stored)
 // ───────────────────────────────────────────────
 
-import { fromMinor, asCurrency, type Money as DomainMoney } from "@supa/money/money";
-
 /**
  * Compute the balance for a workspace from ledger entries.
  * Balance = sum(credits) − sum(debits), in minor units.
@@ -168,7 +166,9 @@ export function computeBalance(
   const balances = new Map<string, bigint>();
   for (const entry of entries) {
     if (entry.wsId !== wsId) continue;
-    const currency = (entry.debit ?? entry.credit)!.currency;
+    const money = entry.debit ?? entry.credit;
+    if (!money) throw new Error(`ledger entry ${entry.id} has no debit or credit leg`);
+    const currency = money.currency;
     const current = balances.get(currency) ?? 0n;
     if (entry.credit) {
       balances.set(currency, current + BigInt(entry.credit.amountMinor));
