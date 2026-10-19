@@ -21,7 +21,7 @@
 import type { Command, DesignDoc } from "@supa/design-model";
 import { apply } from "@supa/design-model";
 import type { EditorStore } from "@supa/design-editor";
-import type { SessionStore, SessionState, SyncMetadata, Collaborator } from "./workspace";
+import type { SessionStore, Collaborator } from "./workspace";
 
 // ============ SYNC TRANSPORT INTERFACE ============
 
@@ -108,17 +108,17 @@ export class SyncLifecycle {
   private init(): void {
     // Subscribe to editor store changes (rev bumps → outbox).
     this.unsubscribers.push(
-      this.store.subscribe(() => this.onStoreChange()),
+      this.store.subscribe(() => { this.onStoreChange(); }),
     );
 
     // Subscribe to remote ops from the transport.
     this.unsubscribers.push(
-      this.transport.onRemoteOps((ops) => this.onRemoteOps(ops)),
+      this.transport.onRemoteOps((ops) => { this.onRemoteOps(ops); }),
     );
 
     // Subscribe to presence updates.
     this.unsubscribers.push(
-      this.transport.onPresence((updates) => this.onPresence(updates)),
+      this.transport.onPresence((updates) => { this.onPresence(updates); }),
     );
 
     // Online/offline detection.
@@ -152,7 +152,7 @@ export class SyncLifecycle {
 
     // Debounce the flush (400ms idle).
     if (this.flushTimer) clearTimeout(this.flushTimer);
-    this.flushTimer = setTimeout(() => this.flushOutbox(), 400);
+    this.flushTimer = setTimeout(() => { void this.flushOutbox(); }, 400);
   }
 
   /**
@@ -173,7 +173,7 @@ export class SyncLifecycle {
       await this.transport.sendOps(ops);
 
       this.session.syncComplete();
-    } catch (err) {
+    } catch {
       // Failed to sync — put ops back in the outbox.
       this.outbox.unshift(...ops);
 
@@ -211,7 +211,7 @@ export class SyncLifecycle {
     // Apply remotes immediately (rebased onto local state).
     for (const op of ops) {
       try {
-        const { doc } = apply(this.store.get().doc, op.cmd);
+        apply(this.store.get().doc, op.cmd);
         // Apply silently (no history entry — remote ops don't go into
         // the local undo stack).
         // NOTE: The editor store's apply() pushes to history. For remote
@@ -402,18 +402,18 @@ export function renderRemoteSelections(
   for (const { collaborator, rect } of rects) {
     // Outlined rect in the collaborator's color.
     parts.push(
-      `<rect x="${rect.x}" y="${rect.y}" width="${rect.width}" height="${rect.height}" ` +
+      `<rect x="${String(rect.x)}" y="${String(rect.y)}" width="${String(rect.width)}" height="${String(rect.height)}" ` +
       `fill="none" stroke="${collaborator.color}" stroke-width="1.5" rx="1" />`,
     );
 
     // Name tag (top-left corner).
     const tagWidth = collaborator.name.length * 7 + 8;
     parts.push(
-      `<rect x="${rect.x}" y="${rect.y - 18}" width="${tagWidth}" height="16" ` +
+      `<rect x="${String(rect.x)}" y="${String(rect.y - 18)}" width="${String(tagWidth)}" height="16" ` +
       `fill="${collaborator.color}" rx="2" />`,
     );
     parts.push(
-      `<text x="${rect.x + 4}" y="${rect.y - 6}" font-size="10" fill="white" ` +
+      `<text x="${String(rect.x + 4)}" y="${String(rect.y - 6)}" font-size="10" fill="white" ` +
       `font-family="system-ui, sans-serif">${escapeXml(collaborator.name)}</text>`,
     );
   }
