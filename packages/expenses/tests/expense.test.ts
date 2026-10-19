@@ -140,8 +140,8 @@ describe("queryReimbursements — what do I owe myself/staff?", () => {
     const summary = queryReimbursements([draft, approved, reimbursed]);
     expect(summary.owedCount).toBe(1); // approved, not yet reimbursed
     expect(summary.reimbursedCount).toBe(1);
-    expect(summary.owed[0]!.id).toBe("d2");
-    expect(summary.reimbursed[0]!.id).toBe("d3");
+    expect(summary.owed[0]?.id).toBe("d2");
+    expect(summary.reimbursed[0]?.id).toBe("d3");
   });
 });
 
