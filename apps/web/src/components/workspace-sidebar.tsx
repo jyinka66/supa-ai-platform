@@ -66,6 +66,11 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
   const [renameValue, setRenameValue] = useState("");
   const [busyConversationId, setBusyConversationId] = useState<string | null>(null);
 
+  useEffect(() => {
+    const nextId = props.activeWorkspaceId || props.workspaces[0]?.id || "";
+    if (nextId && nextId !== selectedId) setSelectedId(nextId);
+  }, [props.activeWorkspaceId, props.workspaces, selectedId]);
+
   const selectedWorkspace =
     props.workspaces.find((workspace) => workspace.id === selectedId) ??
     props.workspaces[0];
@@ -374,9 +379,15 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
         </div>
       )}
       <nav aria-label="Mobile navigation" className={"fixed inset-x-0 bottom-0 z-30 grid " + (props.conversationId ? "grid-cols-3" : "grid-cols-2") + " border-t border-slate-200 bg-white/95 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_20px_-18px_rgba(15,23,42,0.4)] backdrop-blur lg:hidden"}>
-        <button type="button" onClick={() => void createNewChat()} disabled={creatingChat || savingWorkspace || !selectedWorkspace} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (props.activePage === "chat" ? "font-semibold text-violet-700" : "text-slate-500")}>
-          {creatingChat ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <MessageSquarePlus className="h-4 w-4" />} AI Chat
-        </button>
+        {props.conversationId ? (
+          <Link href={base + "/chat/" + props.conversationId} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (props.activePage === "chat" ? "font-semibold text-violet-700" : "text-slate-500")}>
+            <MessageSquare className="h-4 w-4" /> AI Chat
+          </Link>
+        ) : (
+          <button type="button" onClick={() => void createNewChat()} disabled={creatingChat || savingWorkspace || !selectedWorkspace} className="flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] font-semibold text-violet-700 disabled:opacity-50">
+            {creatingChat ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <MessageSquarePlus className="h-4 w-4" />} AI Chat
+          </button>
+        )}
         {props.conversationId && <button type="button" onClick={() => setMobileHistoryOpen((open) => !open)} aria-expanded={mobileHistoryOpen} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (mobileHistoryOpen ? "font-semibold text-violet-700" : "text-slate-500")}><History className="h-4 w-4" /> History</button>}
         <Link href={base + "/team"} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (props.activePage === "team" ? "font-semibold text-violet-700" : "text-slate-500")}>
           <Users className="h-4 w-4" /> Team
