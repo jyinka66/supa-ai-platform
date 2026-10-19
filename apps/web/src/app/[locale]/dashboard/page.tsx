@@ -12,17 +12,19 @@ export default async function DashboardPage({ params }: Props) {
   const { locale } = await params;
   const supabase = await supabaseServer();
 
+  // getUser() validates the token with Supabase Auth; getSession() only reads
+  // the cookie and must not be trusted on the server.
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
     redirect(`/${locale}/login?next=/${locale}/dashboard`);
   }
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name, avatar_path, language")
-    .eq("id", session.user.id)
+    .eq("id", user.id)
     .maybeSingle();
 
   const workspaces = await listWorkspaces();

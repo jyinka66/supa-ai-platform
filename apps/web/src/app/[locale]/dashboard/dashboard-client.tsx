@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -15,6 +14,7 @@ import {
   Layers,
   Languages,
   ListChecks,
+  LogOut,
   MessageSquare,
   PenLine,
   Plus,
@@ -26,6 +26,7 @@ import {
 import type { Mode } from "@/lib/prompts";
 import type { WorkspaceWithMembership } from "@/lib/workspaces/queries";
 import { WorkspaceSidebar } from "@/components/workspace-sidebar";
+import { supabaseBrowser } from "@/lib/supabase/client";
 
 interface DashboardClientProps {
   locale: string;
@@ -128,19 +129,31 @@ function formatDate(value: string | Date, locale: string): string {
 export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId: initialWorkspaceId }: DashboardClientProps) {
   const router = useRouter();
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(initialWorkspaceId || workspaces[0]?.id || "");
-  const [recentConversations, setRecentConversations] = useState<RecentConversation[]>([]);
-  const [pinnedConversations, setPinnedConversations] = useState<RecentConversation[]>([]);
+  const [allConversations, setAllConversations] = useState<RecentConversation[]>([]);
   const [studioPrompt, setStudioPrompt] = useState("");
   const [studioMode, setStudioMode] = useState<Mode>("chat");
   const [loadingRecent, setLoadingRecent] = useState(true);
   const [recentError, setRecentError] = useState(false);
   const [busyMode, setBusyMode] = useState<Mode | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
 
   const activeWorkspace = useMemo(
     () => workspaces.find((workspace) => workspace.id === activeWorkspaceId) ?? workspaces[0],
     [activeWorkspaceId, workspaces],
   );
+
+  // The API returns every conversation the user owns. Show only those in the
+  // selected workspace, matching the "saved to the selected workspace" copy.
+  const { recentConversations, pinnedConversations } = useMemo(() => {
+    const inWorkspace = allConversations.filter(
+      (conversation) => !activeWorkspace || conversation.workspaceId === activeWorkspace.id,
+    );
+    return {
+      recentConversations: inWorkspace.slice(0, 6),
+      pinnedConversations: inWorkspace.filter((conversation) => conversation.pinned).slice(0, 4),
+    };
+  }, [allConversations, activeWorkspace]);
 
   const displayName = profile.fullName?.trim() || "there";
   const initials = (profile.fullName ?? "S")
@@ -163,9 +176,7 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
         };
         if (!response.ok) throw new Error(payload.error?.message ?? "Could not load conversations.");
         if (mounted) {
-          const conversations = Array.isArray(payload.data) ? payload.data : [];
-          setRecentConversations(conversations.slice(0, 6));
-          setPinnedConversations(conversations.filter((conversation) => conversation.pinned).slice(0, 4));
+          setAllConversations(Array.isArray(payload.data) ? payload.data : []);
           setRecentError(false);
         }
       } catch {
@@ -230,6 +241,20 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
     [activeWorkspace, locale, profile.language, router],
   );
 
+  const signOut = useCallback(async () => {
+    setSigningOut(true);
+    setActionError(null);
+    try {
+      const { error } = await supabaseBrowser.auth.signOut();
+      if (error) throw error;
+      router.replace(`/${locale}/login`);
+      router.refresh();
+    } catch {
+      setActionError("Could not sign you out. Please try again.");
+      setSigningOut(false);
+    }
+  }, [locale, router]);
+
   const base = `/${locale}`;
 
   return (
@@ -258,8 +283,12 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
             </div>
             <div className="flex items-center gap-3">
               <span className="hidden text-sm text-slate-500 sm:inline">Signed in as</span>
-              {profile.avatarPath ? (
-                <Image
+              {profile.avatarPath && /^https?:\/\//.test(profile.avatarPath) ? (
+                // avatar_path may hold a bare storage path, which next/image
+                // cannot load without a configured host, so only absolute URLs
+                // are shown and everything else falls back to initials.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
                   src={profile.avatarPath}
                   alt=""
                   width={36}
@@ -271,7 +300,16 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
                   {initials}
                 </div>
               )}
-              <span className="max-w-[140px] truncate text-sm font-semibold text-slate-800">{profile.fullName || "Your account"}</span>
+              <span className="hidden max-w-[140px] truncate text-sm font-semibold text-slate-800 sm:inline">{profile.fullName || "Your account"}</span>
+              <button
+                type="button"
+                onClick={() => void signOut()}
+                disabled={signingOut}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-60"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                {signingOut ? "Signing out…" : "Sign out"}
+              </button>
             </div>
           </header>
 

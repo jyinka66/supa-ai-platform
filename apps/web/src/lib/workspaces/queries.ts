@@ -22,11 +22,20 @@ export interface WorkspaceWithMembership {
  */
 export async function listWorkspaces(): Promise<WorkspaceWithMembership[]> {
   const supabase = await supabaseServer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  // The wm_select RLS policy lets a member see every member of their
+  // workspaces, so the embedded rows must be filtered to the caller. Without
+  // this, workspace_members[0] could be another member's role.
   const { data, error } = await supabase
     .from("workspaces")
     .select(
       "id, slug, name, logo_path, is_personal, plan, seat_limit, workspace_members!inner(role)",
     )
+    .eq("workspace_members.user_id", user.id)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
