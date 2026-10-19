@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Clock3,
   Home,
   Layers,
   LoaderCircle,
@@ -196,9 +195,6 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
                 <Sparkles className="h-4 w-4" /> AI Studio
               </button>
             )}
-            <Link href={base + "/history"} className={navClass(props.activePage === "history")}>
-              <Clock3 className="h-4 w-4" /> History
-            </Link>
             <Link href={base + "/team"} className={navClass(props.activePage === "team")}>
               <Users className="h-4 w-4" /> Team
             </Link>
@@ -283,9 +279,6 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
         <button type="button" onClick={() => void createNewChat()} disabled={creatingChat || savingWorkspace || !selectedWorkspace} className="flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] font-semibold text-violet-700 disabled:opacity-50">
           {creatingChat ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <MessageSquarePlus className="h-4 w-4" />} New chat
         </button>
-        <Link href={base + "/history"} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (props.activePage === "history" ? "font-semibold text-violet-700" : "text-slate-500")}>
-          <Clock3 className="h-4 w-4" /> History
-        </Link>
         <Link href={base + "/team"} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (props.activePage === "team" ? "font-semibold text-violet-700" : "text-slate-500")}>
           <Users className="h-4 w-4" /> Team
         </Link>
