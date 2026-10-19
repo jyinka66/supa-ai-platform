@@ -39,6 +39,7 @@ interface WorkFolder {
 
 interface Props {
   workspaceId: string;
+  onStatsChange?: (stats: { items: number; folders: number }) => void;
 }
 
 function responseMessage(payload: unknown, fallback: string): string {
@@ -57,7 +58,7 @@ function shortDate(value: string | Date): string {
   return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(date);
 }
 
-export function WorkLibraryPanel({ workspaceId }: Props) {
+export function WorkLibraryPanel({ workspaceId, onStatsChange }: Props) {
   const [items, setItems] = useState<WorkItem[]>([]);
   const [folders, setFolders] = useState<WorkFolder[]>([]);
   const [trashItems, setTrashItems] = useState<WorkItem[]>([]);
@@ -102,14 +103,19 @@ export function WorkLibraryPanel({ workspaceId }: Props) {
       ]);
       if (!itemsResponse.ok) throw new Error(responseMessage(itemsPayload, "Could not load your saved work."));
       if (!foldersResponse.ok) throw new Error(responseMessage(foldersPayload, "Could not load folders."));
-      setItems(Array.isArray(itemsPayload.data?.items) ? itemsPayload.data.items : []);
-      setFolders(Array.isArray(foldersPayload.data?.folders) ? foldersPayload.data.folders : []);
+      const nextItems = Array.isArray(itemsPayload.data?.items) ? itemsPayload.data.items : [];
+      const nextFolders = Array.isArray(foldersPayload.data?.folders) ? foldersPayload.data.folders : [];
+      setItems(nextItems);
+      setFolders(nextFolders);
+      if (!search.trim() && !activeFolderId) {
+        onStatsChange?.({ items: Number(itemsPayload.data?.total ?? nextItems.length), folders: nextFolders.length });
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not load your work.");
     } finally {
       setLoading(false);
     }
-  }, [activeFolderId, workspaceId]);
+  }, [activeFolderId, onStatsChange, workspaceId]);
 
   useEffect(() => { void load(""); }, [load]);
 
