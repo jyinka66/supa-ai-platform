@@ -242,7 +242,7 @@ export class SessionStore {
 
   setPageId(pageId: string): void {
     if (this.state.kind === "loading" || this.state.kind === "error") return;
-    this.state = { ...this.state, pageId } as SessionState;
+    this.state = { ...this.state, pageId };
     this.emit();
   }
 
@@ -344,9 +344,9 @@ export function serializeRoute(params: RouteParams): string {
 
   const query: string[] = [];
   if (params.sel && params.sel.length > 0) query.push(`sel=${params.sel.join(",")}`);
-  if (params.zoom !== undefined) query.push(`zoom=${params.zoom}`);
-  if (params.x !== undefined) query.push(`x=${params.x}`);
-  if (params.y !== undefined) query.push(`y=${params.y}`);
+  if (params.zoom !== undefined) query.push(`zoom=${String(params.zoom)}`);
+  if (params.x !== undefined) query.push(`x=${String(params.x)}`);
+  if (params.y !== undefined) query.push(`y=${String(params.y)}`);
 
   if (query.length > 0) path += `?${query.join("&")}`;
 
