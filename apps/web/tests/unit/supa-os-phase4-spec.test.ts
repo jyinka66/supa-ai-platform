@@ -195,6 +195,7 @@ describe("2 — Supa OS Marketplace", () => {
       status: "draft" as MarketplaceItemStatus, monetization: "free" as MonetizationModel,
       price: 0, version: "1.0.0", tags: [], downloadCount: 0, rating: 0, reviewCount: 0,
       featured: false, verified: false, publishedAt: null, createdAt: new Date(), updatedAt: new Date(),
+      manifest: { entrypoint: "index.ts", permissions: [], source: "export default {};", monthlyBudgetUsd: 0 },
     };
     const { item: submitted, checks } = submitForReview(item);
     expect(submitted.status).toBe("in_review");
