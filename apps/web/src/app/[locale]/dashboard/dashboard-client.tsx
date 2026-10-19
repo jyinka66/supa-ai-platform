@@ -33,24 +33,13 @@ interface DashboardClientProps {
   activeWorkspaceId: string;
 }
 
-interface RecentConversation {
-  id: string;
-  workspaceId: string;
-  mode: string;
-  title: string | null;
-  updatedAt: string | Date;
-  createdAt: string | Date;
-  pinned: boolean;
-}
-
 
 export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId: initialWorkspaceId }: DashboardClientProps) {
   const router = useRouter();
   const t = useTranslations("dashboard.home");
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(initialWorkspaceId || workspaces[0]?.id || "");
-  const [allConversations, setAllConversations] = useState<RecentConversation[]>([]);
-  const [loadingRecent, setLoadingRecent] = useState(true);
   const [busyMode, setBusyMode] = useState<Mode | null>(null);
+  const [workStats, setWorkStats] = useState<{ items: number | null; folders: number | null }>({ items: null, folders: null });
   const [actionError, setActionError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -59,12 +48,6 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
     [activeWorkspaceId, workspaces],
   );
 
-  // The API returns every conversation the user owns. Show only those in the
-  // selected workspace, matching the "saved to the selected workspace" copy.
-  const workspaceConversationCount = useMemo(
-    () => allConversations.filter((conversation) => !activeWorkspace || conversation.workspaceId === activeWorkspace.id).length,
-    [allConversations, activeWorkspace],
-  );
 
   const displayName = profile.fullName?.trim() || "";
   const initials = (profile.fullName ?? "S")
@@ -74,32 +57,6 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
     .slice(0, 2)
     .toUpperCase();
 
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadRecentConversations() {
-      setLoadingRecent(true);
-      try {
-        const response = await fetch("/api/conversations", { cache: "no-store" });
-        const payload = (await response.json().catch(() => ({}))) as {
-          data?: RecentConversation[];
-          error?: { message?: string };
-        };
-        if (!response.ok) throw new Error(payload.error?.message ?? "Could not load conversations.");
-        if (mounted) {
-          setAllConversations(Array.isArray(payload.data) ? payload.data : []);
-        }
-      } catch {
-      } finally {
-        if (mounted) setLoadingRecent(false);
-      }
-    }
-
-    void loadRecentConversations();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   const startConversation = useCallback(
     async (mode: Mode, initialPrompt?: string) => {
@@ -285,8 +242,8 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
             )}
 
             <section aria-label={t("sw")} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <SummaryCard icon={Layers} label={t("sw")} value={String(workspaces.length)} detail={t("swd")} tone="violet" />
-              <SummaryCard icon={MessageSquare} label={t("sr")} value={loadingRecent ? "…" : String(workspaceConversationCount)} detail={t("srd")} tone="blue" />
+              <SummaryCard icon={Layers} label="Saved work" value={workStats.items === null ? "—" : String(workStats.items)} detail="Items saved in this workspace" tone="violet" />
+              <SummaryCard icon={FolderOpen} label="Folders" value={workStats.folders === null ? "—" : String(workStats.folders)} detail="Folders to organize your work" tone="blue" />
               <SummaryCard icon={Zap} label={t("sp")} value={activeWorkspace?.plan ?? "Free"} detail={t("spd")} tone="amber" />
               <SummaryCard icon={Check} label={t("sro")} value={activeWorkspace?.workspace_members[0]?.role ?? "member"} detail={t("srod")} tone="green" />
             </section>
@@ -317,7 +274,7 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
               </div>
             </section>
 
-            {activeWorkspace && <WorkLibraryPanel workspaceId={activeWorkspace.id} />}
+            {activeWorkspace && <WorkLibraryPanel workspaceId={activeWorkspace.id} onStatsChange={setWorkStats} />}
 
             <div className="grid gap-8">
               <section id="workspaces" className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
