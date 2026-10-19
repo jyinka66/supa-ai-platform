@@ -16,7 +16,6 @@
 import type { DesignDoc } from "./types";
 import type { Command } from "./commands";
 import { apply } from "./apply";
-import { validate } from "./validate";
 
 export interface JournalEntry {
   /** Monotonically increasing sequence number. */
@@ -217,7 +216,8 @@ export class Journal {
     // Find the last snapshot.
     let snapshotIdx = -1;
     for (let i = entries.length - 1; i >= 0; i--) {
-      if (entries[i]!.snapshot) {
+      const entry = entries[i];
+      if (entry?.snapshot) {
         snapshotIdx = i;
         break;
       }
@@ -228,8 +228,11 @@ export class Journal {
     let startIdx = 0;
 
     if (snapshotIdx >= 0) {
-      doc = structuredClone(entries[snapshotIdx]!.snapshot!);
-      startIdx = snapshotIdx + 1;
+      const snapshotEntry = entries[snapshotIdx];
+      if (snapshotEntry?.snapshot) {
+        doc = structuredClone(snapshotEntry.snapshot);
+        startIdx = snapshotIdx + 1;
+      }
     }
 
     if (!doc) {
@@ -240,7 +243,8 @@ export class Journal {
 
     // Replay all commands after the snapshot.
     for (let i = startIdx; i < entries.length; i++) {
-      const entry = entries[i]!;
+      const entry = entries[i];
+      if (!entry) continue;
       if (entry.commands) {
         for (const cmd of entry.commands) {
           const result = apply(doc, cmd);
@@ -259,8 +263,9 @@ export class Journal {
 export class InMemoryJournalStorage implements JournalStorage {
   private entries: JournalEntry[] = [];
 
-  async append(entries: JournalEntry[]): Promise<void> {
+  append(entries: JournalEntry[]): Promise<void> {
     this.entries.push(...entries);
+    return Promise.resolve();
   }
 
   async readSince(seq: number): Promise<JournalEntry[]> {
@@ -271,11 +276,13 @@ export class InMemoryJournalStorage implements JournalStorage {
     return [...this.entries];
   }
 
-  async pruneBefore(seq: number): Promise<void> {
+  pruneBefore(seq: number): Promise<void> {
     this.entries = this.entries.filter((e) => e.seq >= seq);
+    return Promise.resolve();
   }
 
-  async clear(): Promise<void> {
+  clear(): Promise<void> {
     this.entries = [];
+    return Promise.resolve();
   }
 }
