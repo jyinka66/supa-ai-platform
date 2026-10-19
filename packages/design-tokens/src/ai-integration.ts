@@ -248,12 +248,16 @@ export function paletteToTokenProposals(
   targetTokenIds: string[],
   ctx: { aiGenerationId: string; opClass: "palette-suggest" | "repaint"; model: string; provider: string },
 ): TokenProposalBatch {
-  const proposals: TokenProposal[] = palette.colors.slice(0, targetTokenIds.length).map((color, i) => ({
-    proposalId: `${ctx.aiGenerationId}-p${i}`,
-    tokenId: targetTokenIds[i]!,
-    value: color,
-    confidence: 1 - i * 0.1, // first color is highest-confidence
-  }));
+  const proposals: TokenProposal[] = palette.colors.slice(0, targetTokenIds.length).flatMap((color, i) => {
+    const tokenId = targetTokenIds[i];
+    if (tokenId === undefined) return [];
+    return [{
+      proposalId: `${ctx.aiGenerationId}-p${String(i)}`,
+      tokenId,
+      value: color,
+      confidence: 1 - i * 0.1, // first color is highest-confidence
+    }];
+  });
   return {
     batchId: ctx.aiGenerationId,
     aiGenerationId: ctx.aiGenerationId,
