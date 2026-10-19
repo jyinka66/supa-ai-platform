@@ -268,12 +268,12 @@ export class InMemoryJournalStorage implements JournalStorage {
     return Promise.resolve();
   }
 
-  async readSince(seq: number): Promise<JournalEntry[]> {
-    return this.entries.filter((e) => e.seq > seq);
+  readSince(seq: number): Promise<JournalEntry[]> {
+    return Promise.resolve(this.entries.filter((e) => e.seq > seq));
   }
 
-  async readAll(): Promise<JournalEntry[]> {
-    return [...this.entries];
+  readAll(): Promise<JournalEntry[]> {
+    return Promise.resolve([...this.entries]);
   }
 
   pruneBefore(seq: number): Promise<void> {
