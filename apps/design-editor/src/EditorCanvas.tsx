@@ -347,7 +347,7 @@ interface OverlayLayerProps {
   marqueeRect: { startPage: Point; currentPage: Point } | null;
 }
 
-function OverlayLayer({ store, page, zoom, scroll, marqueeRect }: OverlayLayerProps) {
+export function OverlayLayer({ store, page, zoom, scroll, marqueeRect }: OverlayLayerProps) {
   const state = useDocState(store);
 
   // Compute screen-space positions for selected nodes.
