@@ -120,6 +120,8 @@ export async function searchWorkItems(params: SearchParams): Promise<SearchResul
       return trigramSearch(params, classified.sanitized);
     case "filter":
       return filterScan(params);
+    default:
+      return filterScan(params);
   }
 }
 
