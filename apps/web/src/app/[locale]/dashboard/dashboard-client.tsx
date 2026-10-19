@@ -107,6 +107,30 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
     [activeWorkspace, locale, profile.language, router, t],
   );
 
+  const changeWorkspace = useCallback(async (workspaceId: string) => {
+    if (!workspaces.some((workspace) => workspace.id === workspaceId)) return;
+    setActionError(null);
+    try {
+      const response = await fetch("/api/workspaces/active", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspaceId }),
+      });
+      const payload = await response.json().catch(() => ({})) as {
+        error?: { message?: string } | string;
+        detail?: string;
+      };
+      if (!response.ok) {
+        const message = typeof payload.error === "string" ? payload.error : payload.error?.message;
+        throw new Error(message || payload.detail || "Could not switch workspace.");
+      }
+      setActiveWorkspaceId(workspaceId);
+      router.refresh();
+    } catch (cause) {
+      setActionError(cause instanceof Error ? cause.message : "Could not switch workspace.");
+    }
+  }, [router, workspaces]);
+
   const signOut = useCallback(async () => {
     setSigningOut(true);
     setActionError(null);
@@ -208,7 +232,7 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
                       {t("si")}
                       <select
                         value={activeWorkspaceId}
-                        onChange={(event) => setActiveWorkspaceId(event.target.value)}
+                        onChange={(event) => void changeWorkspace(event.target.value)}
                         className="mt-1.5 block w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-white/50"
                       >
                         {workspaces.map((workspace) => (
@@ -334,7 +358,7 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
                         <li key={workspace.id}>
                           <button
                             type="button"
-                            onClick={() => setActiveWorkspaceId(workspace.id)}
+                            onClick={() => void changeWorkspace(workspace.id)}
                             className={`w-full rounded-xl border p-4 text-left transition ${active ? "border-violet-200 bg-violet-50/70 ring-1 ring-violet-100" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"}`}
                           >
                             <span className="flex items-start justify-between gap-3">
