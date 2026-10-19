@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Check,
   Home,
   Layers,
   LoaderCircle,
   MessageSquare,
   MessageSquarePlus,
+  Pencil,
+  Pin,
   Search,
+  Trash2,
+  X,
   Sparkles,
   Users,
   Zap,
@@ -57,6 +62,9 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
   const [conversations, setConversations] = useState<SidebarConversation[]>([]);
   const [historySearch, setHistorySearch] = useState("");
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [busyConversationId, setBusyConversationId] = useState<string | null>(null);
 
   const selectedWorkspace =
     props.workspaces.find((workspace) => workspace.id === selectedId) ??
@@ -73,32 +81,89 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const refreshHistory = useCallback(async () => {
+    const response = await fetch("/api/conversations", { cache: "no-store" });
+    const payload = await response.json().catch(() => ({})) as { data?: SidebarConversation[] };
+    if (!response.ok) throw new Error("Could not load chat history.");
+    const next = Array.isArray(payload.data) ? payload.data : [];
+    if (props.conversationId && !next.some((item) => item.id === props.conversationId)) {
+      const currentResponse = await fetch("/api/conversations/" + props.conversationId, { cache: "no-store" });
+      const currentPayload = await currentResponse.json().catch(() => ({})) as { data?: SidebarConversation };
+      if (currentResponse.ok && currentPayload.data) next.unshift(currentPayload.data);
+    }
+    setConversations(next);
+  }, [props.conversationId]);
+
   useEffect(() => {
     if (!props.conversationId) return;
     let active = true;
     setHistoryLoading(true);
-    void fetch("/api/conversations", { cache: "no-store" })
-      .then(async (response) => {
-        const payload = await response.json().catch(() => ({})) as { data?: SidebarConversation[] };
-        if (!response.ok) throw new Error("Could not load chat history.");
-        if (active) setConversations(Array.isArray(payload.data) ? payload.data : []);
-      })
-      .catch(() => {
-        if (active) setConversations([]);
-      })
-      .finally(() => {
-        if (active) setHistoryLoading(false);
-      });
-    return () => { active = false; };
-  }, [props.conversationId]);
+    void refreshHistory().catch(() => {
+      if (active) setConversations([]);
+    }).finally(() => {
+      if (active) setHistoryLoading(false);
+    });
+    const onConversationUpdated = () => { void refreshHistory().catch(() => {}); };
+    window.addEventListener("supa:conversation-updated", onConversationUpdated);
+    return () => {
+      active = false;
+      window.removeEventListener("supa:conversation-updated", onConversationUpdated);
+    };
+  }, [props.conversationId, refreshHistory]);
 
   const visibleConversations = useMemo(() => {
     const query = historySearch.trim().toLocaleLowerCase();
-    return conversations.filter((conversation) => {
-      const title = conversation.title?.trim() || "New chat";
-      return !query || title.toLocaleLowerCase().includes(query) || conversation.mode.toLocaleLowerCase().includes(query);
-    });
+    return conversations
+      .filter((conversation) => {
+        const title = conversation.title?.trim() || "New chat";
+        return !query || title.toLocaleLowerCase().includes(query) || conversation.mode.toLocaleLowerCase().includes(query);
+      })
+      .sort((a, b) => Number(b.pinned) - Number(a.pinned) || new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   }, [conversations, historySearch]);
+
+  async function updateConversation(conversationId: string, patch: { title?: string; pinned?: boolean }) {
+    setError(null);
+    setBusyConversationId(conversationId);
+    try {
+      const response = await fetch("/api/conversations/" + conversationId, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      const payload = await response.json().catch(() => ({})) as { data?: SidebarConversation; error?: { message?: string } | string; detail?: string };
+      if (!response.ok || !payload.data) {
+        const message = typeof payload.error === "string" ? payload.error : payload.error?.message;
+        throw new Error(message || payload.detail || "Could not update this conversation.");
+      }
+      setConversations((previous) => previous.map((item) => item.id === conversationId ? payload.data! : item));
+      setRenamingId(null);
+      window.dispatchEvent(new CustomEvent("supa:conversation-updated"));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not update this conversation.");
+    } finally {
+      setBusyConversationId(null);
+    }
+  }
+
+  async function deleteConversation(conversationId: string) {
+    if (!window.confirm("Delete this conversation and its messages? This cannot be undone.")) return;
+    setError(null);
+    setBusyConversationId(conversationId);
+    try {
+      const response = await fetch("/api/conversations/" + conversationId, { method: "DELETE" });
+      const payload = await response.json().catch(() => ({})) as { error?: { message?: string } | string; detail?: string };
+      if (!response.ok) {
+        const message = typeof payload.error === "string" ? payload.error : payload.error?.message;
+        throw new Error(message || payload.detail || "Could not delete this conversation.");
+      }
+      setConversations((previous) => previous.filter((item) => item.id !== conversationId));
+      if (conversationId === props.conversationId) router.push(base + "/dashboard");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not delete this conversation.");
+    } finally {
+      setBusyConversationId(null);
+    }
+  }
 
   async function saveWorkspace(workspaceId: string) {
     setError(null);
@@ -215,13 +280,31 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
               {historyLoading ? (
                 <p className="px-3 py-4 text-xs text-slate-400">Loading conversations…</p>
               ) : visibleConversations.length ? visibleConversations.map((conversation) => (
-                <Link key={conversation.id} href={base + "/chat/" + conversation.id} aria-current={conversation.id === props.conversationId ? "page" : undefined} className={"group flex items-start gap-2.5 rounded-xl px-3 py-2.5 text-xs transition " + (conversation.id === props.conversationId ? "bg-violet-50 text-violet-800 ring-1 ring-violet-100" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950")}>
-                  <MessageSquare className={"mt-0.5 h-3.5 w-3.5 shrink-0 " + (conversation.id === props.conversationId ? "text-violet-600" : "text-slate-400")} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{conversation.title?.trim() || "New chat"}</span>
-                    <span className="mt-1 block truncate text-[10px] capitalize text-slate-400">{conversation.mode}{conversation.pinned ? " · Pinned" : ""}</span>
-                  </span>
-                </Link>
+                <div key={conversation.id} className={"group rounded-xl transition " + (conversation.id === props.conversationId ? "bg-violet-50 ring-1 ring-violet-100" : "hover:bg-slate-50")}>
+                  <div className="flex items-start gap-1 px-2 py-2">
+                    <MessageSquare className={"mt-1 h-3.5 w-3.5 shrink-0 " + (conversation.id === props.conversationId ? "text-violet-600" : "text-slate-400")} />
+                    <div className="min-w-0 flex-1">
+                      {renamingId === conversation.id ? (
+                        <form onSubmit={(event) => { event.preventDefault(); const title = renameValue.trim(); if (title) void updateConversation(conversation.id, { title }); }} className="flex items-center gap-1">
+                          <input autoFocus maxLength={200} value={renameValue} onChange={(event) => setRenameValue(event.target.value)} aria-label="Conversation title" className="min-w-0 w-full rounded-md border border-violet-200 bg-white px-1.5 py-1 text-xs outline-none focus:ring-2 focus:ring-violet-100" />
+                          <button type="submit" disabled={!renameValue.trim() || busyConversationId === conversation.id} aria-label="Save title" className="rounded p-1 text-violet-700 hover:bg-violet-100 disabled:opacity-50"><Check className="h-3.5 w-3.5" /></button>
+                          <button type="button" onClick={() => setRenamingId(null)} aria-label="Cancel rename" className="rounded p-1 text-slate-400 hover:bg-slate-200"><X className="h-3.5 w-3.5" /></button>
+                        </form>
+                      ) : (
+                        <Link href={base + "/chat/" + conversation.id} aria-current={conversation.id === props.conversationId ? "page" : undefined} className={"block truncate text-xs font-medium " + (conversation.id === props.conversationId ? "text-violet-800" : "text-slate-700")}>
+                          {conversation.title?.trim() || "New chat"}
+                        </Link>
+                      )}
+                      <span className="mt-1 block truncate text-[10px] capitalize text-slate-400">{conversation.mode}{conversation.pinned ? " · Pinned" : ""}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-0.5 px-7 pb-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+                    <button type="button" onClick={() => { setRenamingId(conversation.id); setRenameValue(conversation.title?.trim() || ""); setError(null); }} disabled={busyConversationId === conversation.id} aria-label={"Rename " + (conversation.title || "conversation")} title="Rename" className="rounded-md p-1.5 text-slate-400 hover:bg-white hover:text-violet-700 disabled:opacity-50"><Pencil className="h-3 w-3" /></button>
+                    <button type="button" onClick={() => void updateConversation(conversation.id, { pinned: !conversation.pinned })} disabled={busyConversationId === conversation.id} aria-label={conversation.pinned ? "Unpin conversation" : "Pin conversation"} title={conversation.pinned ? "Unpin" : "Pin"} className={"rounded-md p-1.5 hover:bg-white disabled:opacity-50 " + (conversation.pinned ? "text-violet-700" : "text-slate-400 hover:text-violet-700")}><Pin className="h-3 w-3" /></button>
+                    <button type="button" onClick={() => void deleteConversation(conversation.id)} disabled={busyConversationId === conversation.id} aria-label="Delete conversation" title="Delete" className="rounded-md p-1.5 text-slate-400 hover:bg-white hover:text-rose-600 disabled:opacity-50"><Trash2 className="h-3 w-3" /></button>
+                    {busyConversationId === conversation.id && <LoaderCircle className="ml-auto h-3 w-3 animate-spin text-violet-600" />}
+                  </div>
+                </div>
               )) : (
                 <p className="px-3 py-4 text-xs leading-5 text-slate-400">{historySearch ? "No chats match your search." : "Your conversations will appear here after you start chatting."}</p>
               )}
