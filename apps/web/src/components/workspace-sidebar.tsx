@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   Check,
   Home,
+  History,
   Layers,
   LoaderCircle,
   MessageSquare,
@@ -61,6 +62,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
   const [error, setError] = useState<string | null>(null);
   const [conversations, setConversations] = useState<SidebarConversation[]>([]);
   const [historySearch, setHistorySearch] = useState("");
+  const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -355,13 +357,34 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
         {error && <p role="alert" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs leading-5 text-rose-800">{error}</p>}
       </aside>
 
-      <nav aria-label="Mobile navigation" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-slate-200 bg-white/95 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_20px_-18px_rgba(15,23,42,0.4)] backdrop-blur lg:hidden">
+      {props.conversationId && mobileHistoryOpen && (
+        <div className="fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 max-h-[65dvh] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl lg:hidden" role="dialog" aria-label="Chat history">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+            <p className="text-sm font-semibold text-slate-900">Chat history</p>
+            <button type="button" onClick={() => setMobileHistoryOpen(false)} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" aria-label="Close chat history"><X className="h-4 w-4" /></button>
+          </div>
+          <label className="mx-3 mt-3 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-400">
+            <Search className="h-3.5 w-3.5 shrink-0" />
+            <input value={historySearch} onChange={(event) => setHistorySearch(event.target.value)} placeholder="Search chats" aria-label="Search chat history" className="min-w-0 w-full bg-transparent text-xs text-slate-800 outline-none placeholder:text-slate-400" />
+          </label>
+          <div className="max-h-[calc(65dvh-7rem)] overflow-y-auto p-2">
+            {visibleConversations.length ? visibleConversations.map((conversation) => (
+              <Link key={conversation.id} href={base + "/chat/" + conversation.id} onClick={() => setMobileHistoryOpen(false)} className={"flex items-start gap-3 rounded-xl px-3 py-3 " + (conversation.id === props.conversationId ? "bg-violet-50 text-violet-800" : "text-slate-700 hover:bg-slate-50")}>
+                <MessageSquare className="mt-0.5 h-4 w-4 shrink-0" />
+                <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{conversation.title?.trim() || "New chat"}</span><span className="mt-1 block text-xs capitalize text-slate-400">{conversation.mode}{conversation.pinned ? " · Pinned" : ""}</span></span>
+              </Link>
+            )) : <p className="px-3 py-5 text-center text-xs text-slate-400">{historySearch ? "No chats match your search." : "No conversations yet."}</p>}
+          </div>
+        </div>
+      )}
+      <nav aria-label="Mobile navigation" className={"fixed inset-x-0 bottom-0 z-30 grid " + (props.conversationId ? "grid-cols-4" : "grid-cols-3") border-t border-slate-200 bg-white/95 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_20px_-18px_rgba(15,23,42,0.4)] backdrop-blur lg:hidden">
         <Link href={base + "/dashboard"} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (props.activePage === "home" ? "font-semibold text-violet-700" : "text-slate-500")}>
           <Home className="h-4 w-4" /> Home
         </Link>
         <button type="button" onClick={() => void createNewChat()} disabled={creatingChat || savingWorkspace || !selectedWorkspace} className="flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] font-semibold text-violet-700 disabled:opacity-50">
           {creatingChat ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <MessageSquarePlus className="h-4 w-4" />} New chat
         </button>
+        {props.conversationId && <button type="button" onClick={() => setMobileHistoryOpen((open) => !open)} aria-expanded={mobileHistoryOpen} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (mobileHistoryOpen ? "font-semibold text-violet-700" : "text-slate-500")}><History className="h-4 w-4" /> History</button>}
         <Link href={base + "/team"} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (props.activePage === "team" ? "font-semibold text-violet-700" : "text-slate-500")}>
           <Users className="h-4 w-4" /> Team
         </Link>
