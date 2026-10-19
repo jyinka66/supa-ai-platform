@@ -377,9 +377,6 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
         <button type="button" onClick={() => void createNewChat()} disabled={creatingChat || savingWorkspace || !selectedWorkspace} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (props.activePage === "chat" ? "font-semibold text-violet-700" : "text-slate-500")}>
           {creatingChat ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <MessageSquarePlus className="h-4 w-4" />} AI Chat
         </button>
-        <button type="button" onClick={() => void createNewChat()} disabled={creatingChat || savingWorkspace || !selectedWorkspace} className="flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] font-semibold text-violet-700 disabled:opacity-50">
-          {creatingChat ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <MessageSquarePlus className="h-4 w-4" />} New chat
-        </button>
         {props.conversationId && <button type="button" onClick={() => setMobileHistoryOpen((open) => !open)} aria-expanded={mobileHistoryOpen} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (mobileHistoryOpen ? "font-semibold text-violet-700" : "text-slate-500")}><History className="h-4 w-4" /> History</button>}
         <Link href={base + "/team"} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (props.activePage === "team" ? "font-semibold text-violet-700" : "text-slate-500")}>
           <Users className="h-4 w-4" /> Team
