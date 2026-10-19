@@ -76,6 +76,7 @@ export function WorkLibraryPanel({ workspaceId, onStatsChange }: Props) {
   const [editing, setEditing] = useState<WorkItem | null>(null);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [editorFolderId, setEditorFolderId] = useState("");
   const [folderName, setFolderName] = useState("");
 
   const load = useCallback(async (search: string) => {
@@ -252,7 +253,7 @@ export function WorkLibraryPanel({ workspaceId, onStatsChange }: Props) {
       const response = await fetch("/api/work/items/" + editing.id, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), content: body, contentFormat: "markdown" }),
+        body: JSON.stringify({ title: title.trim(), content: body, contentFormat: "markdown", folderId: editorFolderId || null }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(responseMessage(payload, "Could not update this item."));
@@ -324,6 +325,7 @@ export function WorkLibraryPanel({ workspaceId, onStatsChange }: Props) {
     setEditing(item);
     setTitle(item.title);
     setBody(item.content ?? "");
+    setEditorFolderId(item.folderId ?? "");
     setNoteOpen(false);
   }
 
@@ -338,7 +340,7 @@ export function WorkLibraryPanel({ workspaceId, onStatsChange }: Props) {
           <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">Create notes, organize saved work into folders, find previous deliverables, and keep important items close.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => { setNoteOpen(true); setEditing(null); setTitle(""); setBody(""); setError(null); }} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700">
+          <button type="button" onClick={() => { setNoteOpen(true); setEditing(null); setTitle(""); setBody(""); setEditorFolderId(activeFolderId ?? ""); setError(null); }} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700">
             <Plus className="h-4 w-4" /> New note
           </button>
           <button type="button" onClick={() => { setFolderOpen((open) => !open); setError(null); }} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
@@ -413,7 +415,7 @@ export function WorkLibraryPanel({ workspaceId, onStatsChange }: Props) {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-700"><FileText className="h-5 w-5" /></div>
           <h3 className="mt-3 text-sm font-semibold text-slate-900">{query ? "No matching work found" : "Your library is ready"}</h3>
           <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-slate-500">{query ? "Try another search term or clear your search." : "Save notes and AI deliverables here. Your saved work stays attached to this workspace."}</p>
-          {!query && <button type="button" onClick={() => { setNoteOpen(true); setTitle(""); setBody(""); }} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-violet-700"><Plus className="h-3.5 w-3.5" /> Create your first note</button>}
+          {!query && <button type="button" onClick={() => { setNoteOpen(true); setTitle(""); setBody(""); setEditorFolderId(activeFolderId ?? ""); }} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-violet-700"><Plus className="h-3.5 w-3.5" /> Create your first note</button>}
         </div>}
       </div>}
 
@@ -425,6 +427,11 @@ export function WorkLibraryPanel({ workspaceId, onStatsChange }: Props) {
           </div>
           <label htmlFor="work-item-title" className="mt-5 block text-xs font-semibold text-slate-600">Title</label>
           <input id="work-item-title" value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={200} className="mt-1.5 min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100" placeholder="Give this work a clear title" />
+          <label htmlFor="work-item-folder" className="mt-4 block text-xs font-semibold text-slate-600">Save in folder</label>
+          <select id="work-item-folder" value={editorFolderId} onChange={(event) => setEditorFolderId(event.target.value)} className="mt-1.5 min-h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100">
+            <option value="">No folder</option>
+            {folders.map((folder) => <option key={folder.id} value={folder.id}>{folder.name}</option>)}
+          </select>
           <label htmlFor="work-item-body" className="mt-4 block text-xs font-semibold text-slate-600">Content</label>
           <textarea id="work-item-body" value={body} onChange={(event) => setBody(event.target.value)} maxLength={1000000} rows={10} className="mt-1.5 w-full resize-y rounded-xl border border-slate-200 px-3 py-3 text-sm leading-6 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100" placeholder="Write notes, paste a draft, or save useful information…" />
           <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
