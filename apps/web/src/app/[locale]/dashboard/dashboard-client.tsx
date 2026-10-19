@@ -256,10 +256,6 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
                 <p className="mt-1 text-sm text-slate-500">Jump straight into the tools you use to get work done.</p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <button type="button" onClick={() => void startConversation("chat")} disabled={busyMode !== null || !activeWorkspace} className="group flex min-h-[118px] items-start gap-3 rounded-2xl border border-violet-200 bg-violet-50/70 p-4 text-left transition hover:border-violet-300 hover:bg-violet-50 disabled:opacity-50">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-violet-700 shadow-sm"><MessageSquare className="h-4.5 w-4.5" /></span>
-                  <span><span className="block text-sm font-semibold text-slate-900">AI Chat</span><span className="mt-1 block text-xs leading-5 text-slate-600">Start a conversation. Your chat history stays in the chat sidebar.</span></span>
-                </button>
                 <Link href="#my-work" className="group flex min-h-[118px] items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-violet-200 hover:shadow-sm">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-700"><FolderOpen className="h-4.5 w-4.5" /></span>
                   <span><span className="block text-sm font-semibold text-slate-900">Work library</span><span className="mt-1 block text-xs leading-5 text-slate-500">Create, search, edit, favorite, and export saved work.</span></span>
@@ -293,7 +289,7 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
                   { mode: "code", title: "Code helper", description: "Build, explain, and troubleshoot code.", prompt: "Help me with a coding task. Ask for the relevant code, expected behavior, and error details if they are needed." },
                   { mode: "document", title: "Documents", description: "Create structured reports, briefs, and proposals.", prompt: "Help me create a structured document. First clarify the audience, purpose, and key points, then draft a useful document." },
                   { mode: "plan", title: "Make a plan", description: "Break a goal into ordered, actionable steps.", prompt: "Help me turn my goal into a practical plan with milestones, priorities, dependencies, and next actions. Ask what goal I want to achieve." },
-                  { mode: "chat", title: "Ask anything", description: "Think through questions, ideas, and decisions.", prompt: "Help me work through a question or idea. Ask a clarifying question if it will materially improve your answer." },
+                  { mode: "image", title: "Image concepts", description: "Develop detailed visual concepts and image-generation prompts.", prompt: "Help me develop an image concept and a precise image-generation prompt. Ask about the subject, style, composition, lighting, and mood if needed." },
                 ] satisfies { mode: Mode; title: string; description: string; prompt: string }[]).map((tool) => (
                   <button
                     key={tool.mode}
