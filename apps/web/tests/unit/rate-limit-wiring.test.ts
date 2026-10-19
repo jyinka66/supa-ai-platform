@@ -172,7 +172,7 @@ describe("POST /api/supa-os/marketplace — rate limit wiring", () => {
     const { POST } = await import("@/app/api/supa-os/marketplace/route");
     const req = new NextRequest("https://example.com/api/supa-os/marketplace", {
       method: "POST",
-      body: JSON.stringify({ name: "Test theme", type: "theme", description: "A valid test theme for rate limit coverage.", monetization: "free", price: 0, version: "1.0.0", manifest: { tokens: {} } }),
+      body: JSON.stringify({ name: "Test theme", type: "theme", description: "A valid test theme for rate limit coverage.", monetization: "free", price: 0, version: "1.0.0", manifest: { tokens: { "color.primary": "#000000" } } }),
       headers: { "Content-Type": "application/json" },
     });
     try { await POST(req); } catch { /* request may fail validation after rate limiting */ }
@@ -186,7 +186,7 @@ describe("POST /api/supa-os/marketplace — rate limit wiring", () => {
     const { POST } = await import("@/app/api/supa-os/marketplace/route");
     const req = new NextRequest("https://example.com/api/supa-os/marketplace", {
       method: "POST",
-      body: JSON.stringify({ name: "Test", type: "theme" }),
+      body: JSON.stringify({ name: "Test theme", type: "theme", description: "A valid test theme for rate limit coverage.", monetization: "free", price: 0, version: "1.0.0", manifest: { tokens: { "color.primary": "#000000" } } }),
       headers: { "Content-Type": "application/json" },
     });
     const res = await POST(req);
