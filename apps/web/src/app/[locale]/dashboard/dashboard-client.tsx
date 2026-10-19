@@ -9,7 +9,6 @@ import {
   Check,
   Layers,
   LogOut,
-  MessageSquare,
   Sparkles,
   Zap,
   FolderOpen,
@@ -255,7 +254,7 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
                 <h2 className="text-lg font-semibold tracking-tight text-slate-950">Quick access</h2>
                 <p className="mt-1 text-sm text-slate-500">Jump straight into the tools you use to get work done.</p>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 <Link href="#my-work" className="group flex min-h-[118px] items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-violet-200 hover:shadow-sm">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-700"><FolderOpen className="h-4.5 w-4.5" /></span>
                   <span><span className="block text-sm font-semibold text-slate-900">Work library</span><span className="mt-1 block text-xs leading-5 text-slate-500">Create, search, edit, favorite, and export saved work.</span></span>
