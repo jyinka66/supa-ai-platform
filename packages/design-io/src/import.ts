@@ -572,7 +572,7 @@ function convertText(el: Element, ctx: ConvertContext): LayerNode | null {
     name: el.getAttribute("data-name") ?? "Text",
     locked: false,
     hidden: false,
-    rect: { x: x + transform.x, y: y + transform.y, width: 200, height: fontSize * lineHeight * (content.split("\n").length || 1) },
+    rect: { x: x + transform.x, y: y + transform.y, width: 200, height: fontSize * lineHeight * content.split("\n").length },
     rotation: transform.rotation,
     opacity: parseFloat(el.getAttribute("opacity") ?? "1"),
     blend: "normal",
@@ -668,7 +668,7 @@ async function convertImage(el: Element, ctx: ConvertContext): Promise<LayerNode
     opacity: parseFloat(el.getAttribute("opacity") ?? "1"),
     blend: "normal",
     constraints: {},
-    assetId: assetId ?? "unknown",
+    assetId,
     fit: "cover",
     altText: "",
   };
