@@ -21,7 +21,7 @@
  */
 
 import type { Money, Currency } from "@supa/money/money";
-import { add, subtract, zero } from "@supa/money/money";
+import { subtract } from "@supa/money/money";
 import type { WorkspaceId } from "@supa/workspace-core/workspace";
 import type { ReportFact, ReportPeriod } from "./engine.js";
 import { runReport } from "./engine.js";
@@ -182,13 +182,13 @@ export function verifyRollup(
   if (recomputed.revenueMinor !== rollup.revenueMinor) {
     return {
       consistent: false,
-      reason: `revenue mismatch: rollup=${rollup.revenueMinor}, recomputed=${recomputed.revenueMinor}`,
+      reason: `revenue mismatch: rollup=${String(rollup.revenueMinor)}, recomputed=${String(recomputed.revenueMinor)}`,
     };
   }
   if (recomputed.expensesMinor !== rollup.expensesMinor) {
     return {
       consistent: false,
-      reason: `expenses mismatch: rollup=${rollup.expensesMinor}, recomputed=${recomputed.expensesMinor}`,
+      reason: `expenses mismatch: rollup=${String(rollup.expensesMinor)}, recomputed=${String(recomputed.expensesMinor)}`,
     };
   }
   return { consistent: true, reason: "rollup matches facts" };
