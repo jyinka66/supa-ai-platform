@@ -148,27 +148,27 @@ export function buildAiSummary(
   // phrasing the prose.
   const lines: AiSummaryLine[] = [
     {
-      text: `Revenue ${numbers.revenue.delta.display} to ${numbers.revenue.current}`,
+      text: `Revenue ${numbers.revenue.delta.display} to ${String(numbers.revenue.current)}`,
       referencedNumbers: ["revenue.current", "revenue.delta.percentage"],
       reportLink: { metric: "revenue", period: input.period },
     },
     {
-      text: `Expenses ${numbers.expenses.delta.display} to ${numbers.expenses.current}`,
+      text: `Expenses ${numbers.expenses.delta.display} to ${String(numbers.expenses.current)}`,
       referencedNumbers: ["expenses.current", "expenses.delta.percentage"],
       reportLink: { metric: "expenses", period: input.period },
     },
     {
-      text: `Net profit: ${numbers.netProfit.current}`,
+      text: `Net profit: ${String(numbers.netProfit.current)}`,
       referencedNumbers: ["netProfit.current"],
       reportLink: { metric: "net-profit", period: input.period },
     },
     {
-      text: `Outstanding receivables: ${numbers.receivables.outstanding} across ${numbers.receivables.invoicedCount} invoices`,
+      text: `Outstanding receivables: ${String(numbers.receivables.outstanding)} across ${String(numbers.receivables.invoicedCount)} invoices`,
       referencedNumbers: ["receivables.outstanding", "receivables.invoicedCount"],
       reportLink: { metric: "receivables", period: input.period },
     },
     {
-      text: `Prior period revenue was ${numbers.revenue.prior}`,
+      text: `Prior period revenue was ${String(numbers.revenue.prior)}`,
       referencedNumbers: ["revenue.prior"],
       reportLink: null,
     },
