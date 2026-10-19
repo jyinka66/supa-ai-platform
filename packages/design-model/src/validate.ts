@@ -144,14 +144,14 @@ function checkStructural(
     if (layer.children) {
       for (let i = 0; i < layer.children.length; i++) {
         const child = layer.children[i];
-        if (child) checkLayer(child, `${path}.children[${i}]`);
+        if (child) checkLayer(child, `${path}.children[${String(i)}]`);
       }
     }
   }
 
   for (let i = 0; i < page.layers.length; i++) {
     const layer = page.layers[i];
-    if (layer) checkLayer(layer, `pages[${page.id}].layers[${i}]`);
+    if (layer) checkLayer(layer, `pages[${page.id}].layers[${String(i)}]`);
   }
 }
 
@@ -168,13 +168,13 @@ function checkDepth(page: Page, errors: ValidationError[]): void {
     const children = getChildren(node);
     for (let i = 0; i < children.length; i++) {
       const child = children[i];
-      if (child) check(child, depth + 1, `${path}.children[${i}]`);
+      if (child) check(child, depth + 1, `${path}.children[${String(i)}]`);
     }
   }
 
   for (let i = 0; i < page.layers.length; i++) {
     const layer = page.layers[i];
-    if (layer) check(layer, 1, `pages[${page.id}].layers[${i}]`);
+    if (layer) check(layer, 1, `pages[${page.id}].layers[${String(i)}]`);
   }
 }
 
@@ -193,12 +193,13 @@ function checkUniqueIds(page: Page, errors: ValidationError[]): void {
     const children = getChildren(node);
     for (let i = 0; i < children.length; i++) {
       const child = children[i];
-      if (child) check(child, `${path}.children[${i}]`);
+      if (child) check(child, `${path}.children[${String(i)}]`);
     }
   }
 
   for (let i = 0; i < page.layers.length; i++) {
-    check(page.layers[i]!, `pages[${page.id}].layers[${i}]`);
+    const layer = page.layers[i];
+    if (layer) check(layer, `pages[${page.id}].layers[${String(i)}]`);
   }
 }
 
@@ -224,7 +225,7 @@ function checkCycles(page: Page, errors: ValidationError[]): void {
     const children = getChildren(node);
     for (let i = 0; i < children.length; i++) {
       const child = children[i];
-      if (child && !check(child, `${path}.children[${i}]`)) return false;
+      if (child && !check(child, `${path}.children[${String(i)}]`)) return false;
     }
 
     visiting.delete(node.id);
@@ -233,7 +234,7 @@ function checkCycles(page: Page, errors: ValidationError[]): void {
   }
 
   for (let i = 0; i < page.layers.length; i++) {
-    check(page.layers[i]!, `pages[${page.id}].layers[${i}]`);
+    check(page.layers[i]!, `pages[${page.id}].layers[${String(i)}]`);
   }
 }
 
@@ -399,7 +400,7 @@ function checkTextRuns(layer: TextLayer, errors: ValidationError[]): void {
   for (let i = 0; i < layer.runs.length; i++) {
     const run = layer.runs[i];
     if (!run) continue;
-    const runPath = `${path}[${i}]`;
+    const runPath = `${path}[${String(i)}]`;
 
     // Start must be >= previous end (non-overlapping, ordered).
     if (run.start < prevEnd) {
