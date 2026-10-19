@@ -17,18 +17,14 @@
  */
 
 import type { Currency } from "@supa/money/money";
-import { add, subtract, zero, fromMinor, asCurrency } from "@supa/money/money";
-import type { WorkspaceId } from "@supa/workspace-core/workspace";
 import {
   runReport,
-  traceProvenance,
   type ReportFact,
   type ReportQuery,
   type ReportResult,
   type ReportPeriod,
-  type ReportRow,
 } from "../engine.js";
-import { computeDelta, type ConversionResult } from "../money.js";
+import { computeDelta } from "../money.js";
 
 // ───────────────────────────────────────────────
 // Revenue report — invoiced vs collected
