@@ -585,7 +585,7 @@ export function ChatClient({ conversation, initialMessages, locale, workspaces, 
         locale={locale}
         workspaces={workspaces}
         activeWorkspaceId={activeWorkspaceId}
-        activePage="studio"
+        activePage="chat"
         conversationId={conversation.id}
       />
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[#f7f8fc] text-slate-950">
