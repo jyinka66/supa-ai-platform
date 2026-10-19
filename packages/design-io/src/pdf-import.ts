@@ -95,7 +95,8 @@ export async function importPdf(
   const docPages: Page[] = [];
 
   for (let i = 0; i < pdfPages.length; i++) {
-    const pdfPage = pdfPages[i]!;
+    const pdfPage = pdfPages[i];
+    if (!pdfPage) continue;
     const { width: pageW, height: pageH } = pdfPage.mediaBox;
 
     const contentStrings = await resolveContentStreams(
@@ -854,10 +855,10 @@ async function getImageDimensions(bytes: Uint8Array, mime: string): Promise<{ wi
   });
 }
 
-async function decodeServerSide(
-  bytes: Uint8Array,
-  mimeType: string,
-  options: ImageImportOptions,
+function decodeServerSide(
+  _bytes: Uint8Array,
+  _mimeType: string,
+  _options: ImageImportOptions,
 ): Promise<{ bytes: Uint8Array; width: number; height: number }> {
   // Non-native image formats (HEIC/HEIF, RAW camera formats like CR2/NEF/ARW/DNG,
   // AVIF on browsers without native support, and TIFF) cannot be decoded in the
@@ -878,14 +879,11 @@ async function decodeServerSide(
   // the caller can use it directly: upload the raw bytes, let the server
   // decode and return a JPEG preview + real dimensions. But this function
   // itself does not perform that round-trip — it refuses to fabricate data.
-  void bytes;
-  void mimeType;
-  void options;
-  throw new Error(
+  return Promise.reject(new Error(
     "design-io: Non-native image format (HEIC/RAW/AVIF/TIFF) requires " +
       "server-side decode — see services/design-export. Browsers cannot " +
       "decode these formats natively; the upload pipeline must round-trip " +
       "the bytes through a server codec (libheif, sharp, or ImageMagick) " +
       "and return a JPEG preview + real dimensions.",
-  );
+  ));
 }
