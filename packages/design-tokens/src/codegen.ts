@@ -58,7 +58,8 @@ export function emitCssCustomProperties(map: TokenMap): string {
     lines.push(mediaQuery + " {");
     lines.push("  :root {");
     for (const token of overrides) {
-      const v = token.variants![variant]!;
+      const v = token.variants?.[variant];
+      if (!v) continue;
       const varName = tokenIdToCssVar(token.id);
       if (v.kind === "literal") {
         lines.push(`    --${varName}: ${v.value};`);
@@ -147,14 +148,16 @@ export function exportDtcg(map: TokenMap): DtcgFile {
     const parts = id.split(".");
     let group: DtcgTokenGroup = root as DtcgTokenGroup;
     for (let i = 0; i < parts.length - 1; i++) {
-      const part = parts[i]!;
+      const part = parts[i];
+      if (part === undefined) continue;
       const existing = group[part];
       if (!existing || typeof existing === "string") {
-        group[part] = {} as DtcgTokenGroup;
+        group[part] = {};
       }
       group = group[part] as DtcgTokenGroup;
     }
-    const leafName = parts[parts.length - 1]!;
+    const leafName = parts.at(-1);
+    if (!leafName) continue;
     const dtcgToken: DtcgToken = {
       $value: token.value.kind === "literal" ? token.value.value : `$${token.value.token}`,
       $type: TYPE_TO_DTCG[token.type],
@@ -165,7 +168,6 @@ export function exportDtcg(map: TokenMap): DtcgFile {
     // Variant-specific values as nested $value objects (DTCG convention).
     if (token.variants) {
       for (const [variant, v] of Object.entries(token.variants)) {
-        if (!v) continue;
         dtcgToken[`$value.${variant}`] = v.kind === "literal" ? v.value : `$${v.token}`;
       }
     }
@@ -191,11 +193,12 @@ export function importDtcg(
   function walk(group: DtcgTokenGroup, prefix: string): void {
     for (const [key, value] of Object.entries(group)) {
       if (typeof value === "string") continue;
-      const v = value as DtcgToken | DtcgTokenGroup;
+      const v = value;
       // Is this a leaf token (has $value)?
-      if ("$value" in v && v.$value !== undefined) {
+      if ("$value" in v) {
         const id = nsPrefix ? `${nsPrefix}.${prefix}${key}` : `${prefix}${key}`;
         const rawValue = v.$value;
+        if (typeof rawValue !== "string" && typeof rawValue !== "number") continue;
         const dtcgType = typeof v.$type === "string" ? v.$type : "color";
         const type = DTCG_TO_TYPE[dtcgType] ?? "color";
         // Refs are prefixed with $ in DTCG export.
