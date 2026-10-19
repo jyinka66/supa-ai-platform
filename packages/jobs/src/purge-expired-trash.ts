@@ -1,6 +1,6 @@
 import { db } from "@supa/db";
 import { workItems } from "@supa/db/schema";
-import { eq, lt, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { createClient } from "@supabase/supabase-js";
 import pino from "pino";
 
@@ -65,7 +65,7 @@ export async function purgeExpiredTrash(): Promise<PurgeTrashResult> {
   // Delete associated files from storage (best-effort — don't block on failures).
   for (const item of expired) {
     const filesToDelete = [item.fileUrl, item.thumbnailUrl].filter(
-      (f): f is string => f !== null && f !== undefined,
+      (f): f is string => f !== null,
     );
 
     for (const filePath of filesToDelete) {
