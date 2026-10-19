@@ -45,8 +45,8 @@ import {
 // ───────────────────────────────────────────────
 
 describe("1 — WASM & WebContainer Runtime Engine", () => {
-  it("has 6 runtime environments", () => {
-    expect(RUNTIME_ENVIRONMENTS).toHaveLength(6);
+  it("has 7 runtime environments including disposable Postgres", () => {
+    expect(RUNTIME_ENVIRONMENTS).toHaveLength(7);
     const langs = RUNTIME_ENVIRONMENTS.map((r) => r.language);
     expect(langs).toContain("nodejs");
     expect(langs).toContain("python");
@@ -54,26 +54,27 @@ describe("1 — WASM & WebContainer Runtime Engine", () => {
     expect(langs).toContain("rust");
     expect(langs).toContain("deno");
     expect(langs).toContain("bun");
+    expect(langs).toContain("postgres");
   });
 
   it("all 6 runtimes are implemented", () => {
     expect(RUNTIME_ENVIRONMENTS.every((r) => r.implemented)).toBe(true);
   });
 
-  it("Node.js uses WebContainer runtime", () => {
+  it("Node.js uses the isolated Docker sandbox", () => {
     const node = RUNTIME_ENVIRONMENTS.find((r) => r.language === "nodejs");
-    expect(node?.wasmRuntime).toBe("webcontainer");
-    expect(node?.streaming).toBe(true);
+    expect(node?.runtimeProvider).toBe("docker-sandbox");
+    expect(node?.streaming).toBe(false);
   });
 
-  it("Python uses Pyodide (WASM Python)", () => {
+  it("Python uses the isolated Docker sandbox", () => {
     const python = RUNTIME_ENVIRONMENTS.find((r) => r.language === "python");
-    expect(python?.wasmRuntime).toBe("pyodide");
+    expect(python?.runtimeProvider).toBe("docker-sandbox");
   });
 
-  it("Go uses Wasmer runtime", () => {
+  it("Go uses the isolated Docker sandbox", () => {
     const go = RUNTIME_ENVIRONMENTS.find((r) => r.language === "go");
-    expect(go?.wasmRuntime).toBe("wasmer");
+    expect(go?.runtimeProvider).toBe("docker-sandbox");
   });
 
   it("executes a terminal command", () => {
