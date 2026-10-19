@@ -10,6 +10,7 @@ import {
   LoaderCircle,
   Pencil,
   Plus,
+  RotateCcw,
   Search,
   Star,
   Trash2,
@@ -59,6 +60,9 @@ function shortDate(value: string | Date): string {
 export function WorkLibraryPanel({ workspaceId }: Props) {
   const [items, setItems] = useState<WorkItem[]>([]);
   const [folders, setFolders] = useState<WorkFolder[]>([]);
+  const [trashItems, setTrashItems] = useState<WorkItem[]>([]);
+  const [showTrash, setShowTrash] = useState(false);
+  const [trashLoading, setTrashLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -108,6 +112,73 @@ export function WorkLibraryPanel({ workspaceId }: Props) {
   }, [activeFolderId, workspaceId]);
 
   useEffect(() => { void load(""); }, [load]);
+
+  const loadTrash = useCallback(async () => {
+    setTrashLoading(true);
+    setError(null);
+    try {
+      const active = await fetch("/api/workspaces/active", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspaceId }),
+      });
+      const activePayload = await active.json().catch(() => ({}));
+      if (!active.ok) throw new Error(responseMessage(activePayload, "Could not select this workspace."));
+      const response = await fetch("/api/trash", { cache: "no-store" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(responseMessage(payload, "Could not load Trash."));
+      setTrashItems(Array.isArray(payload.data?.items) ? payload.data.items : []);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not load Trash.");
+    } finally {
+      setTrashLoading(false);
+    }
+  }, [workspaceId]);
+
+  async function restoreItem(item: WorkItem) {
+    setBusyItem(item.id);
+    setError(null);
+    try {
+      const response = await fetch("/api/trash/restore", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [item.id] }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(responseMessage(payload, "Could not restore this item."));
+      setTrashItems((current) => current.filter((entry) => entry.id !== item.id));
+      setNotice("Item restored to your work library.");
+      await load("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not restore this item.");
+    } finally {
+      setBusyItem(null);
+    }
+  }
+
+  async function emptyTrash() {
+    if (!window.confirm("Permanently delete all items in Trash? This cannot be undone.")) return;
+    setBusy(true);
+    setError(null);
+    try {
+      let deleted = 0;
+      for (let batch = 0; batch < 20; batch += 1) {
+        const response = await fetch("/api/trash", { method: "DELETE" });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(responseMessage(payload, "Could not empty Trash."));
+        const result = payload.data as { deleted?: number; hasMore?: boolean };
+        deleted += result.deleted ?? 0;
+        if (!result.hasMore) break;
+      }
+      setTrashItems([]);
+      setNotice(`Permanently deleted ${String(deleted)} item(s).`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not empty Trash.");
+      await loadTrash();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function createNote(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
