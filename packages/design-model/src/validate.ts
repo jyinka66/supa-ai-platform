@@ -25,9 +25,8 @@ import type {
   ImageLayer,
   ShapeLayer,
   IconLayer,
-  ContainerLayer,
 } from "./types";
-import { isContainerNode, getChildren, flattenLayers, findPage } from "./types";
+import { isContainerNode, getChildren, flattenLayers } from "./types";
 import { safeValidateDoc as zodValidateDoc } from "./validator";
 
 export type ValidationError = {
@@ -132,14 +131,8 @@ function checkStructural(
     if (!layer.id) {
       errors.push({ path, code: "MISSING_ID", message: "Layer missing id" });
     }
-    if (!layer.type) {
-      errors.push({ path, code: "MISSING_TYPE", message: "Layer missing type" });
-    }
     if (!layer.name) {
       errors.push({ path, code: "MISSING_NAME", message: "Layer missing name" });
-    }
-    if (!layer.rect) {
-      errors.push({ path, code: "MISSING_RECT", message: "Layer missing rect" });
     }
 
     // Children only on group/container.
@@ -154,13 +147,15 @@ function checkStructural(
     // Recurse.
     if (layer.children) {
       for (let i = 0; i < layer.children.length; i++) {
-        checkLayer(layer.children[i]!, `${path}.children[${i}]`);
+        const child = layer.children[i];
+        if (child) checkLayer(child, `${path}.children[${i}]`);
       }
     }
   }
 
   for (let i = 0; i < page.layers.length; i++) {
-    checkLayer(page.layers[i]!, `pages[${page.id}].layers[${i}]`);
+    const layer = page.layers[i];
+    if (layer) checkLayer(layer, `pages[${page.id}].layers[${i}]`);
   }
 }
 
@@ -170,18 +165,20 @@ function checkDepth(page: Page, errors: ValidationError[]): void {
       errors.push({
         path,
         code: "DEPTH",
-        message: `Layer depth ${depth} exceeds max ${MAX_DEPTH}`,
+        message: `Layer depth ${String(depth)} exceeds max ${String(MAX_DEPTH)}`,
       });
       return;
     }
     const children = getChildren(node);
     for (let i = 0; i < children.length; i++) {
-      check(children[i]!, depth + 1, `${path}.children[${i}]`);
+      const child = children[i];
+      if (child) check(child, depth + 1, `${path}.children[${i}]`);
     }
   }
 
   for (let i = 0; i < page.layers.length; i++) {
-    check(page.layers[i]!, 1, `pages[${page.id}].layers[${i}]`);
+    const layer = page.layers[i];
+    if (layer) check(layer, 1, `pages[${page.id}].layers[${i}]`);
   }
 }
 
@@ -199,7 +196,8 @@ function checkUniqueIds(page: Page, errors: ValidationError[]): void {
     seen.add(node.id);
     const children = getChildren(node);
     for (let i = 0; i < children.length; i++) {
-      check(children[i]!, `${path}.children[${i}]`);
+      const child = children[i];
+      if (child) check(child, `${path}.children[${i}]`);
     }
   }
 
@@ -229,7 +227,8 @@ function checkCycles(page: Page, errors: ValidationError[]): void {
 
     const children = getChildren(node);
     for (let i = 0; i < children.length; i++) {
-      if (!check(children[i]!, `${path}.children[${i}]`)) return false;
+      const child = children[i];
+      if (child && !check(child, `${path}.children[${i}]`)) return false;
     }
 
     visiting.delete(node.id);
@@ -254,13 +253,13 @@ function checkTypeSpecific(
 
   switch (layer.type) {
     case "text": {
-      const text = layer as TextLayer;
+      const text = layer;
       // Font size bounds.
       if (text.fontSize < FONT_SIZE_MIN || text.fontSize > FONT_SIZE_MAX) {
         errors.push({
           path,
           code: "FONT_SIZE_OUT_OF_RANGE",
-          message: `fontSize ${text.fontSize} outside bounds [${FONT_SIZE_MIN}, ${FONT_SIZE_MAX}]`,
+          message: `fontSize ${String(text.fontSize)} outside bounds [${String(FONT_SIZE_MIN)}, ${String(FONT_SIZE_MAX)}]`,
         });
       }
       // Font family must be non-empty.
@@ -275,7 +274,7 @@ function checkTypeSpecific(
     }
 
     case "image": {
-      const img = layer as ImageLayer;
+      const img = layer;
       // Asset must exist in doc.assets.
       if (!doc.assets[img.assetId]) {
         errors.push({
@@ -288,7 +287,7 @@ function checkTypeSpecific(
     }
 
     case "shape": {
-      const shape = layer as ShapeLayer;
+      const shape = layer;
       if (shape.shape === "polygon" && shape.polygonSides !== undefined) {
         if (
           shape.polygonSides < POLYGON_SIDES_MIN ||
@@ -297,7 +296,7 @@ function checkTypeSpecific(
           errors.push({
             path,
             code: "POLYGON_SIDES_OUT_OF_RANGE",
-            message: `polygonSides ${shape.polygonSides} outside [${POLYGON_SIDES_MIN}, ${POLYGON_SIDES_MAX}]`,
+            message: `polygonSides ${String(shape.polygonSides)} outside [${String(POLYGON_SIDES_MIN)}, ${String(POLYGON_SIDES_MAX)}]`,
           });
         }
       }
@@ -305,7 +304,7 @@ function checkTypeSpecific(
     }
 
     case "icon": {
-      const icon = layer as IconLayer;
+      const icon = layer;
       // iconId must be non-empty (existence in sprite index is checked
       // at a higher level where the sprite catalog is available).
       if (!icon.iconId || icon.iconId.length === 0) {
@@ -350,7 +349,7 @@ function checkNumericSanity(layer: LayerNode, errors: ValidationError[]): void {
       checkNumber(obj, fieldPath);
     } else if (Array.isArray(obj)) {
       for (let i = 0; i < obj.length; i++) {
-        checkObject(obj[i], `${fieldPath}[${i}]`);
+        checkObject(obj[i], `${fieldPath}[${String(i)}]`);
       }
     } else if (obj && typeof obj === "object") {
       for (const [key, value] of Object.entries(obj)) {
@@ -366,7 +365,7 @@ function checkNumericSanity(layer: LayerNode, errors: ValidationError[]): void {
     errors.push({
       path,
       code: "OPACITY_OUT_OF_RANGE",
-      message: `opacity ${layer.opacity} outside [0, 1]`,
+      message: `opacity ${String(layer.opacity)} outside [0, 1]`,
     });
   }
 
@@ -374,7 +373,7 @@ function checkNumericSanity(layer: LayerNode, errors: ValidationError[]): void {
     errors.push({
       path,
       code: "ROTATION_OUT_OF_RANGE",
-      message: `rotation ${layer.rotation} exceeds ±${MAX_ROTATION}`,
+      message: `rotation ${String(layer.rotation)} exceeds ±${String(MAX_ROTATION)}`,
     });
   }
 
@@ -388,7 +387,7 @@ function checkNumericSanity(layer: LayerNode, errors: ValidationError[]): void {
     errors.push({
       path,
       code: "RECT_INVALID",
-      message: `rect ${JSON.stringify(rect)} invalid (must be finite, width/height ≥ ${MIN_RECT})`,
+      message: `rect ${JSON.stringify(rect)} invalid (must be finite, width/height ≥ ${String(MIN_RECT)})`,
     });
   }
 }
@@ -402,7 +401,8 @@ function checkTextRuns(layer: TextLayer, errors: ValidationError[]): void {
   let prevEnd = 0;
 
   for (let i = 0; i < layer.runs.length; i++) {
-    const run = layer.runs[i]!;
+    const run = layer.runs[i];
+    if (!run) continue;
     const runPath = `${path}[${i}]`;
 
     // Start must be >= previous end (non-overlapping, ordered).
@@ -410,7 +410,7 @@ function checkTextRuns(layer: TextLayer, errors: ValidationError[]): void {
       errors.push({
         path: runPath,
         code: "RUN_OVERLAP",
-        message: `run.start ${run.start} < previous end ${prevEnd} (overlapping or unordered)`,
+        message: `run.start ${String(run.start)} < previous end ${String(prevEnd)} (overlapping or unordered)`,
       });
     }
 
@@ -419,7 +419,7 @@ function checkTextRuns(layer: TextLayer, errors: ValidationError[]): void {
       errors.push({
         path: runPath,
         code: "RUN_INVERTED",
-        message: `run.end ${run.end} < run.start ${run.start}`,
+        message: `run.end ${String(run.end)} < run.start ${String(run.start)}`,
       });
     }
 
@@ -428,7 +428,7 @@ function checkTextRuns(layer: TextLayer, errors: ValidationError[]): void {
       errors.push({
         path: runPath,
         code: "RUN_OUT_OF_BOUNDS",
-        message: `run [${run.start}, ${run.end}] exceeds content length ${contentLen}`,
+        message: `run [${String(run.start)}, ${String(run.end)}] exceeds content length ${String(contentLen)}`,
       });
     }
 
@@ -482,7 +482,7 @@ function checkBudget(doc: DesignDoc, errors: ValidationError[]): void {
     errors.push({
       path: "doc",
       code: "SOFT_NODE_LIMIT_EXCEEDED",
-      message: `Total nodes ${totalNodes} exceed soft limit ${SOFT_NODE_LIMIT} (hard limit: ${HARD_NODE_LIMIT})`,
+      message: `Total nodes ${String(totalNodes)} exceed soft limit ${String(SOFT_NODE_LIMIT)} (hard limit: ${String(HARD_NODE_LIMIT)})`,
     });
   }
 
@@ -490,7 +490,7 @@ function checkBudget(doc: DesignDoc, errors: ValidationError[]): void {
     errors.push({
       path: "doc",
       code: "HARD_NODE_LIMIT_EXCEEDED",
-      message: `Total nodes ${totalNodes} exceed hard limit ${HARD_NODE_LIMIT}`,
+      message: `Total nodes ${String(totalNodes)} exceed hard limit ${String(HARD_NODE_LIMIT)}`,
     });
   }
 }
