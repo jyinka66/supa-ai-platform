@@ -85,15 +85,15 @@ export function computePeriodKey(date: number, frequency: RecurrenceFrequency): 
   const day = String(d.getUTCDate()).padStart(2, "0");
   switch (frequency) {
     case "daily":
-      return `${year}-${month}-${day}`;
+      return `${String(year)}-${month}-${day}`;
     case "weekly": {
       const weekNum = getISOWeek(d);
-      return `${year}-W${String(weekNum).padStart(2, "0")}`;
+      return `${String(year)}-W${String(weekNum).padStart(2, "0")}`;
     }
     case "monthly":
-      return `${year}-${month}`;
+      return `${String(year)}-${month}`;
     case "yearly":
-      return `${year}`;
+      return `${String(year)}`;
   }
 }
 
