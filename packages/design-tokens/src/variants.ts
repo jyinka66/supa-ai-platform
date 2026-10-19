@@ -175,7 +175,7 @@ function parseHex(hex: string): [number, number, number] | null {
     return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
   }
   if (/^[0-9a-f]{3}$/.test(h)) {
-    return [parseInt(h[0]! + h[0]!, 16), parseInt(h[1]! + h[1]!, 16), parseInt(h[2]! + h[2]!, 16)];
+    return [parseInt(h.slice(0, 1).repeat(2), 16), parseInt(h.slice(1, 2).repeat(2), 16), parseInt(h.slice(2, 3).repeat(2), 16)];
   }
   return null;
 }
