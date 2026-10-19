@@ -12,6 +12,9 @@ import {
   MessageSquare,
   Sparkles,
   Zap,
+  FolderOpen,
+  ShieldCheck,
+  Users,
 } from "lucide-react";
 import type { Mode } from "@/lib/prompts";
 import type { WorkspaceWithMembership } from "@/lib/workspaces/queries";
@@ -288,6 +291,31 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
               <SummaryCard icon={Check} label={t("sro")} value={activeWorkspace?.workspace_members[0]?.role ?? "member"} detail={t("srod")} tone="green" />
             </section>
 
+
+            <section aria-label="Quick access">
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold tracking-tight text-slate-950">Quick access</h2>
+                <p className="mt-1 text-sm text-slate-500">Jump straight into the tools you use to get work done.</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <button type="button" onClick={() => void startConversation("chat")} disabled={busyMode !== null || !activeWorkspace} className="group flex min-h-[118px] items-start gap-3 rounded-2xl border border-violet-200 bg-violet-50/70 p-4 text-left transition hover:border-violet-300 hover:bg-violet-50 disabled:opacity-50">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-violet-700 shadow-sm"><MessageSquare className="h-4.5 w-4.5" /></span>
+                  <span><span className="block text-sm font-semibold text-slate-900">AI Chat</span><span className="mt-1 block text-xs leading-5 text-slate-600">Start a conversation. Your chat history stays in the chat sidebar.</span></span>
+                </button>
+                <Link href="#my-work" className="group flex min-h-[118px] items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-violet-200 hover:shadow-sm">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-700"><FolderOpen className="h-4.5 w-4.5" /></span>
+                  <span><span className="block text-sm font-semibold text-slate-900">Work library</span><span className="mt-1 block text-xs leading-5 text-slate-500">Create, search, edit, favorite, and export saved work.</span></span>
+                </Link>
+                <Link href={base + "/team"} className="group flex min-h-[118px] items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-violet-200 hover:shadow-sm">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><Users className="h-4.5 w-4.5" /></span>
+                  <span><span className="block text-sm font-semibold text-slate-900">Team & sharing</span><span className="mt-1 block text-xs leading-5 text-slate-500">Invite collaborators and manage workspace access.</span></span>
+                </Link>
+                <Link href={base + "/security/sessions"} className="group flex min-h-[118px] items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-violet-200 hover:shadow-sm">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700"><ShieldCheck className="h-4.5 w-4.5" /></span>
+                  <span><span className="block text-sm font-semibold text-slate-900">Account security</span><span className="mt-1 block text-xs leading-5 text-slate-500">Review active sessions and sign out devices you no longer use.</span></span>
+                </Link>
+              </div>
+            </section>
 
             {activeWorkspace && <WorkLibraryPanel workspaceId={activeWorkspace.id} />}
 
