@@ -161,12 +161,15 @@ export async function listConversations(
 ): Promise<ConversationRow[]> {
   await requireMatchingUser(userId);
   const supabase = await supabaseServer();
+  // Embed at most one message id per conversation so empty conversations can
+  // be recognised without loading message bodies.
   let query = supabase
     .from("conversations")
-    .select(CONVERSATION_COLUMNS)
+    .select(`${CONVERSATION_COLUMNS}, messages(id)`)
     .eq("user_id", userId)
     .order("updated_at", { ascending: false })
-    .limit(100);
+    .limit(100)
+    .limit(1, { referencedTable: "messages" });
 
   if (opts?.pinnedOnly) query = query.eq("pinned", true);
   if (opts?.folderId === null) query = query.is("folder_id", null);
@@ -174,7 +177,14 @@ export async function listConversations(
 
   const { data, error } = await query;
   if (error) throw error;
-  return ((data ?? []) as unknown as ConversationRecord[]).map(mapConversation);
+  const rows = (data ?? []) as unknown as (ConversationRecord & { messages?: { id: string }[] })[];
+
+  // Every click on "New chat" or a tool card creates a conversation up front,
+  // so many never receive a message. Hide those from lists, unless the user
+  // pinned or renamed them on purpose. They stay reachable by direct link.
+  return rows
+    .filter((row) => (row.messages?.length ?? 0) > 0 || row.pinned || !row.title_auto)
+    .map(mapConversation);
 }
 
 /** Creates a conversation owned by the authenticated user. */
