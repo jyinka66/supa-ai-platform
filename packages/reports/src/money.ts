@@ -15,7 +15,7 @@
  */
 
 import type { Money, Currency, Rate } from "@supa/money/money";
-import { convert, zero, add } from "@supa/money/money";
+import { convert, zero } from "@supa/money/money";
 
 // ───────────────────────────────────────────────
 // As-of semantics — periods are pinned to recorded rates
@@ -41,13 +41,12 @@ export interface AsOfRateResolver {
  * recorded rates over any other source.
  */
 export class RecordedRateResolver implements AsOfRateResolver {
-  resolve(nativeCurrency: string, _asOf: number, _baseCurrency: Currency): Rate | null {
+  resolve(_nativeCurrency: string, _asOf: number, _baseCurrency: Currency): Rate | null {
     // The recorded rate is ON the fact (fact.recordedRate).
     // This resolver is a no-op placeholder — the engine reads
     // fact.recordedRate directly. This class exists to document
     // the contract: rates are DATA, looked up by as-of, never
     // "live".
-    void nativeCurrency;
     return null;
   }
 }
@@ -147,7 +146,7 @@ export function computeDelta(
     return {
       absolute,
       percentage: null,
-      display: current.minor > 0n ? `+${absolute.minor}` : "0",
+      display: current.minor > 0n ? `+${String(absolute.minor)}` : "0",
     };
   }
   // Both must be same sign for a meaningful percentage.
