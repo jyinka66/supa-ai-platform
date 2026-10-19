@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Check,
-  Home,
   History,
   Layers,
   LoaderCircle,
@@ -16,13 +15,12 @@ import {
   Search,
   Trash2,
   X,
-  Sparkles,
   Users,
   Zap,
 } from "lucide-react";
 import type { WorkspaceWithMembership } from "@/lib/workspaces/queries";
 
-export type WorkspaceNavPage = "home" | "studio" | "history" | "team";
+export type WorkspaceNavPage = "dashboard" | "chat" | "history" | "team";
 
 type SidebarConversation = {
   id: string;
@@ -251,20 +249,17 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
         <div className="mt-8">
           <p className="px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Your workspace</p>
           <nav className="mt-3 space-y-1" aria-label="Main navigation">
-            <Link href={base + "/dashboard"} className={navClass(props.activePage === "home")}>
-              <Home className="h-4 w-4" /> Home
-            </Link>
             {props.conversationId ? (
-              <Link href={base + "/chat/" + props.conversationId} className={navClass(props.activePage === "studio")}>
-                <Sparkles className="h-4 w-4" /> AI Studio
+              <Link href={base + "/chat/" + props.conversationId} className={navClass(props.activePage === "chat")}>
+                <MessageSquare className="h-4 w-4" /> AI Chat
               </Link>
             ) : (
-              <button type="button" onClick={() => void createNewChat()} className={navClass(props.activePage === "studio")}>
-                <Sparkles className="h-4 w-4" /> AI Studio
+              <button type="button" onClick={() => void createNewChat()} className={navClass(false)}>
+                <MessageSquare className="h-4 w-4" /> AI Chat
               </button>
             )}
             <Link href={base + "/team"} className={navClass(props.activePage === "team")}>
-              <Users className="h-4 w-4" /> Team
+              <Users className="h-4 w-4" /> Team &amp; sharing
             </Link>
           </nav>
         </div>
@@ -378,10 +373,10 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
           </div>
         </div>
       )}
-      <nav aria-label="Mobile navigation" className={"fixed inset-x-0 bottom-0 z-30 grid " + (props.conversationId ? "grid-cols-4" : "grid-cols-3") + " border-t border-slate-200 bg-white/95 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_20px_-18px_rgba(15,23,42,0.4)] backdrop-blur lg:hidden"}>
-        <Link href={base + "/dashboard"} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (props.activePage === "home" ? "font-semibold text-violet-700" : "text-slate-500")}>
-          <Home className="h-4 w-4" /> Home
-        </Link>
+      <nav aria-label="Mobile navigation" className={"fixed inset-x-0 bottom-0 z-30 grid " + (props.conversationId ? "grid-cols-3" : "grid-cols-2") + " border-t border-slate-200 bg-white/95 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_20px_-18px_rgba(15,23,42,0.4)] backdrop-blur lg:hidden"}>
+        <button type="button" onClick={() => void createNewChat()} disabled={creatingChat || savingWorkspace || !selectedWorkspace} className={"flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] " + (props.activePage === "chat" ? "font-semibold text-violet-700" : "text-slate-500")}>
+          {creatingChat ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <MessageSquarePlus className="h-4 w-4" />} AI Chat
+        </button>
         <button type="button" onClick={() => void createNewChat()} disabled={creatingChat || savingWorkspace || !selectedWorkspace} className="flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] font-semibold text-violet-700 disabled:opacity-50">
           {creatingChat ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <MessageSquarePlus className="h-4 w-4" />} New chat
         </button>
