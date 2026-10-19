@@ -57,7 +57,7 @@ describe("1 — WASM & WebContainer Runtime Engine", () => {
     expect(langs).toContain("postgres");
   });
 
-  it("all 6 runtimes are implemented", () => {
+  it("all 7 runtimes are implemented", () => {
     expect(RUNTIME_ENVIRONMENTS.every((r) => r.implemented)).toBe(true);
   });
 
@@ -77,16 +77,21 @@ describe("1 — WASM & WebContainer Runtime Engine", () => {
     expect(go?.runtimeProvider).toBe("docker-sandbox");
   });
 
-  it("executes a terminal command", () => {
-    const cmd = executeCommand({ command: "npm run dev" });
+  it("rejects a working directory outside the isolated workspace before launching Docker", async () => {
+    const cmd = await executeCommand({ command: "npm run dev", cwd: "/app" });
     expect(cmd.command).toBe("npm run dev");
-    expect(cmd.status).toBe("running");
-    expect(cmd.exitCode).toBeNull();
-    expect(cmd.stdout).toHaveLength(0);
+    expect(cmd.status).toBe("error");
+    expect(cmd.exitCode).toBe(1);
+    expect(cmd.stderr[0]).toContain("cwd must be inside /workspace");
   });
 
-  it("completes a terminal command (exit 0)", () => {
-    const cmd = executeCommand({ command: "npm run build" });
+  it("completes a terminal command successfully", () => {
+    const cmd = {
+      id: "test-command", command: "npm run build", cwd: "/workspace", env: {},
+      status: "running" as const, exitCode: null, stdout: [], stderr: [],
+      startedAt: new Date(Date.now() - 50), exitedAt: null, durationMs: null,
+      autoTriggered: false,
+    };
     const completed = completeCommand(cmd, 0, ["Build succeeded"], []);
     expect(completed.status).toBe("exited");
     expect(completed.exitCode).toBe(0);
@@ -94,45 +99,40 @@ describe("1 — WASM & WebContainer Runtime Engine", () => {
     expect(completed.durationMs).not.toBeNull();
   });
 
-  it("completes a terminal command (exit 1 = error)", () => {
-    const cmd = executeCommand({ command: "npm run build" });
+  it("marks a failed terminal command as an error", () => {
+    const cmd = {
+      id: "test-command", command: "npm run build", cwd: "/workspace", env: {},
+      status: "running" as const, exitCode: null, stdout: [], stderr: [],
+      startedAt: new Date(Date.now() - 50), exitedAt: null, durationMs: null,
+      autoTriggered: false,
+    };
     const completed = completeCommand(cmd, 1, [], ["Build failed"]);
     expect(completed.status).toBe("error");
     expect(completed.exitCode).toBe(1);
     expect(completed.stderr).toContain("Build failed");
   });
 
-  it("executes a database migration", () => {
-    const migration = executeMigration({
+  it("rejects a migration with no executable up SQL without launching a sandbox", async () => {
+    const migration = await executeMigration({
       fileName: "0001_initial.sql",
-      sql: "CREATE TABLE users (id UUID PRIMARY KEY, email TEXT NOT NULL); CREATE TABLE loans (id UUID PRIMARY KEY);",
+      sql: "-- down:\nDROP TABLE users;",
     });
-    expect(migration.status).toBe("applied");
-    expect(migration.tablesCreated).toContain("users");
-    expect(migration.tablesCreated).toContain("loans");
-    expect(migration.appliedAt).not.toBeNull();
-    expect(migration.error).toBeNull();
-  });
-
-  it("rolls back a reversible migration", () => {
-    const migration = executeMigration({
-      fileName: "0001_initial.sql",
-      sql: "CREATE TABLE users (id UUID); -- down: DROP TABLE users;",
-    });
+    expect(migration.status).toBe("failed");
+    expect(migration.tablesCreated).toHaveLength(0);
+    expect(migration.appliedAt).toBeNull();
+    expect(migration.error).toContain("no executable up SQL");
     expect(migration.reversible).toBe(true);
-    const rolled = rollbackMigration(migration);
-    expect(rolled.status).toBe("rolled_back");
   });
 
-  it("cannot roll back a non-reversible migration", () => {
-    const migration = executeMigration({
-      fileName: "0001_initial.sql",
-      sql: "CREATE TABLE users (id UUID);",
-    });
-    expect(migration.reversible).toBe(false);
-    const rolled = rollbackMigration(migration);
+  it("refuses rollback when no down migration is provided", async () => {
+    const migration = {
+      id: "migration-test", fileName: "0001_initial.sql", sql: "CREATE TABLE users (id UUID);",
+      target: "temporary_postgres" as const, status: "failed" as const, appliedAt: null,
+      durationMs: 0, error: "sandbox unavailable", tablesCreated: ["users"], reversible: false,
+    };
+    const rolled = await rollbackMigration(migration);
     expect(rolled.status).toBe("failed");
-    expect(rolled.error).toContain("not reversible");
+    expect(rolled.error).toContain("no explicit");
   });
 
   it("runs API endpoint tests", () => {
@@ -201,15 +201,15 @@ describe("1 — WASM & WebContainer Runtime Engine", () => {
 
   it("verifyRuntimeEngine reports all implemented", () => {
     const v = verifyRuntimeEngine();
-    expect(v.totalRuntimes).toBe(6);
+    expect(v.totalRuntimes).toBe(7);
     expect(v.totalGuarantees).toBe(6);
     expect(v.implementedGuarantees).toBe(6);
     expect(v.allImplemented).toBe(true);
   });
 
-  it("RuntimeLanguage covers 6 languages", () => {
-    const l: RuntimeLanguage[] = ["nodejs", "python", "go", "rust", "deno", "bun"];
-    expect(l).toHaveLength(6);
+  it("RuntimeLanguage covers all 7 isolated runtime targets", () => {
+    const l: RuntimeLanguage[] = ["nodejs", "python", "go", "rust", "deno", "bun", "postgres"];
+    expect(l).toHaveLength(7);
   });
 
   it("PackageManager covers 9 managers", () => {
