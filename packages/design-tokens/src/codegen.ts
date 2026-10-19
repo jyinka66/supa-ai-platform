@@ -242,7 +242,7 @@ export function importDtcg(
         tokens.push(tokenRecord);
       } else {
         // It's a nested group — recurse.
-        walk(v as DtcgTokenGroup, `${prefix}${key}.`);
+        walk(v, `${prefix}${key}.`);
       }
     }
   }
