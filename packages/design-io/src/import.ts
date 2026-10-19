@@ -142,7 +142,7 @@ export async function importSvg(
     for (const err of errors) {
       issues.push({
         nodeId: err.path,
-        reason: `${String(err.code)}: ${String(err.message)}`,
+        reason: `${err.code}: ${err.message}`,
         action: "dropped",
       });
     }
@@ -276,7 +276,7 @@ async function convertElement(
       }
       ctx.issues.push({
         nodeId: el.getAttribute("id") ?? "unknown",
-        reason: `Unsupported element: <${String(tag)}>`,
+        reason: `Unsupported element: <${tag}>`,
         action: "dropped",
       });
       return null;
@@ -683,7 +683,7 @@ function bakeElement(el: Element, ctx: ConvertContext): Promise<LayerNode | null
   ctx.onBaked();
   ctx.issues.push({
     nodeId: id,
-    reason: `Element <${String(el.tagName)}> baked to image`,
+    reason: `Element <${el.tagName}> baked to image`,
     action: "baked",
   });
 
@@ -696,7 +696,7 @@ function bakeElement(el: Element, ctx: ConvertContext): Promise<LayerNode | null
   return Promise.resolve({
     id,
     type: "image",
-    name: `Baked ${String(el.tagName)}`,
+    name: `Baked ${el.tagName}`,
     locked: false,
     hidden: false,
     rect: bbox,
@@ -706,7 +706,7 @@ function bakeElement(el: Element, ctx: ConvertContext): Promise<LayerNode | null
     constraints: {},
     assetId: "baked_placeholder",
     fit: "contain",
-    altText: `Baked from <${String(el.tagName)}>`,
+    altText: `Baked from <${el.tagName}>`,
   });
 }
 
