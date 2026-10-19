@@ -26,7 +26,7 @@ import type { DesignDoc } from "@supa/design-model";
 
 // ============ PALETTE STATE ============
 
-export interface PaletteCommand extends Command {
+export type PaletteCommand = Omit<Command, "id" | "title"> & {
   /** Source package that registered the command. */
   source: "design-editor" | "design-ai" | "design-io" | "app-shell";
   /** Category for grouping in the palette UI. */
