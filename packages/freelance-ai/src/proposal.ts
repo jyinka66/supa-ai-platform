@@ -20,7 +20,6 @@ import {
   type DraftStore,
   type LlmClient,
 } from "./verbs.js";
-import type { ListingJob } from "@supa/supa-board/match";
 
 async function recordActivity(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
