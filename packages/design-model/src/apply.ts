@@ -9,8 +9,8 @@
 //
 // The caller never sees mutation — the original doc is untouched.
 
-import type { DesignDoc, LayerNode, NodeId, Page, RichRun, AssetId, Fill } from "./types";
-import { findLayerById, findParent, findPage, getChildren, isContainerNode, cloneLayer } from "./types";
+import type { DesignDoc, LayerNode, NodeId, Page } from "./types";
+import { findLayerById, findParent, findPage, isContainerNode, cloneLayer } from "./types";
 import type { Command } from "./commands";
 import { safeValidateDoc } from "./validator";
 import type { DeepReadonly } from "./util";
@@ -25,7 +25,6 @@ export class ApplyError extends Error {
   }
 }
 
-const MAX_DEPTH = 24;
 
 /**
  * Applies a command to a doc, returning a NEW doc + the inverse command.
@@ -98,8 +97,8 @@ function applyInPlace(doc: DesignDoc, cmd: Command): Command {
       // Apply each sub-command in order, collecting inverses in reverse.
       const inverses: Command[] = [];
       for (let i = 0; i < cmd.commands.length; i++) {
-        const sub = cmd.commands[i]!;
-        inverses.unshift(applyInPlace(doc, sub));
+        const sub = cmd.commands[i];
+        if (sub) inverses.unshift(applyInPlace(doc, sub));
       }
       return { op: "BATCH", commands: inverses };
     }
@@ -132,8 +131,9 @@ function applyDeleteNodes(doc: DesignDoc, cmd: Extract<Command, { op: "DELETE_NO
 
   // Check page root.
   for (let i = page.layers.length - 1; i >= 0; i--) {
-    if (idSet.has(page.layers[i]!.id)) {
-      const node = page.layers[i]!;
+    const layer = page.layers[i];
+    if (layer && idSet.has(layer.id)) {
+      const node = layer;
       deleted.push({ node: cloneLayer(node), parentId: null, index: i });
       page.layers.splice(i, 1);
     }
@@ -143,12 +143,12 @@ function applyDeleteNodes(doc: DesignDoc, cmd: Extract<Command, { op: "DELETE_NO
   function removeFromChildren(node: LayerNode, parentId: NodeId) {
     if (!isContainerNode(node) || !node.children) return;
     for (let i = node.children.length - 1; i >= 0; i--) {
-      if (idSet.has(node.children[i]!.id)) {
-        const child = node.children[i]!;
+      const child = node.children[i];
+      if (child && idSet.has(child.id)) {
         deleted.push({ node: cloneLayer(child), parentId, index: i });
         node.children.splice(i, 1);
       } else {
-        removeFromChildren(node.children[i]!, parentId);
+        if (child) removeFromChildren(child, parentId);
       }
     }
   }
@@ -164,7 +164,10 @@ function applyDeleteNodes(doc: DesignDoc, cmd: Extract<Command, { op: "DELETE_NO
     node: d.node,
   }));
 
-  if (inverseCommands.length === 1) return inverseCommands[0]!;
+  if (inverseCommands.length === 1) {
+    const inverse = inverseCommands[0];
+    if (inverse) return inverse;
+  }
   return { op: "BATCH", commands: inverseCommands };
 }
 
@@ -313,7 +316,9 @@ function applyGroup(doc: DesignDoc, cmd: Extract<Command, { op: "GROUP" }>): Com
   if (nodes.length < 2) throw new ApplyError("INVALID", "group_needs_2_plus_nodes");
 
   // Create the group.
-  const groupId = cmd.groupId ?? `n_grp_${nodes[0]!.id.slice(0, 8)}`;
+  const firstNode = nodes[0];
+  if (!firstNode) throw new ApplyError("INVALID", "group_needs_2_plus_nodes");
+  const groupId = cmd.groupId ?? `n_grp_${firstNode.id.slice(0, 8)}`;
   const group: LayerNode = {
     id: groupId,
     type: "group",
@@ -344,7 +349,6 @@ function applyUngroup(doc: DesignDoc, cmd: Extract<Command, { op: "UNGROUP" }>):
   }
 
   // Save the group + its children for the inverse.
-  const savedGroup = cloneLayer(group);
   const childIds = group.children.map((c) => c.id);
 
   // Replace the group with its children.
@@ -405,7 +409,9 @@ function applyDeletePage(doc: DesignDoc, cmd: Extract<Command, { op: "DELETE_PAG
   const idx = doc.pages.findIndex((p) => p.id === cmd.pageId);
   if (idx < 0) throw new ApplyError("NOT_FOUND", `page_not_found: ${cmd.pageId}`);
 
-  const saved = clonePage(doc.pages[idx]!);
+  const page = doc.pages[idx];
+  if (!page) throw new ApplyError("NOT_FOUND", `page_not_found: ${cmd.pageId}`);
+  const saved = clonePage(page);
   doc.pages.splice(idx, 1);
 
   return { op: "ADD_PAGE", page: saved, index: idx };
