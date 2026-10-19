@@ -137,7 +137,8 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
         const message = typeof payload.error === "string" ? payload.error : payload.error?.message;
         throw new Error(message || payload.detail || "Could not update this conversation.");
       }
-      setConversations((previous) => previous.map((item) => item.id === conversationId ? payload.data! : item));
+      const updatedConversation = payload.data;
+      setConversations((previous) => previous.map((item) => item.id === conversationId ? updatedConversation : item));
       setRenamingId(null);
       window.dispatchEvent(new CustomEvent("supa:conversation-updated"));
     } catch (cause) {
