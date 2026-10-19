@@ -22,9 +22,6 @@ import type {
   Page,
   NodeId,
   TextLayer,
-  ImageLayer,
-  ShapeLayer,
-  IconLayer,
 } from "./types";
 import { isContainerNode, getChildren, flattenLayers } from "./types";
 import { safeValidateDoc as zodValidateDoc } from "./validator";
@@ -447,21 +444,6 @@ function checkLocale(doc: DesignDoc, errors: ValidationError[]): void {
     });
   }
 
-  // Text layers must carry direction or 'auto'.
-  for (const page of doc.pages) {
-    for (const layer of flattenLayers(page)) {
-      if (layer.type === "text") {
-        const text = layer as TextLayer;
-        if (!text.direction || !["ltr", "rtl", "auto"].includes(text.direction)) {
-          errors.push({
-            path: `layers[${text.id}].direction`,
-            code: "TEXT_DIRECTION_MISSING",
-            message: `text layer '${text.id}' missing or invalid direction`,
-          });
-        }
-      }
-    }
-  }
 }
 
 // ============ 6. BUDGET ============
