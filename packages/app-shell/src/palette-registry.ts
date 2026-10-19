@@ -190,7 +190,8 @@ const PALETTE_COMMANDS: PaletteCommand[] = [
       };
       const css = emitCssCustomProperties(emptyMap);
       if (typeof navigator !== "undefined") {
-        void navigator.clipboard?.writeText(css).catch(() => undefined);
+        const clipboard = (navigator as Navigator & { clipboard?: Clipboard }).clipboard;
+        if (clipboard) void clipboard.writeText(css).catch((error: unknown) => console.error("palette: clipboard write failed", error));
       }
     },
     icon: "clipboard",
@@ -215,7 +216,7 @@ const PALETTE_COMMANDS: PaletteCommand[] = [
         .then((result) => {
           store.load(result.doc);
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
           console.error("palette: ai.generate failed", err);
         });
     },
@@ -455,7 +456,7 @@ export async function restoreVersion(
   targetRev: number,
 ): Promise<void> {
   const docId = store.get().doc.id;
-  const res = await fetch(`/api/docs/${docId}/versions/${targetRev}`);
+  const res = await fetch(`/api/docs/${docId}/versions/${String(targetRev)}`);
   if (!res.ok) {
     throw new Error(
       `restoreVersion: failed to fetch rev ${String(targetRev)} for doc ${docId} (${String(res.status)})`,
@@ -464,7 +465,7 @@ export async function restoreVersion(
   const json = (await res.json()) as { data?: { doc?: DesignDoc } };
   const doc = json.data?.doc;
   if (!doc) {
-    throw new Error(`restoreVersion: rev ${targetRev} returned no doc`);
+    throw new Error(`restoreVersion: rev ${String(targetRev)} returned no doc`);
   }
   // TODO: compute the diff between current + target, apply as a BATCH of
   // UPDATE_PROPS / ADD_NODE / DELETE_NODES so the restore is undoable
@@ -540,7 +541,7 @@ function triggerFormatExport(
       if (!blob) return;
       triggerDownload(`${docName}.${format}`, blob);
     })
-    .catch((err) => {
+    .catch((err: unknown) => {
       console.error(`palette: io.export-${format} failed`, err);
     });
 }
