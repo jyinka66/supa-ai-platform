@@ -386,7 +386,7 @@ export async function runAutoBid(
         evaluations.push({
           listingId: opportunity.listingId,
           decision: "skip",
-          reasons: [`proposal match confidence ${proposalResult.proposal.matchConfidence} below 0.5 threshold — AI can't draft a clean proposal`],
+          reasons: [`proposal match confidence ${String(proposalResult.proposal.matchConfidence)} below 0.5 threshold — AI can't draft a clean proposal`],
           proposal: proposalResult.proposal,
           pricing,
           matchScore: opportunity.matchScore,
@@ -402,8 +402,8 @@ export async function runAutoBid(
         reasons: [
           "all guardrails passed",
           `rate ${String(pricing.suggestedRate.amountMinor)} ${pricing.suggestedRate.currency}`,
-          `match ${opportunity.matchScore}/100`,
-          `demand ${opportunity.demandIndex}/100`,
+          `match ${String(opportunity.matchScore)}/100`,
+          `demand ${String(opportunity.demandIndex)}/100`,
         ],
         proposal: proposalResult.proposal,
         pricing,
