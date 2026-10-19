@@ -73,8 +73,8 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
   const base = "/" + props.locale;
 
   useEffect(() => {
-    if (!selectedId) return;
-    void persistWorkspaceCookie(selectedId).catch((cause) => {
+    if (!effectiveSelectedId) return;
+    void persistWorkspaceCookie(effectiveSelectedId).catch((cause) => {
       setError(cause instanceof Error ? cause.message : "Could not save the active workspace.");
     });
     // Save the initial server-selected workspace once. Subsequent changes are
