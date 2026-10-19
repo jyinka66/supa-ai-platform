@@ -248,7 +248,7 @@ export interface DraftStore {
 export class InMemoryDraftStore implements DraftStore {
   private readonly drafts = new Map<string, Draft>();
 
-  async insert(input: Omit<Draft, "id" | "status" | "editedOutput" | "editedAt" | "committedAt">): Promise<Draft> {
+  insert(input: Omit<Draft, "id" | "status" | "editedOutput" | "editedAt" | "committedAt">): Promise<Draft> {
     const draft: Draft = Draft.parse({
       ...input,
       id: crypto.randomUUID(),
@@ -258,21 +258,21 @@ export class InMemoryDraftStore implements DraftStore {
       committedAt: null,
     });
     this.drafts.set(draft.id, draft);
-    return draft;
+    return Promise.resolve(draft);
   }
 
-  async findById(wsId: string, draftId: string): Promise<Draft | null> {
+  findById(wsId: string, draftId: string): Promise<Draft | null> {
     const draft = this.drafts.get(draftId);
-    if (!draft || draft.wsId !== wsId) return null;
-    return draft;
+    if (!draft || draft.wsId !== wsId) return Promise.resolve(null);
+    return Promise.resolve(draft);
   }
 
-  async update(wsId: string, draftId: string, changes: Partial<Pick<Draft, "status" | "editedOutput" | "editedAt" | "committedAt">>): Promise<Draft> {
+  update(wsId: string, draftId: string, changes: Partial<Pick<Draft, "status" | "editedOutput" | "editedAt" | "committedAt">>): Promise<Draft> {
     const draft = this.drafts.get(draftId);
     if (!draft || draft.wsId !== wsId) throw new Error(`draft ${draftId} not found`);
     const updated = Draft.parse({ ...draft, ...changes });
     this.drafts.set(draftId, updated);
-    return updated;
+    return Promise.resolve(updated);
   }
 }
 
