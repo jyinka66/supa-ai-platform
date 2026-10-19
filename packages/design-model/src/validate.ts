@@ -77,7 +77,7 @@ export function validate(doc: DesignDoc): ValidationError[] {
 
   // Structural checks.
   for (const page of doc.pages) {
-    checkStructural(page, doc, errors);
+    checkStructural(page, errors);
     checkDepth(page, errors);
     checkUniqueIds(page, errors);
     checkCycles(page, errors);
@@ -120,7 +120,6 @@ export function isValid(doc: DesignDoc): boolean {
 
 function checkStructural(
   page: Page,
-  doc: DesignDoc,
   errors: ValidationError[],
 ): void {
   function checkLayer(layer: LayerNode, path: string): void {
