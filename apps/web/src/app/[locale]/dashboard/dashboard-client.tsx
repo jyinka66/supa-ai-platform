@@ -275,6 +275,45 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
               </div>
             </section>
 
+            <section aria-labelledby="ai-tools-heading" className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-700">Get work done</p>
+                  <h2 id="ai-tools-heading" className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">AI tools</h2>
+                  <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">Start a focused task. Each tool opens a real AI conversation in your selected workspace, and the task prompt is ready for you to edit or send.</p>
+                </div>
+                <span className="text-xs font-medium text-slate-400">8 task types · saved in AI Chat</span>
+              </div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {([
+                  { mode: "write", title: "Write", description: "Draft emails, articles, proposals, and polished copy.", prompt: "Help me write a clear, polished piece. Ask me for any essential context you need, then draft it." },
+                  { mode: "rewrite", title: "Rewrite", description: "Improve clarity, tone, structure, or readability.", prompt: "Help me rewrite text for clarity and impact. Ask me to paste the text and specify a preferred tone if needed." },
+                  { mode: "summarize", title: "Summarize", description: "Turn long notes and documents into key points.", prompt: "Help me summarize a document or notes into the main points, decisions, risks, and next actions. Ask me to provide the source text." },
+                  { mode: "translate", title: "Translate", description: "Translate content while preserving meaning and tone.", prompt: "Help me translate text accurately while preserving its meaning and tone. Ask me for the text and target language." },
+                  { mode: "code", title: "Code helper", description: "Build, explain, and troubleshoot code.", prompt: "Help me with a coding task. Ask for the relevant code, expected behavior, and error details if they are needed." },
+                  { mode: "document", title: "Documents", description: "Create structured reports, briefs, and proposals.", prompt: "Help me create a structured document. First clarify the audience, purpose, and key points, then draft a useful document." },
+                  { mode: "plan", title: "Make a plan", description: "Break a goal into ordered, actionable steps.", prompt: "Help me turn my goal into a practical plan with milestones, priorities, dependencies, and next actions. Ask what goal I want to achieve." },
+                  { mode: "chat", title: "Ask anything", description: "Think through questions, ideas, and decisions.", prompt: "Help me work through a question or idea. Ask a clarifying question if it will materially improve your answer." },
+                ] satisfies { mode: Mode; title: string; description: string; prompt: string }[]).map((tool) => (
+                  <button
+                    key={tool.mode}
+                    type="button"
+                    onClick={() => void startConversation(tool.mode, tool.prompt)}
+                    disabled={busyMode !== null || !activeWorkspace}
+                    className="group flex min-h-[136px] flex-col rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span className="flex w-full items-center justify-between gap-3">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-700 transition group-hover:bg-white"><Sparkles className="h-4.5 w-4.5" /></span>
+                      <ArrowRight className="h-4 w-4 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-violet-700" />
+                    </span>
+                    <span className="mt-4 block text-sm font-semibold text-slate-900">{busyMode === tool.mode ? "Opening…" : tool.title}</span>
+                    <span className="mt-1 block text-xs leading-5 text-slate-500">{tool.description}</span>
+                  </button>
+                ))}
+              </div>
+              {actionError && <p role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{actionError}</p>}
+            </section>
+
             {activeWorkspace && <WorkLibraryPanel workspaceId={activeWorkspace.id} onStatsChange={setWorkStats} />}
 
             <div className="grid gap-8">
