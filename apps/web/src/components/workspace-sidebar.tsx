@@ -101,7 +101,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
     let active = true;
     setHistoryLoading(true);
     void refreshHistory().catch(() => {
-      if (active) setConversations([]);
+      if (active) setError("Chat history could not be refreshed. Check your connection and try again.");
     }).finally(() => {
       if (active) setHistoryLoading(false);
     });
