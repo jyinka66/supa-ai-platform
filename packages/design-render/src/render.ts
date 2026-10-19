@@ -406,7 +406,7 @@ function renderSelectionOverlay(page: Page, selectionIds: string[]): string {
     const node = findNode(page.layers);
     if (!node) continue;
 
-    const { x, y, width, height } = node.rect;
+    const { width, height } = node.rect;
     const t = trs(node.rect, node.rotation);
 
     // Draw a rect around the node (in its local space, transformed).
@@ -455,7 +455,7 @@ class DefsBuilder {
 
     const parts: string[] = ["<defs>"];
     for (const [json, id] of this.gradients) {
-      const gradient: Gradient = JSON.parse(json);
+      const gradient = JSON.parse(json) as Gradient;
       const tag = gradient.kind === "linear" ? "linearGradient" : "radialGradient";
       const angle = gradient.angle ?? 0;
       const x1 = 50 - Math.cos((angle * Math.PI) / 180) * 50;
