@@ -8,7 +8,6 @@ import { and, eq } from "drizzle-orm";
 import { Money } from "@supa/freelance-core/job";
 import {
   LedgerEntry,
-  buildReversal,
   computeBalance,
 } from "./ledger.js";
 
@@ -25,11 +24,6 @@ async function recordActivity(
     actor: "system",
     source: "system",
   });
-}
-
-// FIX: available() was defined in release.ts but not imported. Redefined here.
-function available(amountMinor: number, currency: string): Money {
-  return { amountMinor, currency };
 }
 
 // ───────────────────────────────────────────────
@@ -76,7 +70,7 @@ export class InsufficientFunds extends Error {
     readonly requested: number,
     readonly available: number,
   ) {
-    super(`insufficient funds: requested ${requested} ${currency}, available ${available}`);
+    super(`insufficient funds: requested ${String(requested)} ${currency}, available ${String(available)}`);
     this.name = "InsufficientFunds";
   }
 }
