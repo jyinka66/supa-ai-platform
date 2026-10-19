@@ -11,7 +11,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import type { NodeId, AssetId, LayerNode, Page, RichRun } from "./types";
-import { findLayerById, findParent, findPage, getChildren, isContainerNode, cloneLayer } from "./types";
+import { findLayerById, findParent, findPage, isContainerNode, cloneLayer } from "./types";
 import { safeValidateLayer } from "./validator";
 
 // ============ COMMAND TYPES ============
@@ -185,7 +185,7 @@ function executeUpdateProps(doc: import("./types").DesignDoc, cmd: Extract<Comma
   // Validate the result against the schema.
   const result = safeValidateLayer(updated);
   if (!result.success) {
-    throw new Error(`validation_failed: ${result.error.issues[0]?.message}`);
+    throw new Error(`validation_failed: ${result.error.issues[0]?.message ?? "unknown"}`);
   }
 
   // Apply the validated update.
@@ -224,7 +224,7 @@ function executeGroup(doc: import("./types").DesignDoc, cmd: Extract<Command, { 
   if (nodes.length < 2) return;
 
   // Create the group.
-  const groupId = cmd.groupId ?? `n_group_${Date.now()}`;
+  const groupId = cmd.groupId ?? `n_group_${String(Date.now())}`;
   const group: LayerNode = {
     id: groupId,
     type: "group",
