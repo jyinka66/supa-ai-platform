@@ -855,7 +855,7 @@ function parseSvgColor(color: string, opacity?: string | null): Color {
 
 function parseFontFamily(fontFamily: string): string {
   // Take the first family from a comma-separated list.
-  return fontFamily.split(",")[0]!.trim().replace(/["']/g, "");
+  return fontFamily.split(",").slice(0, 1).join(",").trim().replace(/["\']/g, "");
 }
 
 function computeRectFromChildren(el: Element): Rect | null {
