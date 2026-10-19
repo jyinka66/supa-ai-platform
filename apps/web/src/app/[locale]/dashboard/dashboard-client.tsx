@@ -218,15 +218,13 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
                   <p className="mt-3 max-w-2xl text-sm leading-6 text-indigo-100 sm:text-base">
                     {t("sub")}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => void startConversation("chat")}
-                    disabled={busyMode !== null || !activeWorkspace}
-                    className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-violet-800 shadow-md transition hover:-translate-y-0.5 hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  <Link
+                    href="#ai-tools-heading"
+                    className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-violet-800 shadow-md transition hover:-translate-y-0.5 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                   >
-                    {busyMode === "chat" ? t("op") : t("st")}
+                    Explore AI tools
                     <ArrowRight className="h-4 w-4" />
-                  </button>
+                  </Link>
                   {workspaces.length > 1 && (
                     <label className="mt-5 block max-w-xs text-xs font-medium text-indigo-100">
                       {t("si")}
