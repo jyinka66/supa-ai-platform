@@ -22,7 +22,6 @@ import { activityFacts } from "@supa/db/schema";
 import {
   Verb,
   buildProvenance,
-  type Draft,
   type DraftStore,
   type LlmClient,
   type DraftId,
@@ -149,7 +148,7 @@ export async function runCapture(
   // The AI is instructed to output JSON matching CapturedJobDraft.
   let captured: CapturedJobDraft;
   try {
-    const parsed = JSON.parse(rawOutput);
+    const parsed = z.record(z.string(), z.unknown()).parse(JSON.parse(rawOutput));
     captured = CapturedJobDraft.parse({
       ...parsed,
       sourceType: input.sourceType,
