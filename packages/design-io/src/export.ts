@@ -26,7 +26,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import type { DesignDoc, Page } from "@supa/design-model";
-import { renderPage, type RenderResult, type RenderOpts } from "@supa/design-render";
+import { renderPage, type RenderOpts } from "@supa/design-render";
 import type { TextMeasurer } from "@supa/design-render";
 
 // ============ EXPORT SPEC ============
@@ -44,7 +44,7 @@ export interface ExportSpec {
   /** Print bleed: adds mm bleed + trim marks. */
   bleed?: { mm: number };
   /** Background: 'doc' = use page bg, 'transparent' = no bg, hex = custom. Default: 'doc'. */
-  background?: "doc" | "transparent" | string;
+  background?: string;
 }
 
 export interface ExportProgress {
@@ -172,7 +172,7 @@ export async function exportDoc(
         break;
 
       default:
-        throw new Error(`unsupported_format: ${spec.format}`);
+        throw new Error(`unsupported_format: ${String(spec.format)}`);
     }
 
     items.push({
@@ -398,7 +398,7 @@ function buildPdfFromJpegs(pages: ReadonlyArray<PdfPageRaster>): Uint8Array<Arra
   /** Writes `n 0 obj\n<body>\nendobj\n` and records its byte offset. */
   const writeObj = (n: number, bodyFn: () => void): void => {
     offsets[n] = totalLen;
-    pushStr(`${n} 0 obj\n`);
+    pushStr(`${String(n)} 0 obj\n`);
     bodyFn();
     pushStr(`endobj\n`);
   };
@@ -424,7 +424,7 @@ function buildPdfFromJpegs(pages: ReadonlyArray<PdfPageRaster>): Uint8Array<Arra
   // Object 2: Pages tree root.
   writeObj(2, () => {
     pushStr(
-      `<< /Type /Pages /Kids [${pageObjIds.map((n) => `${n} 0 R`).join(" ")}] /Count ${pages.length} >>\n`,
+      `<< /Type /Pages /Kids [${pageObjIds.map((n) => `${String(n)} 0 R`).join(" ")}] /Count ${String(pages.length)} >>\n`,
     );
   });
 
@@ -439,8 +439,8 @@ function buildPdfFromJpegs(pages: ReadonlyArray<PdfPageRaster>): Uint8Array<Arra
     // Image XObject — JPEG bytes embedded verbatim via /DCTDecode.
     writeObj(imageObjId, () => {
       pushStr(
-        `<< /Type /XObject /Subtype /Image /Width ${p.pixelWidth} /Height ${p.pixelHeight} ` +
-          `/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${p.jpegBytes.length} >>\n` +
+        `<< /Type /XObject /Subtype /Image /Width ${String(p.pixelWidth)} /Height ${String(p.pixelHeight)} ` +
+          `/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${String(p.jpegBytes.length)} >>\n` +
           `stream\n`,
       );
       pushBytes(p.jpegBytes);
@@ -453,10 +453,10 @@ function buildPdfFromJpegs(pages: ReadonlyArray<PdfPageRaster>): Uint8Array<Arra
     //   /Im0 Do                    paint XObject /Im0 (treated as 1x1 image)
     //   Q                          pop graphics state
     const contentStr =
-      `q\n${p.pageWidthPt} 0 0 ${p.pageHeightPt} 0 0 cm\n/Im0 Do\nQ\n`;
+      `q\n${String(p.pageWidthPt)} 0 0 ${String(p.pageHeightPt)} 0 0 cm\n/Im0 Do\nQ\n`;
     const contentBytes = encoder.encode(contentStr);
     writeObj(contentObjId, () => {
-      pushStr(`<< /Length ${contentBytes.length} >>\nstream\n`);
+      pushStr(`<< /Length ${String(contentBytes.length)} >>\nstream\n`);
       pushBytes(contentBytes);
       pushStr(`\nendstream\n`);
     });
@@ -465,9 +465,9 @@ function buildPdfFromJpegs(pages: ReadonlyArray<PdfPageRaster>): Uint8Array<Arra
     writeObj(pageObjId, () => {
       pushStr(
         `<< /Type /Page /Parent 2 0 R ` +
-          `/MediaBox [0 0 ${p.pageWidthPt} ${p.pageHeightPt}] ` +
-          `/Resources << /XObject << /Im0 ${imageObjId} 0 R >> >> ` +
-          `/Contents ${contentObjId} 0 R >>\n`,
+          `/MediaBox [0 0 ${String(p.pageWidthPt)} ${String(p.pageHeightPt)}] ` +
+          `/Resources << /XObject << /Im0 ${String(imageObjId)} 0 R >> >> ` +
+          `/Contents ${String(contentObjId)} 0 R >>\n`,
       );
     });
   }
@@ -482,7 +482,7 @@ function buildPdfFromJpegs(pages: ReadonlyArray<PdfPageRaster>): Uint8Array<Arra
   // Entry 0 is the free list head: offset 0, generation 65535, status 'f'.
   const xrefOffset = totalLen;
   const objCount = offsets.length; // index 0 = free head, indices 1..N = objects
-  pushStr(`xref\n0 ${objCount}\n`);
+  pushStr(`xref\n0 ${String(objCount)}\n`);
   pushStr(`0000000000 65535 f \n`);
   for (let i = 1; i < objCount; i++) {
     const off = offsets[i] ?? 0;
@@ -491,7 +491,7 @@ function buildPdfFromJpegs(pages: ReadonlyArray<PdfPageRaster>): Uint8Array<Arra
 
   // ── Trailer + startxref ──
   pushStr(
-    `trailer\n<< /Size ${objCount} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`,
+    `trailer\n<< /Size ${String(objCount)} /Root 1 0 R >>\nstartxref\n${String(xrefOffset)}\n%%EOF\n`,
   );
 
   // Concatenate all chunks into a single buffer.
@@ -532,7 +532,7 @@ class ExportAbortedError extends Error {
 
 function applyBackgroundOverride(
   spec: ExportSpec,
-  page: Page,
+  _page: Page,
 ): { background?: string } {
   if (!spec.background || spec.background === "doc") {
     return {}; // use the page's own background
@@ -555,7 +555,10 @@ function loadImage(url: string, signal?: AbortSignal): Promise<HTMLImageElement>
     };
 
     if (signal) {
-      if (signal.aborted) return onAbort();
+      if (signal.aborted) {
+        onAbort();
+        return;
+      }
       signal.addEventListener("abort", onAbort, { once: true });
     }
 
