@@ -258,8 +258,8 @@ describe("getCountryDefaultRate", () => {
   it("returns NG default", () => {
     const rate = getCountryDefaultRate("NG");
     expect(rate).not.toBeNull();
-    expect(rate!.currency).toBe("NGN");
-    expect(rate!.ratePerKm).toBe("65.00");
+    expect(rate?.currency).toBe("NGN");
+    expect(rate?.ratePerKm).toBe("65.00");
   });
 
   it("returns null for unknown country", () => {
@@ -330,8 +330,8 @@ describe("materializeInstance — idempotent per period key", () => {
     const mar = new Date("2024-03-15").getTime();
     const inst = materializeInstance(rule, mar);
     expect(inst).not.toBeNull();
-    expect(inst!.periodKey).toBe("2024-03");
-    expect(inst!.requiresConfirmation).toBe(false); // fixed + autoRecord
+    expect(inst?.periodKey).toBe("2024-03");
+    expect(inst?.requiresConfirmation).toBe(false); // fixed + autoRecord
   });
 
   it("returns null if rule is paused", () => {
@@ -362,7 +362,7 @@ describe("computeNextDueDate", () => {
     };
     const next = computeNextDueDate(rule, new Date("2024-01-15").getTime());
     expect(next).not.toBeNull();
-    const nextDate = new Date(next!);
+    const nextDate = new Date(next ?? Number.NaN);
     expect(nextDate.getUTCMonth()).toBe(1); // Feb (0-indexed)
   });
 
