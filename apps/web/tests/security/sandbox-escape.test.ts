@@ -107,7 +107,7 @@ describe("Sandbox escape — path traversal", () => {
     );
     expect(res.status).toBe(400);
     const json = await res.json();
-    expect(json.ok).toBe(false);
+    expect(json).toHaveProperty("error");
   });
 });
 
