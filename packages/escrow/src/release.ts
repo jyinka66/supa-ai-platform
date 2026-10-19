@@ -9,7 +9,6 @@ import {
   milestones,
 } from "@supa/db/schema";
 import { and, eq } from "drizzle-orm";
-import { Money } from "@supa/freelance-core/job";
 import {
 } from "./ledger.js";
 import { assertTransition, type MilestoneStatus } from "@supa/supa-board/contract";
@@ -53,14 +52,6 @@ export function applyFeeBps(amountMinor: number, feeBps: number): number {
 // ───────────────────────────────────────────────
 // Money helpers — held / available are just Money constructors
 // ───────────────────────────────────────────────
-
-function held(amountMinor: number, currency: string): Money {
-  return { amountMinor, currency };
-}
-
-function available(amountMinor: number, currency: string): Money {
-  return { amountMinor, currency };
-}
 
 // ───────────────────────────────────────────────
 // Contract shape for release (the fields release needs)
