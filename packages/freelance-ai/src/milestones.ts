@@ -120,8 +120,12 @@ export async function runMilestoneSuggest(
 
   let suggestion: MilestoneSuggestion;
   try {
-    const parsed = JSON.parse(rawOutput);
-    const milestones = (parsed.milestones ?? []) as ProposedMilestone[];
+    const parsed: unknown = JSON.parse(rawOutput);
+    const rawMilestones =
+      parsed && typeof parsed === "object" && "milestones" in parsed
+        ? (parsed as { milestones?: unknown }).milestones
+        : undefined;
+    const milestones = z.array(ProposedMilestone).min(1).max(10).parse(rawMilestones);
     const computedSum = milestones.reduce((sum, m) => sum + m.amountMinor, 0);
     suggestion = MilestoneSuggestion.parse({
       milestones,
