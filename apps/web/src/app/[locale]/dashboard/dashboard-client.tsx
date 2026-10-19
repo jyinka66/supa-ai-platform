@@ -6,10 +6,8 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   ArrowRight,
-  ArrowUpRight,
   BookOpen,
   Check,
-  Clock3,
   Code2,
   FileText,
   Layers,
@@ -117,12 +115,6 @@ const TOOLS: ToolCard[] = [
   },
 ];
 
-function formatDate(value: string | Date, locale: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(date);
-}
-
 export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId: initialWorkspaceId }: DashboardClientProps) {
   const router = useRouter();
   const t = useTranslations("dashboard.home");
@@ -147,12 +139,10 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
 
   // The API returns every conversation the user owns. Show only those in the
   // selected workspace, matching the "saved to the selected workspace" copy.
-  const recentConversations = useMemo(() => {
-    const inWorkspace = allConversations.filter(
-      (conversation) => !activeWorkspace || conversation.workspaceId === activeWorkspace.id,
-    );
-    return inWorkspace.slice(0, 6);
-  }, [allConversations, activeWorkspace]);
+  const workspaceConversationCount = useMemo(
+    () => allConversations.filter((conversation) => !activeWorkspace || conversation.workspaceId === activeWorkspace.id).length,
+    [allConversations, activeWorkspace],
+  );
 
   const displayName = profile.fullName?.trim() || "";
   const initials = (profile.fullName ?? "S")
@@ -376,7 +366,7 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
 
             <section aria-label={t("sw")} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <SummaryCard icon={Layers} label={t("sw")} value={String(workspaces.length)} detail={t("swd")} tone="violet" />
-              <SummaryCard icon={MessageSquare} label={t("sr")} value={loadingRecent ? "…" : String(recentConversations.length)} detail={t("srd")} tone="blue" />
+              <SummaryCard icon={MessageSquare} label={t("sr")} value={loadingRecent ? "…" : String(workspaceConversationCount)} detail={t("srd")} tone="blue" />
               <SummaryCard icon={Zap} label={t("sp")} value={activeWorkspace?.plan ?? "Free"} detail={t("spd")} tone="amber" />
               <SummaryCard icon={Check} label={t("sro")} value={activeWorkspace?.workspace_members[0]?.role ?? "member"} detail={t("srod")} tone="green" />
             </section>
