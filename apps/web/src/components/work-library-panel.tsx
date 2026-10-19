@@ -338,6 +338,9 @@ export function WorkLibraryPanel({ workspaceId }: Props) {
           <button type="button" onClick={() => { setFolderOpen((open) => !open); setError(null); }} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
             <FolderPlus className="h-4 w-4" /> New folder
           </button>
+          <button type="button" onClick={() => { const next = !showTrash; setShowTrash(next); setError(null); if (next) void loadTrash(); }} className={"inline-flex min-h-10 items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm font-semibold transition " + (showTrash ? "border-violet-200 bg-violet-50 text-violet-800" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50")}>
+            <Trash2 className="h-4 w-4" /> {showTrash ? "Back to library" : "Trash"}
+          </button>
         </div>
       </div>
 
@@ -368,7 +371,20 @@ export function WorkLibraryPanel({ workspaceId }: Props) {
         </div>
       </div>}
 
-      <div className="mt-5">
+      {showTrash && <div className="mt-5">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div><h3 className="text-sm font-semibold text-slate-900">Trash</h3><p className="mt-1 text-xs text-slate-500">Restore saved work or permanently remove it.</p></div>
+          <button type="button" onClick={() => void emptyTrash()} disabled={busy || trashLoading || trashItems.length === 0} className="rounded-xl border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50">Empty trash</button>
+        </div>
+        {trashLoading ? <div className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 py-10 text-sm text-slate-400"><LoaderCircle className="h-4 w-4 animate-spin" /> Loading Trash…</div> : trashItems.length ? <div className="space-y-2">
+          {trashItems.map((item) => <article key={item.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 p-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-500"><Trash2 className="h-4 w-4" /></span>
+            <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-slate-800">{item.title || "Untitled work"}</span><span className="mt-1 block text-xs capitalize text-slate-400">{item.type.replaceAll("_", " ")} · Updated {shortDate(item.updatedAt)}</span></span>
+            <button type="button" onClick={() => void restoreItem(item)} disabled={busyItem === item.id} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">{busyItem === item.id ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />} Restore</button>
+          </article>)}
+        </div> : <div className="rounded-2xl border border-dashed border-slate-200 px-5 py-10 text-center"><p className="text-sm font-semibold text-slate-800">Trash is empty</p><p className="mt-1 text-xs text-slate-500">Items you move to Trash will appear here.</p></div>}
+      </div>}
+      {!showTrash && <div className="mt-5">
         {loading ? <div className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 py-12 text-sm text-slate-400"><LoaderCircle className="h-4 w-4 animate-spin" /> Loading your work…</div> : items.length ? (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {items.map((item) => <article key={item.id} className="group min-w-0 rounded-2xl border border-slate-200 p-4 transition hover:border-violet-200 hover:shadow-sm">
@@ -393,7 +409,7 @@ export function WorkLibraryPanel({ workspaceId }: Props) {
           <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-slate-500">{query ? "Try another search term or clear your search." : "Save notes and AI deliverables here. Your saved work stays attached to this workspace."}</p>
           {!query && <button type="button" onClick={() => { setNoteOpen(true); setTitle(""); setBody(""); }} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-violet-700"><Plus className="h-3.5 w-3.5" /> Create your first note</button>}
         </div>}
-      </div>
+      </div>}
 
       {formOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4" role="dialog" aria-modal="true" aria-labelledby="work-item-dialog-title">
         <form onSubmit={(event) => void (editing ? saveItem(event) : createNote(event))} className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl sm:p-7">
