@@ -203,7 +203,7 @@ export function WorkLibraryPanel({ workspaceId, onStatsChange }: Props) {
           contentFormat: "markdown",
           sourceType: "manual",
           metadata: { origin: "dashboard-note" },
-          ...(activeFolderId ? { folderId: activeFolderId } : {}),
+          ...(editorFolderId ? { folderId: editorFolderId } : {}),
         }),
       });
       const payload = await response.json().catch(() => ({}));
