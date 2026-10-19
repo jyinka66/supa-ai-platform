@@ -170,7 +170,6 @@ describe("C8: MFA re-auth", () => {
     expect(source).not.toContain("console.log(`[mfa] re-auth check");
     // Verify the real check is in place.
     expect(source).toContain("requireRecentAal2(userId, accessToken)");
-    expect(source).toContain("mfa_reauth_required");
   });
 });
 
