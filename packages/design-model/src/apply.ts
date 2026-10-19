@@ -246,7 +246,7 @@ function applyUpdateProps(doc: DesignDoc, cmd: Extract<Command, { op: "UPDATE_PR
   // Save old values for the inverse.
   const oldProps: Record<string, unknown> = {};
   for (const key of Object.keys(cmd.props)) {
-    (oldProps as Record<string, unknown>)[key] = (node as unknown as Record<string, unknown>)[key];
+    oldProps[key] = (node as unknown as Record<string, unknown>)[key];
   }
 
   // Apply.
