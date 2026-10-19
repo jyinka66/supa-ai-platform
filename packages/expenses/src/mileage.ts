@@ -72,7 +72,7 @@ export interface MileageEntry {
  */
 export function computeMileageAmount(entry: MileageEntry): Money {
   if (entry.distanceKm < 0) {
-    throw new Error(`distance must be ≥ 0; got: ${entry.distanceKm}`);
+    throw new Error(`distance must be ≥ 0; got: ${String(entry.distanceKm)}`);
   }
   const { numerator, denominator } = parseDecimal(entry.ratePerKm);
   const scale = minorScale(entry.currency);
