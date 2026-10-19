@@ -19,7 +19,7 @@
  */
 
 import type { Money, Currency, Rate } from "@supa/money/money";
-import { add, subtract, zero, convert, fromMinor, asCurrency } from "@supa/money/money";
+import { add, zero, convert, fromMinor, asCurrency } from "@supa/money/money";
 import type { WorkspaceId } from "@supa/workspace-core/workspace";
 
 // ───────────────────────────────────────────────
@@ -144,7 +144,7 @@ export function runReport(
   const inPeriod = facts.filter((f) => f.asOf >= query.period.from && f.asOf <= query.period.to);
 
   // Apply filters.
-  let filtered = applyFilters(inPeriod, query.filters);
+  const filtered = applyFilters(inPeriod, query.filters);
 
   // Select the facts relevant to this metric.
   const metricFacts = filterByMetric(filtered, query.metric);
@@ -264,7 +264,7 @@ function buildDimensionKey(fact: ReportFact, dimensions: readonly ReportDimensio
     switch (dim) {
       case "by-month": {
         const d = new Date(fact.asOf);
-        parts.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
+        parts.push(`${String(d.getUTCFullYear())}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
         break;
       }
       case "by-customer":
@@ -335,7 +335,9 @@ function sumFacts(
 
 function sumNative(facts: readonly ReportFact[]): Money {
   if (facts.length === 0) return zero(asCurrency("NGN"));
-  const currency = asCurrency(facts[0]!.nativeCurrency);
+  const firstFact = facts[0];
+  if (!firstFact) return zero(asCurrency("NGN"));
+  const currency = asCurrency(firstFact.nativeCurrency);
   let total = zero(currency);
   for (const fact of facts) {
     total = add(total, fromMinor(fact.nativeAmountMinor, asCurrency(fact.nativeCurrency)));
