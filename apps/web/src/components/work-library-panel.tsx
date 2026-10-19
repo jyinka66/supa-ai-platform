@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import {
   Check,
+  Download,
   FileText,
   Folder,
   FolderPlus,
@@ -59,6 +60,7 @@ export function WorkLibraryPanel({ workspaceId }: Props) {
   const [items, setItems] = useState<WorkItem[]>([]);
   const [folders, setFolders] = useState<WorkFolder[]>([]);
   const [query, setQuery] = useState("");
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [busyItem, setBusyItem] = useState<string | null>(null);
@@ -85,6 +87,7 @@ export function WorkLibraryPanel({ workspaceId }: Props) {
 
       const params = new URLSearchParams({ limit: "8", sort: "updated", saveHistory: "false" });
       if (search.trim()) params.set("q", search.trim());
+      if (activeFolderId) params.set("folder", activeFolderId);
       const [itemsResponse, foldersResponse] = await Promise.all([
         fetch("/api/work/items?" + params.toString(), { cache: "no-store" }),
         fetch("/api/work/folders", { cache: "no-store" }),
@@ -102,7 +105,7 @@ export function WorkLibraryPanel({ workspaceId }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  }, [activeFolderId, workspaceId]);
 
   useEffect(() => { void load(""); }, [load]);
 
@@ -122,6 +125,7 @@ export function WorkLibraryPanel({ workspaceId }: Props) {
           contentFormat: "markdown",
           sourceType: "manual",
           metadata: { origin: "dashboard-note" },
+          ...(activeFolderId ? { folderId: activeFolderId } : {}),
         }),
       });
       const payload = await response.json().catch(() => ({}));
@@ -207,6 +211,38 @@ export function WorkLibraryPanel({ workspaceId }: Props) {
     }
   }
 
+  async function exportItem(item: WorkItem) {
+    setBusyItem(item.id);
+    setError(null);
+    try {
+      const response = await fetch("/api/work/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ format: "md", selection: { itemIds: [item.id] } }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(responseMessage(payload, "Could not export this item."));
+      const result = payload.data as { inline?: boolean; content?: string; filename?: string; status?: string };
+      if (!result.inline || typeof result.content !== "string") {
+        throw new Error("This export was queued, but downloadable exports are not ready yet. Try Markdown export for one saved item.");
+      }
+      const blob = new Blob([result.content], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = result.filename || "supa-work.md";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setNotice("Markdown export downloaded.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not export this item.");
+    } finally {
+      setBusyItem(null);
+    }
+  }
+
   function openEditor(item: WorkItem) {
     setEditing(item);
     setTitle(item.title);
@@ -255,8 +291,9 @@ export function WorkLibraryPanel({ workspaceId }: Props) {
       {folders.length > 0 && <div className="mt-4">
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Folders</p>
         <div className="flex flex-wrap gap-2">
-          {folders.slice(0, 8).map((folder) => <span key={folder.id} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700"><Folder className="h-3.5 w-3.5" style={{ color: folder.color ?? "#7c3aed" }} />{folder.name}</span>)}
+          {folders.slice(0, 8).map((folder) => <button key={folder.id} type="button" onClick={() => { setQuery(""); setActiveFolderId(folder.id === activeFolderId ? null : folder.id); }} aria-pressed={activeFolderId === folder.id} className={"inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition " + (activeFolderId === folder.id ? "border-violet-200 bg-violet-50 text-violet-800" : "border-slate-200 bg-slate-50 text-slate-700 hover:border-violet-200")}><Folder className="h-3.5 w-3.5" style={{ color: folder.color ?? "#7c3aed" }} />{folder.name}</button>)}
           {folders.length > 8 && <span className="px-2 py-2 text-xs text-slate-400">+{folders.length - 8} more</span>}
+          {activeFolderId && <button type="button" onClick={() => { setActiveFolderId(null); setQuery(""); }} className="rounded-xl px-3 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-50">All work</button>}
         </div>
       </div>}
 
@@ -274,7 +311,7 @@ export function WorkLibraryPanel({ workspaceId }: Props) {
               </div>
               <p className="mt-3 line-clamp-3 min-h-[3.75rem] whitespace-pre-wrap text-xs leading-5 text-slate-500">{item.content?.trim() || "No text preview available for this item."}</p>
               <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-                <button type="button" onClick={() => openEditor(item)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-700 hover:text-violet-900"><Pencil className="h-3.5 w-3.5" /> Open & edit</button>
+                <div className="flex items-center gap-3"><button type="button" onClick={() => openEditor(item)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-700 hover:text-violet-900"><Pencil className="h-3.5 w-3.5" /> Open & edit</button><button type="button" onClick={() => void exportItem(item)} className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-violet-700" title="Export Markdown"><Download className="h-3.5 w-3.5" /> Export</button></div>
                 <button type="button" onClick={() => { if (window.confirm("Move this item to trash? You can restore it later from Trash.")) void updateItem(item, { status: "trash" }); }} disabled={busyItem === item.id} aria-label={"Move " + item.title + " to trash"} className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
             </article>)}
