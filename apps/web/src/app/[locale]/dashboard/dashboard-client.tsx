@@ -118,16 +118,11 @@ const TOOLS: ToolCard[] = [
 export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId: initialWorkspaceId }: DashboardClientProps) {
   const router = useRouter();
   const t = useTranslations("dashboard.home");
-  const modeLabel = (mode: string): string => {
-    const tool = TOOLS.find((item) => item.mode === mode);
-    return tool ? t(tool.titleKey) : t("tconv");
-  };
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(initialWorkspaceId || workspaces[0]?.id || "");
   const [allConversations, setAllConversations] = useState<RecentConversation[]>([]);
   const [studioPrompt, setStudioPrompt] = useState("");
   const [studioMode, setStudioMode] = useState<Mode>("chat");
   const [loadingRecent, setLoadingRecent] = useState(true);
-  const [recentError, setRecentError] = useState(false);
   const [busyMode, setBusyMode] = useState<Mode | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
@@ -166,10 +161,8 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
         if (!response.ok) throw new Error(payload.error?.message ?? "Could not load conversations.");
         if (mounted) {
           setAllConversations(Array.isArray(payload.data) ? payload.data : []);
-          setRecentError(false);
         }
       } catch {
-        if (mounted) setRecentError(true);
       } finally {
         if (mounted) setLoadingRecent(false);
       }
@@ -371,7 +364,6 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
               <SummaryCard icon={Check} label={t("sro")} value={activeWorkspace?.workspace_members[0]?.role ?? "member"} detail={t("srod")} tone="green" />
             </section>
 
-            
 
             <section id="ai-tools" className="scroll-mt-24">
               <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
@@ -437,8 +429,6 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
             </section>
 
             <div className="grid gap-8">
-              
-
               <section id="workspaces" className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
                 <div className="flex items-start justify-between gap-3">
                   <div>
