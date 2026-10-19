@@ -84,8 +84,10 @@ export function buildScorecard(
   const matching = drafts.filter((d) => d.provenance.verbId === verbId);
   if (matching.length === 0) return null;
 
-  const modelId = matching[0]!.provenance.modelId;
-  const promptVersion = matching[0]!.provenance.promptVersion;
+  const firstDraft = matching[0];
+  if (!firstDraft) return null;
+  const modelId = firstDraft.provenance.modelId;
+  const promptVersion = firstDraft.provenance.promptVersion;
   const used = matching.filter((d) => d.status === "used");
   const discarded = matching.filter((d) => d.status === "discarded");
 
@@ -99,7 +101,8 @@ export function buildScorecard(
     if (maxLen === 0) return 0;
     let matches = 0;
     for (let i = 0; i < Math.min(draftLen, editedLen); i++) {
-      if (d.output[i] === d.editedOutput![i]) matches++;
+      const editedOutput = d.editedOutput ?? d.output;
+      if (d.output[i] === editedOutput[i]) matches++;
     }
     return 1 - matches / maxLen;
   });
