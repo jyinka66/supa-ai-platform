@@ -24,7 +24,7 @@ async function main() {
   process.exit(0);
 }
 
-main().catch((err) => {
+main().catch((err: unknown) => {
   console.error(JSON.stringify({ event: "purge_cli_crash", error: String(err) }));
   process.exit(1);
 });
