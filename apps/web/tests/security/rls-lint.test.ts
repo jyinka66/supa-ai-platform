@@ -169,7 +169,7 @@ describe("RLS lint — @tenant_table CI gate", () => {
   });
 
   it("supa_app has bypassrls revoked", () => {
-    expect(allMigrations).toMatch(/revoke\s+bypassrls\s+on\s+system\s+from\s+supa_app/i);
+    expect(allMigrations).toMatch(/alter\s+role\s+supa_app\s+nobypassrls/i);
   });
 
   it("supa_app has row_security = on", () => {
