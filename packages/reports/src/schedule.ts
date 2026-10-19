@@ -125,9 +125,9 @@ function formatRevenueSummary(
   const outstanding = report.outstanding.base;
   return [
     `Revenue Summary`,
-    `Billed: ${invoiced}`,
-    `Received: ${collected}`,
-    `Outstanding: ${outstanding}`,
+    `Billed: ${String(invoiced)}`,
+    `Received: ${String(collected)}`,
+    `Outstanding: ${String(outstanding)}`,
   ].join("\n");
 }
 
@@ -141,9 +141,9 @@ function formatPnLSummary(
   const margin = report.margin;
   return [
     `P&L Summary`,
-    `Revenue: ${revenue}`,
-    `Expenses: ${expenses}`,
-    `Net Profit: ${profit}`,
+    `Revenue: ${String(revenue)}`,
+    `Expenses: ${String(expenses)}`,
+    `Net Profit: ${String(profit)}`,
     `Margin: ${margin !== null ? margin.toFixed(1) + "%" : "N/A"}`,
   ].join("\n");
 }
