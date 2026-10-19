@@ -280,6 +280,6 @@ describe("marketplace-repository", () => {
     await updateItem({ ...sampleItem, status: "published" } as never);
     const updateSql = sqlCapture.find((c) => c.sql.includes("update supa_os_marketplace_items"));
     expect(updateSql).toBeDefined();
-    expect(updateSql!.sql).toContain("status =");
+    expect(updateSql!.sql).toMatch(/status\s*=/);
   });
 });
