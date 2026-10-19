@@ -181,8 +181,10 @@ export async function resolveShareSession(
 ): Promise<ShareSession> {
   const res = await fetch(`/api/work/share/${token}`, {
     method: password ? "POST" : "GET",
-    headers: password ? { "Content-Type": "application/json" } : {},
-    body: password ? JSON.stringify({ password }) : undefined,
+    ...(password ? {
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    } : {}),
   });
 
   if (!res.ok) {
