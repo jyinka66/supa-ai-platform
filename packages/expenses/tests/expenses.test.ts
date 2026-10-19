@@ -15,7 +15,6 @@ import {
   isAboveThreshold,
   buildConfirmation,
   buildQualitySignal,
-  DEFAULT_CONFIRMATION_THRESHOLD,
   type OcrExtraction,
 } from "../src/ocr.js";
 import {
@@ -28,7 +27,6 @@ import {
   computeMileageAmount,
   getCountryDefaultRate,
   gpsCaptureToEntry,
-  COUNTRY_DEFAULT_RATES,
   type MileageEntry,
 } from "../src/mileage.js";
 import {
@@ -166,9 +164,9 @@ describe("buildConfirmation — propose, never write", () => {
     const confirmation = buildConfirmation(extraction, { amount: "6000.00" }, "user-1", NOW + 1000);
     expect(confirmation.amount).toBe("6000.00"); // user-edited
     expect(confirmation.edits).toHaveLength(1);
-    expect(confirmation.edits[0]!.field).toBe("amount");
-    expect(confirmation.edits[0]!.ocrValue).toBe("5000.00");
-    expect(confirmation.edits[0]!.confirmedValue).toBe("6000.00");
+    expect(confirmation.edits[0]?.field).toBe("amount");
+    expect(confirmation.edits[0]?.ocrValue).toBe("5000.00");
+    expect(confirmation.edits[0]?.confirmedValue).toBe("6000.00");
   });
 
   it("carries the extraction as attribution metadata", () => {
