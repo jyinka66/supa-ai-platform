@@ -38,7 +38,7 @@ export function renderPage(
   opts: RenderOpts,
 ): RenderResult {
   const page = doc.pages.find((p) => p.id === opts.pageId);
-  if (!page) throw new Error(`renderPage: page ${String(opts.pageId)} not found`);
+  if (!page) throw new Error(`renderPage: page ${opts.pageId} not found`);
 
   const W = page.size.width;
   const H = page.size.height;
@@ -99,8 +99,8 @@ function renderNode(
   const matrix = mul(parentMatrix, trs(node.rect, node.rotation));
   const transform = matrixToTransform(matrix);
   const opacity = node.opacity < 1 ? ` opacity="${String(node.opacity)}"` : "";
-  const blend = node.blend !== "normal" ? ` style="mix-blend-mode:${String(escapeXml(node.blend))}"` : "";
-  const id = ` id="${String(escapeXml(node.id))}"`;
+  const blend = node.blend !== "normal" ? ` style="mix-blend-mode:${escapeXml(node.blend)}"` : "";
+  const id = ` id="${escapeXml(node.id)}"`;
   const parts: string[] = [];
 
   switch (node.type) {
@@ -150,7 +150,7 @@ function renderText(
 
     // Apply runs (rich text).
     if (runs.length === 0) {
-      return `<tspan x="0" y="${String(y)}"${String(anchor)}${String(dir)}>${String(escapeXml(line))}</tspan>`;
+      return `<tspan x="0" y="${String(y)}"${anchor}${dir}>${escapeXml(line)}</tspan>`;
     }
 
     // Split line into segments based on runs.
@@ -184,23 +184,23 @@ function renderText(
         let attrs = "";
         if (s.bold) attrs += ` font-weight="bold"`;
         if (s.italic) attrs += ` font-style="italic"`;
-        if (s.color) attrs += ` fill="${String(colorToHex(s.color))}"`;
-        if (s.fontFamily) attrs += ` font-family="${String(escapeXml(s.fontFamily))}"`;
+        if (s.color) attrs += ` fill="${colorToHex(s.color)}"`;
+        if (s.fontFamily) attrs += ` font-family="${escapeXml(s.fontFamily)}"`;
         if (s.fontSize) attrs += ` font-size="${String(s.fontSize)}"`;
-        return `<tspan${String(attrs)}>${String(escapeXml(s.text))}</tspan>`;
+        return `<tspan${attrs}>${escapeXml(s.text)}</tspan>`;
       })
       .join("");
 
-    return `<tspan x="0" y="${String(y)}"${String(anchor)}${String(dir)}>${String(tspansInner)}</tspan>`;
+    return `<tspan x="0" y="${String(y)}"${anchor}${dir}>${tspansInner}</tspan>`;
   });
 
   return (
-    `<text${String(id)} transform="${String(transform)}"` +
-    ` font-family="${String(escapeXml(fontFamily))}"` +
+    `<text${id} transform="${transform}"` +
+    ` font-family="${escapeXml(fontFamily)}"` +
     ` font-size="${String(fontSize)}"` +
     ` font-weight="${String(fontWeight)}"` +
-    ` text-anchor="${String(align === "center" ? "middle" : align === "right" || align === "end" ? "end" : "start")}"` +
-    ` direction="${String(direction)}"` +
+    ` text-anchor="${align === "center" ? "middle" : align === "right" || align === "end" ? "end" : "start"}"` +
+    ` direction="${direction}"` +
     opacity + blend + `>` +
     tspans.join("") +
     `</text>`
@@ -230,7 +230,7 @@ function renderImage(
     case "fill": preserveAspect = "none"; break;
   }
 
-  const href = asset.kind === "svg" ? ` xlink:href="${String(escapeXml(asset.ref))}"` : ` xlink:href="${String(escapeXml(asset.ref))}"`;
+  const href = asset.kind === "svg" ? ` xlink:href="${escapeXml(asset.ref)}"` : ` xlink:href="${escapeXml(asset.ref)}"`;
   const filters: string[] = [];
   if (layer.filters) {
     if (layer.filters.brightness !== undefined) filters.push(`brightness(${String(layer.filters.brightness)})`);
@@ -238,10 +238,10 @@ function renderImage(
     if (layer.filters.saturation !== undefined) filters.push(`saturate(${String(layer.filters.saturation)})`);
     if (layer.filters.blur !== undefined) filters.push(`blur(${String(layer.filters.blur)}px)`);
   }
-  const filterAttr = filters.length > 0 ? ` filter="${String(filters.join(" "))}"` : "";
-  const altAttr = altText ? ` role="img" aria-label="${String(escapeXml(altText))}"` : "";
+  const filterAttr = filters.length > 0 ? ` filter="${filters.join(" ")}"` : "";
+  const altAttr = altText ? ` role="img" aria-label="${escapeXml(altText)}"` : "";
 
-  return `<image${String(id)} transform="${String(transform)}" width="${String(width)}" height="${String(height)}" preserveAspectRatio="${String(preserveAspect)}"${String(href)}${String(filterAttr)}${String(altAttr)}${String(opacity)}${String(blend)} />`;
+  return `<image${id} transform="${transform}" width="${String(width)}" height="${String(height)}" preserveAspectRatio="${preserveAspect}"${href}${filterAttr}${altAttr}${opacity}${blend} />`;
 }
 
 // ============ SHAPE ============
@@ -257,19 +257,19 @@ function renderShape(
   const { width, height } = layer.rect;
   const { fill, stroke, cornerRadius, shape, polygonSides } = layer;
   const fillAttr = fill ? renderFill(fill, defs) : "none";
-  const strokeAttr = stroke ? ` stroke="${String(colorToHex(stroke.color))}" stroke-width="${String(stroke.width)}"` : "";
+  const strokeAttr = stroke ? ` stroke="${colorToHex(stroke.color)}" stroke-width="${String(stroke.width)}"` : "";
 
   switch (shape) {
     case "rect": {
       const rx = cornerRadius ? ` rx="${String(cornerRadius)}" ry="${String(cornerRadius)}"` : "";
-      return `<rect${String(id)} transform="${String(transform)}" x="0" y="0" width="${String(width)}" height="${String(height)}"${String(rx)} fill="${String(fillAttr)}"${String(strokeAttr)}${String(opacity)}${String(blend)} />`;
+      return `<rect${id} transform="${transform}" x="0" y="0" width="${String(width)}" height="${String(height)}"${rx} fill="${fillAttr}"${strokeAttr}${opacity}${blend} />`;
     }
     case "ellipse": {
-      return `<ellipse${String(id)} transform="${String(transform)}" cx="${String(width / 2)}" cy="${String(height / 2)}" rx="${String(width / 2)}" ry="${String(height / 2)}" fill="${String(fillAttr)}"${String(strokeAttr)}${String(opacity)}${String(blend)} />`;
+      return `<ellipse${id} transform="${transform}" cx="${String(width / 2)}" cy="${String(height / 2)}" rx="${String(width / 2)}" ry="${String(height / 2)}" fill="${fillAttr}"${strokeAttr}${opacity}${blend} />`;
     }
     case "triangle": {
       const points = `${String(width / 2)},0 ${String(width)},${String(height)} 0,${String(height)}`;
-      return `<polygon${String(id)} transform="${String(transform)}" points="${String(points)}" fill="${String(fillAttr)}"${String(strokeAttr)}${String(opacity)}${String(blend)} />`;
+      return `<polygon${id} transform="${transform}" points="${points}" fill="${fillAttr}"${strokeAttr}${opacity}${blend} />`;
     }
     case "polygon": {
       const sides = polygonSides ?? 6;
@@ -278,10 +278,10 @@ function renderShape(
         const angle = (2 * Math.PI * i) / sides - Math.PI / 2;
         return `${String(cx + r * Math.cos(angle))},${String(cy + r * Math.sin(angle))}`;
       }).join(" ");
-      return `<polygon${String(id)} transform="${String(transform)}" points="${String(points)}" fill="${String(fillAttr)}"${String(strokeAttr)}${String(opacity)}${String(blend)} />`;
+      return `<polygon${id} transform="${transform}" points="${points}" fill="${fillAttr}"${strokeAttr}${opacity}${blend} />`;
     }
     case "line": {
-      return `<line${String(id)} transform="${String(transform)}" x1="0" y1="0" x2="${String(width)}" y2="${String(height)}" stroke="${String(stroke ? colorToHex(stroke.color) : "#000")}" stroke-width="${String(stroke?.width ?? 1)}"${String(opacity)}${String(blend)} />`;
+      return `<line${id} transform="${transform}" x1="0" y1="0" x2="${String(width)}" y2="${String(height)}" stroke="${stroke ? colorToHex(stroke.color) : "#000"}" stroke-width="${String(stroke?.width ?? 1)}"${opacity}${blend} />`;
     }
     default:
       return "";
@@ -301,8 +301,8 @@ function renderIcon(
   const { color, library, iconId } = layer;
   // Icons are rendered as <use> referencing a sprite sheet.
   // The sprite sheet is loaded as a <symbol> in defs.
-  const ref = `${String(library)}#${String(iconId)}`;
-  return `<use${String(id)} transform="${String(transform)}" width="${String(width)}" height="${String(height)}" xlink:href="#${String(escapeXml(ref))}" fill="${String(colorToHex(color))}"${String(opacity)}${String(blend)} />`;
+  const ref = `${library}#${iconId}`;
+  return `<use${id} transform="${transform}" width="${String(width)}" height="${String(height)}" xlink:href="#${escapeXml(ref)}" fill="${colorToHex(color)}"${opacity}${blend} />`;
 }
 
 // ============ CONTAINER ============
@@ -330,8 +330,8 @@ function renderContainer(
     .join("");
 
   return (
-    `<g${String(id)} transform="${String(transform)}"${String(opacity)}${String(blend)}>` +
-    `<rect x="0" y="0" width="${String(width)}" height="${String(height)}"${String(rx)} fill="${String(fillAttr)}"${String(clipAttr)} />` +
+    `<g${id} transform="${transform}"${opacity}${blend}>` +
+    `<rect x="0" y="0" width="${String(width)}" height="${String(height)}"${rx} fill="${fillAttr}"${clipAttr} />` +
     childrenSvg +
     `</g>`
   );
@@ -355,7 +355,7 @@ function renderGroup(
     .map((c) => renderNode(c, parentMatrix, doc, measurer, defs))
     .join("");
 
-  return `<g${String(id)} transform="${String(transform)}"${String(opacity)}${String(blend)}>${String(childrenSvg)}</g>`;
+  return `<g${id} transform="${transform}"${opacity}${blend}>${childrenSvg}</g>`;
 }
 
 // ============ BACKGROUND ============
@@ -364,7 +364,7 @@ function renderBackground(page: Page, W: number, H: number): string {
   if (page.background === "transparent") return "";
   return renderFill(page.background, new DefsBuilder()) === "none"
     ? ""
-    : `<rect x="0" y="0" width="${String(W)}" height="${String(H)}" fill="${String(renderFill(page.background, new DefsBuilder()))}" />`;
+    : `<rect x="0" y="0" width="${String(W)}" height="${String(H)}" fill="${renderFill(page.background, new DefsBuilder())}" />`;
 }
 
 // ============ GUIDES (editor-only) ============
@@ -411,7 +411,7 @@ function renderSelectionOverlay(page: Page, selectionIds: string[]): string {
 
     // Draw a rect around the node (in its local space, transformed).
     parts.push(
-      `<rect transform="${String(matrixToTransform(t))}" x="0" y="0" width="${String(width)}" height="${String(height)}" ` +
+      `<rect transform="${matrixToTransform(t)}" x="0" y="0" width="${String(width)}" height="${String(height)}" ` +
       `fill="none" stroke="#3b82f6" stroke-width="1" stroke-dasharray="3 2" />`,
     );
   }
@@ -429,7 +429,7 @@ function renderFill(fill: Fill, defs: DefsBuilder): string {
 
     case "gradient": {
       const id = defs.addGradient(fill.gradient);
-      return `url(#${String(id)})`;
+      return `url(#${id})`;
     }
   }
 }
@@ -464,15 +464,15 @@ class DefsBuilder {
       const y2 = 50 + Math.sin((angle * Math.PI) / 180) * 50;
 
       const stops = gradient.stops
-        .map((s) => `<stop offset="${String(s.offset * 100)}%" stop-color="${String(colorToHex(s.color))}" />`)
+        .map((s) => `<stop offset="${String(s.offset * 100)}%" stop-color="${colorToHex(s.color)}" />`)
         .join("");
 
       if (gradient.kind === "linear") {
         parts.push(
-          `<${String(tag)} id="${String(id)}" gradientUnits="userSpaceOnUse" x1="${String(x1)}%" y1="${String(y1)}%" x2="${String(x2)}%" y2="${String(y2)}%">${String(stops)}</${String(tag)}>`,
+          `<${tag} id="${id}" gradientUnits="userSpaceOnUse" x1="${String(x1)}%" y1="${String(y1)}%" x2="${String(x2)}%" y2="${String(y2)}%">${stops}</${tag}>`,
         );
       } else {
-        parts.push(`<${String(tag)} id="${String(id)}" cx="50%" cy="50%" r="50%">${String(stops)}</${String(tag)}>`);
+        parts.push(`<${tag} id="${id}" cx="50%" cy="50%" r="50%">${stops}</${tag}>`);
       }
     }
     parts.push("</defs>");
