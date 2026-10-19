@@ -232,7 +232,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
   return (
     <>
       <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200 bg-white px-4 py-5 lg:flex">
-        <Link href={base + "/dashboard"} className="flex items-center gap-3 px-2" aria-label="Supa home">
+        <Link href={base + "/dashboard"} className="flex items-center gap-3 px-2" aria-label="Supa dashboard">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-600 text-sm font-black text-white shadow-sm">s.</span>
           <span className="text-xl font-bold tracking-tight text-slate-950">supa<span className="text-violet-600">.</span></span>
         </Link>
