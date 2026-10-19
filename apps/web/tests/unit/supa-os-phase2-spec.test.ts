@@ -326,23 +326,24 @@ describe("2 — Loan Calculation Engine", () => {
   });
 
   it("tracks repayments — active loan", () => {
+    const startDate = new Date("2026-01-01T00:00:00.000Z");
     const schedule = generateAmortizationSchedule({
       principal: 12000,
       annualRate: 0.12,
       termMonths: 12,
       type: "equal_payment",
+      startDate,
     });
-    // Make 3 on-time payments.
-    const payments = [
-      { date: addMonths(new Date(), 1), amount: schedule.monthlyPayment },
-      { date: addMonths(new Date(), 2), amount: schedule.monthlyPayment },
-      { date: addMonths(new Date(), 3), amount: schedule.monthlyPayment },
-    ];
+    // Make the first 3 scheduled payments on their exact due dates.
+    const payments = schedule.entries.slice(0, 3).map((entry) => ({
+      date: entry.paymentDate,
+      amount: entry.scheduledPayment,
+    }));
     const tracker = trackRepayments({
       loanId: "loan-1",
       schedule,
       payments,
-      currentDate: addMonths(new Date(), 4),
+      currentDate: addMonths(startDate, 4),
     });
     expect(tracker.status).toBe("active");
     expect(tracker.totalPaid).toBeCloseTo(schedule.monthlyPayment * 3, 0);
