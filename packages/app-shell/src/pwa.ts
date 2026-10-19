@@ -93,13 +93,18 @@ export async function applyServiceWorkerUpdate(): Promise<void> {
  *
  * Fallback: periodic polling (setInterval) while the tab is open.
  */
+type BackgroundSyncRegistration = ServiceWorkerRegistration & {
+  sync?: { register(tag: string): Promise<void> };
+};
+
 export async function registerBackgroundSync(): Promise<void> {
   if (!("serviceWorker" in navigator)) return;
   if (!("SyncManager" in window)) return; // not supported
 
   try {
-    const registration = await navigator.serviceWorker.ready;
-    await (registration as any).sync.register("outbox-flush");
+    const registration = await navigator.serviceWorker.ready as BackgroundSyncRegistration;
+    if (!registration.sync) return;
+    await registration.sync.register("outbox-flush");
   } catch {
     // Background sync not supported — fall back to polling.
   }
