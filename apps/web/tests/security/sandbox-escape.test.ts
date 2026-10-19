@@ -98,18 +98,16 @@ describe("Sandbox escape — path traversal", () => {
     expect(json.data.command.command).toBe("cat /etc/passwd");
   });
 
-  it("rejects a command that uses ../../../ to escape the sandbox cwd", async () => {
+  it("rejects a working directory outside the sandbox workspace", async () => {
     const res = await wasmExecuteRoute.POST!(
       makePostReq("https://example.com/api/supa-os/wasm/execute", {
         command: "ls ../../../../etc",
         cwd: "/app",
       }),
     );
-    expect(res.status).toBe(200);
-    // The command is captured — the sandbox runtime will reject the path
-    // traversal when it tries to resolve the cwd.
+    expect(res.status).toBe(400);
     const json = await res.json();
-    expect(json.data.command.cwd).toBe("/app");
+    expect(json.ok).toBe(false);
   });
 });
 
