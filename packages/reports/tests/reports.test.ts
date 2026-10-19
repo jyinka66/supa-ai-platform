@@ -75,8 +75,8 @@ describe("runReport — engine primitives", () => {
       metric: "revenue", dimensions: ["none"], filters: {},
       period: { from: 0, to: NOW + 1 }, baseCurrency: NGN,
     });
-    expect(result.rows[0]!.facts.length).toBe(2);
-    expect(result.rows[0]!.conversions.length).toBe(2);
+    expect(result.rows[0]?.facts.length).toBe(2);
+    expect(result.rows[0]?.conversions.length).toBe(2);
   });
 
   it("traceProvenance: sum of facts equals the row amount", () => {
@@ -88,7 +88,10 @@ describe("runReport — engine primitives", () => {
       metric: "revenue", dimensions: ["none"], filters: {},
       period: { from: 0, to: NOW + 1 }, baseCurrency: NGN,
     });
-    const trace = traceProvenance(result.rows[0]!);
+    const firstRow = result.rows[0];
+    expect(firstRow).toBeDefined();
+    if (!firstRow) throw new Error("expected report row");
+    const trace = traceProvenance(firstRow);
     expect(trace.consistent).toBe(true);
     expect(trace.nativeSum.minor).toBe(800_000n);
   });
