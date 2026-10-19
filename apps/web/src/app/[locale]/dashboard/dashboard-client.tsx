@@ -139,7 +139,7 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
         <div className="min-w-0 flex-1">
           <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between border-b border-slate-200 bg-white/95 px-5 backdrop-blur sm:px-8">
             <div className="flex items-center gap-3">
-              <Link href={base} className="flex items-center gap-2 lg:hidden" aria-label="Supa home">
+              <Link href={base + "/dashboard"} className="flex items-center gap-2 lg:hidden" aria-label="Supa dashboard">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-600 text-xs font-black text-white">s.</span>
                 <span className="text-lg font-bold">supa<span className="text-violet-600">.</span></span>
               </Link>
