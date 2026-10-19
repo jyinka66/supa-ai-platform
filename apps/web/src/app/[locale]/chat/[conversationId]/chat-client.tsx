@@ -143,6 +143,7 @@ async function readApiFailure(response: Response): Promise<ChatFailure> {
 
 export function ChatClient({ conversation, initialMessages, locale, workspaces, activeWorkspaceId }: ChatClientProps) {
   const [messages, setMessages] = useState<MessageRow[]>(initialMessages);
+  const [conversationTitle, setConversationTitle] = useState(conversation.title?.trim() || "Ask Supa AI");
   const [activeMode, setActiveMode] = useState<Mode>(
     (MODES as readonly string[]).includes(conversation.mode) ? conversation.mode as Mode : "chat",
   );
@@ -190,6 +191,20 @@ export function ChatClient({ conversation, initialMessages, locale, workspaces, 
       // Audio is optional and must never interrupt message delivery.
     }
   }, [soundEnabled]);
+
+  useEffect(() => {
+    const refreshConversationTitle = () => {
+      void fetch("/api/conversations/" + conversation.id, { cache: "no-store" })
+        .then(async (response) => {
+          if (!response.ok) return;
+          const payload = await response.json().catch(() => ({})) as { data?: { title?: string | null } };
+          setConversationTitle(payload.data?.title?.trim() || "Ask Supa AI");
+        })
+        .catch(() => {});
+    };
+    window.addEventListener("supa:conversation-updated", refreshConversationTitle);
+    return () => window.removeEventListener("supa:conversation-updated", refreshConversationTitle);
+  }, [conversation.id]);
 
   useEffect(() => {
     try {
@@ -493,6 +508,7 @@ export function ChatClient({ conversation, initialMessages, locale, workspaces, 
     } finally {
       setIsSending(false);
       abortRef.current = null;
+      window.dispatchEvent(new CustomEvent("supa:conversation-updated"));
     }
   }, [activeMode, conversation, isSending, locale, messages, playTone]);
 
@@ -586,7 +602,7 @@ export function ChatClient({ conversation, initialMessages, locale, workspaces, 
             <Sparkles className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <h1 className="truncate text-base font-semibold tracking-tight">Ask Supa AI</h1>
+            <h1 className="truncate text-base font-semibold tracking-tight">{conversationTitle}</h1>
             <p className="mt-0.5 truncate text-xs text-slate-500">{greetingMode} · Conversation saved to your workspace</p>
           </div>
         </div>
