@@ -75,7 +75,7 @@ export class InMemoryCatalogSource implements CatalogSource {
     const items = all.slice(offset, offset + PAGE);
     const next = offset + PAGE < all.length ? String(offset + PAGE) : undefined;
 
-    return Promise.resolve({ items, next });
+    return Promise.resolve({ items, ...(next === undefined ? {} : { next }) });
   }
 
   get(id: string): Promise<DesignTemplate> {
@@ -94,7 +94,7 @@ export class InMemoryCatalogSource implements CatalogSource {
     const items = all.slice(offset, offset + PAGE);
     const next = offset + PAGE < all.length ? String(offset + PAGE) : undefined;
 
-    return Promise.resolve({ items, next, version: this.version });
+    return Promise.resolve({ items, ...(next === undefined ? {} : { next }), version: this.version });
   }
 }
 
