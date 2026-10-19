@@ -238,7 +238,7 @@ export function useInlineText(
             ? `${text.letterSpacing.value}em`
             : `${text.letterSpacing.value}%`,
       textAlign: text.align,
-      direction: text.direction,
+      direction: text.direction === "auto" ? "ltr" : text.direction,
       color: text.runs[0]?.color?.hex ?? "#000",
       transform: `rotate(${text.rotation}deg)`,
       transformOrigin: "center center",
