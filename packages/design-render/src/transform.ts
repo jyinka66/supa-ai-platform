@@ -111,5 +111,5 @@ function pathTo(page: Page, id: string): LayerNode[] {
     if (node.id === id) return path;
     if (node.children) for (const c of node.children) stack.push({ node: c, path: [...path, c] });
   }
-  throw new Error(`pathTo: id ${String(id)} not on page ${String(page.id)}`);
+  throw new Error(`pathTo: id ${id} not on page ${page.id}`);
 }
