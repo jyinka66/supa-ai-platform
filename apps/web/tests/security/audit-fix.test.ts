@@ -169,9 +169,8 @@ describe("C8: MFA re-auth", () => {
     expect(source).not.toContain("// Stub — the real implementation checks");
     expect(source).not.toContain("console.log(`[mfa] re-auth check");
     // Verify the real check is in place.
-    expect(source).toContain("mfa_enrolled");
-    expect(source).toContain("mfa_enrollment_required");
-    expect(source).toContain("mfa_verification_failed");
+    expect(source).toContain("requireRecentAal2(userId, accessToken)");
+    expect(source).toContain("mfa_reauth_required");
   });
 });
 
@@ -209,7 +208,7 @@ describe("C11/C12: Share password security", () => {
   it("share route uses argon2id (not unsalted SHA-256)", async () => {
     const fs = await import("node:fs");
     const source = readFileSync(
-      resolve(webRoot + "/src/app/api/work/share/[token]/route.ts"),
+      resolve(webRoot + "/src/app/api/work/share/[id]/route.ts"),
       "utf8",
     );
     // Verify argon2id is imported + used.
