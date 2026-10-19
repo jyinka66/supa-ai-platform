@@ -18,7 +18,6 @@
  * ----------------------------------------------------------------
  */
 
-import { z } from "zod";
 import { db } from "@supa/db";
 import { activityFacts } from "@supa/db/schema";
 import type { Draft, DraftOutcome } from "./verbs.js";
@@ -82,6 +81,8 @@ export function aggregateQuality(
 ): QualityAggregate | null {
   const matching = drafts.filter((d) => d.provenance.verbId === verbId);
   if (matching.length === 0) return null;
+  const firstDraft = matching[0];
+  if (!firstDraft) return null;
 
   const committed = matching.filter((d) => d.status === "used");
   const discarded = matching.filter((d) => d.status === "discarded");
@@ -94,7 +95,8 @@ export function aggregateQuality(
     if (maxLen === 0) return 0;
     let matches = 0;
     for (let i = 0; i < Math.min(draftLen, editedLen); i++) {
-      if (d.output[i] === d.editedOutput![i]) matches++;
+      const editedOutput = d.editedOutput ?? d.output;
+      if (d.output[i] === editedOutput[i]) matches++;
     }
     return 1 - matches / maxLen;
   });
@@ -125,8 +127,8 @@ export function aggregateQuality(
 
   return {
     verbId,
-    modelId: matching[0]!.provenance.modelId,
-    promptVersion: matching[0]!.provenance.promptVersion,
+    modelId: firstDraft.provenance.modelId,
+    promptVersion: firstDraft.provenance.promptVersion,
     totalDrafts: matching.length,
     committedCount: committed.length,
     discardedCount: discarded.length,
@@ -159,32 +161,32 @@ export function evaluateQuality(
       aggregate,
       verdict: "insufficient_sample",
       failures: [],
-      recommendation: `only ${aggregate.totalDrafts} drafts — need ${thresholds.minSampleSize} before evaluating`,
+      recommendation: `only ${String(aggregate.totalDrafts)} drafts — need ${String(thresholds.minSampleSize)} before evaluating`,
     };
   }
 
   if (aggregate.avgEditDistance > thresholds.maxAvgEditDistance) {
     failures.push(
-      `avg edit distance ${aggregate.avgEditDistance} exceeds threshold ${thresholds.maxAvgEditDistance} — drafts are heavily rewritten`,
+      `avg edit distance ${String(aggregate.avgEditDistance)} exceeds threshold ${String(thresholds.maxAvgEditDistance)} — drafts are heavily rewritten`,
     );
   }
 
   const discardRate = aggregate.discardedCount / aggregate.totalDrafts;
   if (discardRate > thresholds.maxDiscardRate) {
     failures.push(
-      `discard rate ${Math.round(discardRate * 100)}% exceeds threshold ${Math.round(thresholds.maxDiscardRate * 100)}% — humans are throwing outputs away`,
+      `discard rate ${String(Math.round(discardRate * 100))}% exceeds threshold ${String(Math.round(thresholds.maxDiscardRate * 100))}% — humans are throwing outputs away`,
     );
   }
 
   if (aggregate.winRate !== null && aggregate.winRate < thresholds.minWinRate) {
     failures.push(
-      `win rate ${Math.round(aggregate.winRate * 100)}% below threshold ${Math.round(thresholds.minWinRate * 100)}% — proposals aren't converting`,
+      `win rate ${String(Math.round(aggregate.winRate * 100))}% below threshold ${String(Math.round(thresholds.minWinRate * 100))}% — proposals aren't converting`,
     );
   }
 
   const verdict: QualityVerdict = failures.length > 0 ? "flagged" : "passing";
   const recommendation = failures.length > 0
-    ? `prompt version "${aggregate.promptVersion}" for verb "${aggregate.verbId}" should be revised — ${failures.length} quality failure(s)`
+    ? `prompt version "${aggregate.promptVersion}" for verb "${aggregate.verbId}" should be revised — ${String(failures.length)} quality failure(s)`
     : null;
 
   return { aggregate, verdict, failures, recommendation };
