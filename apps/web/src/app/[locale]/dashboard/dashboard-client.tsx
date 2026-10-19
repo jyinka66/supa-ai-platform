@@ -183,8 +183,8 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
                 <span className="text-lg font-bold">supa<span className="text-violet-600">.</span></span>
               </Link>
               <div className="hidden lg:block">
-                <p className="text-xs font-medium text-slate-500">{t("hw")}</p>
-                <p className="text-sm font-semibold text-slate-900">{t("ho")}</p>
+                <p className="text-xs font-medium text-slate-500">SUPA WORKSPACE</p>
+                <p className="text-sm font-semibold text-slate-900">Workspace dashboard</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
