@@ -14,19 +14,13 @@
 
 import type {
   DesignDoc,
-  LayerNode,
   Page,
   TextLayer,
   ImageLayer,
-  ShapeLayer,
-  Color,
-  Fill,
   Rect,
-  RichRun,
-  NodeId,
 } from "@supa/design-model";
-import { newId, validate } from "@supa/design-model";
-import type { FidelityReport, FidelityIssue, ImportResult } from "./import";
+import { newId } from "@supa/design-model";
+import type { FidelityIssue, ImportResult } from "./import";
 
 // ============ PDF IMPORT ============
 
@@ -75,7 +69,7 @@ export async function importPdf(
 ): Promise<ImportResult> {
   const issues: FidelityIssue[] = [];
   let exactCount = 0;
-  let bakedCount = 0;
+  const bakedCount = 0;
   const dpi = options.dpi ?? 72;
 
   // Decode bytes as Latin1 to preserve byte values 0-255 (PDF text
@@ -334,7 +328,7 @@ async function resolveContentStreams(
     if (!obj || !obj.streamBytes) {
       issues.push({
         nodeId: `page-${pageIndex + 1}`,
-        reason: `Content stream object ${ref} not found or has no stream`,
+        reason: `Content stream object ${String(ref)} not found or has no stream`,
         action: "dropped",
       });
       continue;
@@ -357,7 +351,7 @@ async function resolveContentStreams(
     } else if (/\/Filter/.test(dict)) {
       issues.push({
         nodeId: `page-${pageIndex + 1}`,
-        reason: `Unsupported stream filter in object ${ref}`,
+        reason: `Unsupported stream filter in object ${String(ref)}`,
         action: "dropped",
       });
       // Skip streams with unsupported filters.
