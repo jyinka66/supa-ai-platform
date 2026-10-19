@@ -1,13 +1,52 @@
 import { NextRequest } from "next/server";
 import { db } from "@supa/db";
 import { workItems } from "@supa/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/session";
 import { guard } from "@/lib/ratelimit/guard";
 import { problem, ok } from "@/lib/api/problem";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+/**
+ * GET /api/trash
+ *
+ * Lists the caller's trashed work items in the active workspace so the
+ * workspace UI can restore individual items before permanent deletion.
+ */
+export async function GET(req: NextRequest) {
+  const denied = await guard(req, "default");
+  if (denied) return denied;
+
+  const user = await requireUser();
+  const wsCookie = req.cookies.get("ws")?.value;
+  if (!wsCookie) return problem(400, "no_workspace_selected");
+
+  const items = await db
+    .select({
+      id: workItems.id,
+      title: workItems.title,
+      type: workItems.type,
+      content: workItems.content,
+      contentFormat: workItems.contentFormat,
+      favorite: workItems.favorite,
+      folderId: workItems.folderId,
+      createdAt: workItems.createdAt,
+      updatedAt: workItems.updatedAt,
+      trashedAt: workItems.trashedAt,
+    })
+    .from(workItems)
+    .where(and(
+      eq(workItems.workspaceId, wsCookie),
+      eq(workItems.ownerId, user.id),
+      eq(workItems.status, "trash"),
+    ))
+    .orderBy(desc(workItems.updatedAt))
+    .limit(100);
+
+  return ok({ items });
+}
 
 /**
  * DELETE /api/trash
