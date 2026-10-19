@@ -21,7 +21,6 @@
  * ----------------------------------------------------------------
  */
 
-import { z } from "zod";
 
 // ───────────────────────────────────────────────
 // Guard result — what each guard returns
@@ -160,13 +159,15 @@ export function screenFabrication(
   const matches = [...output.matchAll(claimPattern)];
 
   for (const match of matches) {
-    const numStr = match[1]!.replace(/[,,%]/g, "");
+    const matchedNumber = match[1];
+    if (!matchedNumber) continue;
+    const numStr = matchedNumber.replace(/[,,%]/g, "");
     const num = parseInt(numStr, 10);
     if (!Number.isNaN(num) && !validNumbers.has(num.toString()) && num > 0) {
       violations.push({
         guard: "fabrication",
         severity: "flag",
-        detail: `unverifiable claim: "${match[0]}" — number ${num} not present in input facts`,
+        detail: `unverifiable claim: "${match[0]}" — number ${String(num)} not present in input facts`,
       });
       // Strip the claim.
       cleaned = cleaned.replace(match[0], "[claim removed — no evidence]");
@@ -228,14 +229,14 @@ export class VerbRateLimiter {
     if (state.hour >= limits.maxPerHour) {
       return {
         passed: false,
-        violations: [{ guard: "rate_limit", severity: "block", detail: `hourly rate limit: ${state.hour}/${limits.maxPerHour} for verb ${verbId}` }],
+        violations: [{ guard: "rate_limit", severity: "block", detail: `hourly rate limit: ${String(state.hour)}/${String(limits.maxPerHour)} for verb ${verbId}` }],
         cleanedOutput: null,
       };
     }
     if (state.day >= limits.maxPerDay) {
       return {
         passed: false,
-        violations: [{ guard: "rate_limit", severity: "block", detail: `daily rate limit: ${state.day}/${limits.maxPerDay} for verb ${verbId}` }],
+        violations: [{ guard: "rate_limit", severity: "block", detail: `daily rate limit: ${String(state.day)}/${String(limits.maxPerDay)} for verb ${verbId}` }],
         cleanedOutput: null,
       };
     }
