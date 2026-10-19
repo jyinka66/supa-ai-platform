@@ -228,7 +228,7 @@ export function matchOpportunities(
       suggestedRate: disciplineDemand?.medianRateMinor !== undefined
         ? { amountMinor: disciplineDemand.medianRateMinor, currency: disciplineDemand.currency ?? "NGN" }
         : null,
-      reason: `${overlap.length}/${listing.skills.length} skills match, demand index ${demandIndex}/100`,
+      reason: `${String(overlap.length)}/${String(listing.skills.length)} skills match, demand index ${String(demandIndex)}/100`,
     });
   }
 
