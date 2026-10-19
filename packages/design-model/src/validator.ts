@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { DesignDoc, LayerNode, Page, Color, Fill, Stroke, Gradient, GradientStop, Constraints, RichRun, AutoLayout, Rect, LayerBase } from "./types";
+import type { DesignDoc, LayerNode, Page } from "./types";
 
 /**
  * Zod validators for the design document model.
