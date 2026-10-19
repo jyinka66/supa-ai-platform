@@ -348,7 +348,7 @@ describe("materializeInstance — idempotent per period key", () => {
     const variable = { ...rule, amountMode: "variable" as const };
     const mar = new Date("2024-03-15").getTime();
     const inst = materializeInstance(variable, mar);
-    expect(inst!.requiresConfirmation).toBe(true);
+    expect(inst?.requiresConfirmation).toBe(true);
   });
 });
 
