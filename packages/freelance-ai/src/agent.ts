@@ -19,7 +19,6 @@
  * ----------------------------------------------------------------
  */
 
-import { z } from "zod";
 import { db } from "@supa/db";
 import { activityFacts } from "@supa/db/schema";
 import type { DraftStore, LlmClient, DraftId, Draft, DraftOutcome } from "./verbs.js";
@@ -123,22 +122,24 @@ export class AutonomousAgent {
       { step: "brief_summarize", status: "pending", draftId: null, startedAt: null, completedAt: null, error: null },
       { step: "proposal_draft", status: "pending", draftId: null, startedAt: null, completedAt: null, error: null },
     ];
+    const [captureStep, briefStep, proposalStep] = steps;
+    if (!captureStep || !briefStep || !proposalStep) throw new Error("workflow_steps_missing");
 
     let captureResult: { draftId: DraftId; captured: import("./capture.js").CapturedJobDraft } | null = null;
     let briefResult: { draftId: DraftId; summary: BriefSummary } | null = null;
     let proposalResult: { draftId: DraftId; proposal: ProposalDraft } | null = null;
 
     // Step 1: Capture.
-    steps[0]!.status = "running";
-    steps[0]!.startedAt = now;
+    captureStep.status = "running";
+    captureStep.startedAt = now;
     try {
       captureResult = await runCapture(captureInput, this.llm, this.drafts);
-      steps[0]!.status = "completed";
-      steps[0]!.draftId = captureResult.draftId;
-      steps[0]!.completedAt = Date.now();
+      captureStep.status = "completed";
+      captureStep.draftId = captureResult.draftId;
+      captureStep.completedAt = Date.now();
     } catch (err) {
-      steps[0]!.status = "failed";
-      steps[0]!.error = err instanceof Error ? err.message : String(err);
+      captureStep.status = "failed";
+      captureStep.error = err instanceof Error ? err.message : String(err);
       return { workflowId, state: this.buildState(wsId, workflowId, steps, 0, "failed"), captureResult: null, briefResult: null, proposalResult: null };
     }
 
@@ -154,16 +155,16 @@ export class AutonomousAgent {
     }
 
     // Step 2: Brief summarize (uses the captured brief).
-    steps[1]!.status = "running";
-    steps[1]!.startedAt = Date.now();
+    briefStep.status = "running";
+    briefStep.startedAt = Date.now();
     try {
       briefResult = await runBriefSummarize(wsId, captureResult.captured.brief, this.llm, this.drafts);
-      steps[1]!.status = "completed";
-      steps[1]!.draftId = briefResult.draftId;
-      steps[1]!.completedAt = Date.now();
+      briefStep.status = "completed";
+      briefStep.draftId = briefResult.draftId;
+      briefStep.completedAt = Date.now();
     } catch (err) {
-      steps[1]!.status = "failed";
-      steps[1]!.error = err instanceof Error ? err.message : String(err);
+      briefStep.status = "failed";
+      briefStep.error = err instanceof Error ? err.message : String(err);
       return { workflowId, state: this.buildState(wsId, workflowId, steps, 1, "failed"), captureResult, briefResult: null, proposalResult: null };
     }
 
@@ -178,8 +179,8 @@ export class AutonomousAgent {
     }
 
     // Step 3: Proposal draft (uses the captured job + brief summary).
-    steps[2]!.status = "running";
-    steps[2]!.startedAt = Date.now();
+    proposalStep.status = "running";
+    proposalStep.startedAt = Date.now();
     try {
       // Build proposal input from capture + brief results.
       const proposalInput: ProposalInput = {
@@ -201,12 +202,12 @@ export class AutonomousAgent {
         proposedDays: 30,
       };
       proposalResult = await runProposal(wsId, proposalInput, this.llm, this.drafts);
-      steps[2]!.status = "completed";
-      steps[2]!.draftId = proposalResult.draftId;
-      steps[2]!.completedAt = Date.now();
+      proposalStep.status = "completed";
+      proposalStep.draftId = proposalResult.draftId;
+      proposalStep.completedAt = Date.now();
     } catch (err) {
-      steps[2]!.status = "failed";
-      steps[2]!.error = err instanceof Error ? err.message : String(err);
+      proposalStep.status = "failed";
+      proposalStep.error = err instanceof Error ? err.message : String(err);
       return { workflowId, state: this.buildState(wsId, workflowId, steps, 2, "failed"), captureResult, briefResult, proposalResult: null };
     }
 
@@ -235,11 +236,14 @@ export class AutonomousAgent {
       { step: "milestone_suggest", status: "running", draftId: null, startedAt: Date.now(), completedAt: null, error: null },
     ];
 
+    const milestoneStep = steps[0];
+    if (!milestoneStep) throw new Error("milestone_step_missing");
+
     try {
       const result = await runMilestoneSuggest(wsId, input, this.llm, this.drafts);
-      steps[0]!.status = "completed";
-      steps[0]!.draftId = result.draftId;
-      steps[0]!.completedAt = Date.now();
+      milestoneStep.status = "completed";
+      milestoneStep.draftId = result.draftId;
+      milestoneStep.completedAt = Date.now();
 
       await db.transaction(async (tx) => {
         await recordActivity(tx, {
@@ -255,8 +259,8 @@ export class AutonomousAgent {
         milestoneResult: result,
       };
     } catch (err) {
-      steps[0]!.status = "failed";
-      steps[0]!.error = err instanceof Error ? err.message : String(err);
+      milestoneStep.status = "failed";
+      milestoneStep.error = err instanceof Error ? err.message : String(err);
       return {
         workflowId,
         state: this.buildState(wsId, workflowId, steps, 0, "failed"),
@@ -312,6 +316,8 @@ export function computeVerbQualitySummary(
 ): VerbQualitySummary | null {
   const verbDrafts = drafts.filter((d) => d.provenance.verbId === verbId);
   if (verbDrafts.length === 0) return null;
+  const firstDraft = verbDrafts[0];
+  if (!firstDraft) return null;
 
   const committed = verbDrafts.filter((d) => d.status === "used");
   const discarded = verbDrafts.filter((d) => d.status === "discarded");
@@ -325,7 +331,8 @@ export function computeVerbQualitySummary(
     // Simple similarity (real impl: Levenshtein).
     let matches = 0;
     for (let i = 0; i < Math.min(draftLen, editedLen); i++) {
-      if (d.output[i] === d.editedOutput![i]) matches++;
+      const editedOutput = d.editedOutput ?? d.output;
+      if (d.output[i] === editedOutput[i]) matches++;
     }
     return 1 - matches / maxLen;
   });
@@ -355,8 +362,8 @@ export function computeVerbQualitySummary(
 
   return {
     verbId,
-    modelId: verbDrafts[0]!.provenance.modelId,
-    promptVersion: verbDrafts[0]!.provenance.promptVersion,
+    modelId: firstDraft.provenance.modelId,
+    promptVersion: firstDraft.provenance.promptVersion,
     totalDrafts: verbDrafts.length,
     committedCount: committed.length,
     discardedCount: discarded.length,
