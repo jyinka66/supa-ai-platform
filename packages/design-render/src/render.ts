@@ -437,16 +437,16 @@ function renderFill(fill: Fill, defs: DefsBuilder): string {
 // ============ DEFS BUILDER ============
 
 class DefsBuilder {
-  private gradients = new Map<string, string>();
+  private gradients = new Map<string, { id: string; gradient: Gradient }>();
   private gradientId = 0;
 
   addGradient(gradient: Gradient): string {
     const key = JSON.stringify(gradient);
     const existing = this.gradients.get(key);
-    if (existing) return existing;
+    if (existing) return existing.id;
 
     const id = `grad_${String(this.gradientId++)}`;
-    this.gradients.set(key, id);
+    this.gradients.set(key, { id, gradient });
     return id;
   }
 
@@ -454,8 +454,7 @@ class DefsBuilder {
     if (this.gradients.size === 0) return "";
 
     const parts: string[] = ["<defs>"];
-    for (const [json, id] of this.gradients) {
-      const gradient = JSON.parse(json) as Gradient;
+    for (const { gradient, id } of this.gradients.values()) {
       const tag = gradient.kind === "linear" ? "linearGradient" : "radialGradient";
       const angle = gradient.angle ?? 0;
       const x1 = 50 - Math.cos((angle * Math.PI) / 180) * 50;
