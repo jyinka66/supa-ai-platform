@@ -16,7 +16,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import type { EditorStore, EditorState } from "@supa/design-editor";
-import { COMMANDS as EDITOR_COMMANDS, type Command, searchCommands } from "@supa/design-editor";
+import { COMMANDS as EDITOR_COMMANDS, type Command } from "@supa/design-editor";
 import { exportDoc, exportSvg, importSvg } from "@supa/design-io";
 import { NoopMeasurer } from "@supa/design-render";
 import { emitCssCustomProperties } from "@supa/design-tokens/codegen";
@@ -167,7 +167,7 @@ const PALETTE_COMMANDS: PaletteCommand[] = [
         .then((result) => {
           store.load(result.doc);
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
           console.error("palette: io.import failed", err);
         });
     },
@@ -189,8 +189,8 @@ const PALETTE_COMMANDS: PaletteCommand[] = [
         tokens: new Map(),
       };
       const css = emitCssCustomProperties(emptyMap);
-      if (typeof navigator !== "undefined" && navigator.clipboard) {
-        void navigator.clipboard.writeText(css);
+      if (typeof navigator !== "undefined") {
+        void navigator.clipboard?.writeText(css).catch(() => undefined);
       }
     },
     icon: "clipboard",
@@ -204,7 +204,7 @@ const PALETTE_COMMANDS: PaletteCommand[] = [
     source: "design-ai",
     creditCost: 5,
     featureFlag: "ai.generate",
-    when: (state) => hasCredits(5) && isFeatureEnabled("ai.generate"),
+    when: () => hasCredits(5) && isFeatureEnabled("ai.generate"),
     run: (store) => {
       const prompt =
         typeof window !== "undefined"
@@ -433,7 +433,7 @@ export async function getVersionHistory(docId: string): Promise<VersionSnapshot[
   const res = await fetch(`/api/docs/${docId}/versions`);
   if (!res.ok) {
     throw new Error(
-      `getVersionHistory: failed to fetch versions for doc ${docId} (${res.status})`,
+      `getVersionHistory: failed to fetch versions for doc ${docId} (${String(res.status)})`,
     );
   }
   const json = (await res.json()) as { data?: VersionSnapshot[] };
@@ -458,7 +458,7 @@ export async function restoreVersion(
   const res = await fetch(`/api/docs/${docId}/versions/${targetRev}`);
   if (!res.ok) {
     throw new Error(
-      `restoreVersion: failed to fetch rev ${targetRev} for doc ${docId} (${res.status})`,
+      `restoreVersion: failed to fetch rev ${String(targetRev)} for doc ${docId} (${String(res.status)})`,
     );
   }
   const json = (await res.json()) as { data?: { doc?: DesignDoc } };
@@ -492,7 +492,7 @@ function triggerDownload(filename: string, blob: Blob): void {
   a.click();
   document.body.removeChild(a);
   // Revoke on the next tick — Chrome needs the URL to live past click().
-  setTimeout(() => URL.revokeObjectURL(url), 0);
+  setTimeout(() => { URL.revokeObjectURL(url); }, 0);
 }
 
 /**
