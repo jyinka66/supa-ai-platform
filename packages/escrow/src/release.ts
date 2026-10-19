@@ -11,9 +11,6 @@ import {
 import { and, eq } from "drizzle-orm";
 import { Money } from "@supa/freelance-core/job";
 import {
-  LedgerEntry,
-  buildDoubleEntry,
-  buildIdempotencyKey,
 } from "./ledger.js";
 import { assertTransition, type MilestoneStatus } from "@supa/supa-board/contract";
 
@@ -176,12 +173,18 @@ export async function releaseMilestone(
     // debit === credit + fee, in minor units, exactly.
     // Verified against the RETURNING rows — the DB's view of what
     // was inserted, not just what we computed locally.
-    const debitAmount = Number(debitEntry!.debitMinor);
-    const creditAmount = Number(creditEntry!.creditMinor);
-    const feeAmount = Number(feeEntry!.creditMinor);
+    if (!debitEntry || !creditEntry || !feeEntry) {
+      throw new Error("ledger insert did not return all three release entries");
+    }
+    if (debitEntry.debitMinor === null || creditEntry.creditMinor === null || feeEntry.creditMinor === null) {
+      throw new Error("release ledger entry is missing its expected amount");
+    }
+    const debitAmount = Number(debitEntry.debitMinor);
+    const creditAmount = Number(creditEntry.creditMinor);
+    const feeAmount = Number(feeEntry.creditMinor);
     if (debitAmount !== creditAmount + feeAmount) {
       throw new Error(
-        `SUM INVARIANT VIOLATION: debit (${debitAmount}) !== credit (${creditAmount}) + fee (${feeAmount})`,
+        `SUM INVARIANT VIOLATION: debit (${String(debitAmount)}) !== credit (${String(creditAmount)}) + fee (${String(feeAmount)})`,
       );
     }
 
