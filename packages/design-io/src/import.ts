@@ -721,7 +721,7 @@ function parseTransform(transform: string | null): ParsedTransform {
   // Parse translate()
   const translate = transform.match(/translate\(([^)]+)\)/);
   if (translate) {
-    const [tx, ty] = translate[1]!.split(/[\s,]+/).map(parseFloat);
+    const [tx, ty] = (translate[1] ?? "0 0").split(/[\s,]+/).map(parseFloat);
     result.x = tx ?? 0;
     result.y = ty ?? 0;
   }
@@ -729,7 +729,7 @@ function parseTransform(transform: string | null): ParsedTransform {
   // Parse rotate()
   const rotate = transform.match(/rotate\(([^)]+)\)/);
   if (rotate) {
-    const angle = parseFloat(rotate[1]!);
+    const angle = parseFloat(rotate[1] ?? "0");
     result.rotation = angle;
   }
 
@@ -778,7 +778,9 @@ function parseFill(el: Element, ctx: ConvertContext): Fill | null {
   if (fillAttr.startsWith("url(")) {
     const match = fillAttr.match(/url\(#([^)]+)\)/);
     if (match) {
-      const def = ctx.defs.get(match[1]!);
+      const defId = match[1];
+      if (!defId) continue;
+      const def = ctx.defs.get(defId);
       if (def) {
         return {
           type: "gradient",
@@ -826,7 +828,7 @@ function parseSvgColor(color: string, opacity?: string | null): Color {
   // rgb()/rgba().
   const rgbMatch = color.match(/rgba?\(([^)]+)\)/);
   if (rgbMatch) {
-    const parts = rgbMatch[1]!.split(/[\s,]+/).map(parseFloat);
+    const parts = (rgbMatch[1] ?? "").split(/[\s,]+/).map(parseFloat);
     const r = Math.round(parts[0] ?? 0);
     const g = Math.round(parts[1] ?? 0);
     const b = Math.round(parts[2] ?? 0);
@@ -888,10 +890,13 @@ function computePathBBox(d: string): Rect {
 
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (let i = 0; i < coords.length - 1; i += 2) {
-    minX = Math.min(minX, coords[i]!);
-    minY = Math.min(minY, coords[i + 1]!);
-    maxX = Math.max(maxX, coords[i]!);
-    maxY = Math.max(maxY, coords[i + 1]!);
+    const x = coords[i];
+    const y = coords[i + 1];
+    if (x === undefined || y === undefined) continue;
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
   }
 
   return {
