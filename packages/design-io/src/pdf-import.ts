@@ -227,7 +227,7 @@ function parsePdfObjects(
       const dictText = streamMatch[1] ?? "";
 
       // Compute the byte offset of stream content in the original bytes.
-      const objStart = m.index ?? 0;
+      const objStart = m.index;
       const streamKwOffset = objStart + body.indexOf("stream");
       const afterStream = streamKwOffset + "stream".length;
       let offset = afterStream;
@@ -392,10 +392,8 @@ async function inflateZlib(bytes: Uint8Array): Promise<Uint8Array> {
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
-    if (value) {
-      chunks.push(value);
-      total += value.length;
-    }
+    chunks.push(value);
+    total += value.length;
   }
   const out = new Uint8Array(total);
   let pos = 0;
