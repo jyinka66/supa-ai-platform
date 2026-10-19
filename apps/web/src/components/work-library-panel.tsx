@@ -138,7 +138,7 @@ export function WorkLibraryPanel({ workspaceId }: Props) {
     }
   }
 
-  async function createFolder(event: React.FormEvent<HTMLFormElement>) {
+  async function createFolder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!folderName.trim()) return;
     setBusy(true);
@@ -162,7 +162,7 @@ export function WorkLibraryPanel({ workspaceId }: Props) {
     }
   }
 
-  async function saveItem(event: React.FormEvent<HTMLFormElement>) {
+  async function saveItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editing || !title.trim()) return;
     setBusy(true);
