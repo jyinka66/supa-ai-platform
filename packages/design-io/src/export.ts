@@ -103,7 +103,8 @@ export async function exportDoc(
   for (let i = 0; i < pageIds.length; i++) {
     if (signal?.aborted) throw new ExportAbortedError();
 
-    const pageId = pageIds[i]!;
+    const pageId = pageIds[i];
+    if (pageId === undefined) continue;
     const page = spec.doc.pages.find((p) => p.id === pageId);
     if (!page) continue;
 
@@ -192,7 +193,8 @@ export async function exportDoc(
 
   // Single-page export → return the single blob.
   if (items.length === 1) {
-    return { items, blob: items[0]!.blob, mimeType: items[0]!.mimeType };
+    const onlyItem = items[0];
+    if (onlyItem) return { items, blob: onlyItem.blob, mimeType: onlyItem.mimeType };
   }
 
   // Multi-page: merge into one blob (PDF) or return items separately.
@@ -251,7 +253,8 @@ async function rasterizeSvg(params: RasterizeParams): Promise<Blob> {
 
     // Create an OffscreenCanvas at the target resolution.
     const canvas = new OffscreenCanvas(scaledWidth, scaledHeight);
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas 2D context is unavailable");
 
     // JPEG quirk: no alpha → composite over background (never black).
     if (format === "jpeg") {
@@ -431,7 +434,8 @@ function buildPdfFromJpegs(pages: ReadonlyArray<PdfPageRaster>): Uint8Array<Arra
   // Per-page objects: Image XObject (4+3i), Content stream (5+3i), Page (3+3i).
   // Written in that order so the Page object can reference the others by ID.
   for (let i = 0; i < pages.length; i++) {
-    const p = pages[i]!;
+    const p = pages[i];
+    if (!p) continue;
     const pageObjId = 3 + i * 3;
     const imageObjId = pageObjId + 1;
     const contentObjId = pageObjId + 2;
