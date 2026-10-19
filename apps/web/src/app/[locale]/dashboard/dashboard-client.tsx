@@ -246,7 +246,7 @@ export function DashboardClient({ locale, profile, workspaces, activeWorkspaceId
           locale={locale}
           workspaces={workspaces}
           activeWorkspaceId={activeWorkspaceId}
-          activePage="home"
+          activePage="dashboard"
           onWorkspaceChange={setActiveWorkspaceId}
           onNewChat={() => startConversation("chat")}
         />
