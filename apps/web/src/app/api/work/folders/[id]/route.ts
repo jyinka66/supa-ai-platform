@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@supa/db";
 import { workFolders, workItems } from "@supa/db/schema";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/session";
 import { guard } from "@/lib/ratelimit/guard";
 import { problem, ok } from "@/lib/api/problem";
@@ -66,11 +66,9 @@ export async function PATCH(
   // Handle move (parentId changed).
   if (parsed.data.parentId !== undefined && parsed.data.parentId !== folder.parentId) {
     try {
-      await (db as any).rpc("move_work_folder", {
-        p_folder_id: id,
-        p_new_parent_id: parsed.data.parentId,
-        p_user_id: user.id,
-      });
+      await db.execute(
+        sql`select public.move_work_folder(${id}::uuid, ${parsed.data.parentId}::uuid, ${user.id}::uuid)`,
+      );
     } catch (err) {
       const msg = String(err);
       if (msg.includes("cycle_detected")) return problem(400, "cycle_detected");
@@ -83,11 +81,9 @@ export async function PATCH(
   // Handle rename.
   if (parsed.data.name !== undefined && parsed.data.name !== folder.name) {
     try {
-      await (db as any).rpc("rename_work_folder", {
-        p_folder_id: id,
-        p_new_name: parsed.data.name,
-        p_user_id: user.id,
-      });
+      await db.execute(
+        sql`select public.rename_work_folder(${id}::uuid, ${parsed.data.name}::text, ${user.id}::uuid)`,
+      );
     } catch (err) {
       const msg = String(err);
       if (msg.includes("name_conflict")) return problem(409, "name_conflict");

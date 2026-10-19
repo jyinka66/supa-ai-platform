@@ -182,10 +182,9 @@ export async function GET(
   const canRestore = versionRows.length > 1 && versionRows[0]!.version === latestVersion;
 
   // Record the view (fire-and-forget, for "Recently Viewed").
-  void (db as any).rpc("upsert_work_item_view", {
-    p_user_id: user.id,
-    p_item_id: id,
-  }).catch(() => {});
+  void db
+    .execute(sql`select public.upsert_work_item_view(${user.id}::uuid, ${id}::uuid)`)
+    .catch(() => {});
 
   const response: ItemResponse = {
     item: {

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@supa/db";
+import { sql } from "drizzle-orm";
 import { problem, ok } from "@/lib/api/problem";
 
 export const runtime = "nodejs";
@@ -34,10 +35,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await (db as any).rpc("update_work_share_dwell", {
-      p_share_link_id: parsed.data.shareLinkId,
-      p_duration_ms: parsed.data.durationMs,
-    });
+    await db.execute(
+      sql`select public.update_work_share_dwell(${parsed.data.shareLinkId}::uuid, ${parsed.data.durationMs}::integer)`,
+    );
   } catch {
     // Best-effort — beacon failures shouldn't error.
   }

@@ -445,13 +445,10 @@ async function recordView(req: NextRequest, token: string): Promise<void> {
   const referrer = req.headers.get("referer") ?? null;
 
   try {
-    await (db as any).rpc("record_work_share_view", {
-      p_token: token,
-      p_ip_hash: ipHash,
-      p_country: null, // TODO: GeoIP lookup
-      p_user_agent: userAgent,
-      p_referrer: referrer,
-    });
+    // country is null until GeoIP lookup exists.
+    await db.execute(
+      sql`select public.record_work_share_view(${token}::text, ${ipHash}::text, null::text, ${userAgent}::text, ${referrer}::text)`,
+    );
   } catch {
     // Best-effort — view recording failure shouldn't block the content.
   }
