@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -8,7 +8,9 @@ import {
   Home,
   Layers,
   LoaderCircle,
+  MessageSquare,
   MessageSquarePlus,
+  Search,
   Sparkles,
   Users,
   Zap,
@@ -16,6 +18,15 @@ import {
 import type { WorkspaceWithMembership } from "@/lib/workspaces/queries";
 
 export type WorkspaceNavPage = "home" | "studio" | "history" | "team";
+
+type SidebarConversation = {
+  id: string;
+  mode: string;
+  title: string | null;
+  updatedAt: string | Date;
+  createdAt: string | Date;
+  pinned: boolean;
+};
 
 interface WorkspaceSidebarProps {
   locale: string;
@@ -44,6 +55,9 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
   const [savingWorkspace, setSavingWorkspace] = useState(false);
   const [creatingChat, setCreatingChat] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<SidebarConversation[]>([]);
+  const [historySearch, setHistorySearch] = useState("");
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const selectedWorkspace =
     props.workspaces.find((workspace) => workspace.id === selectedId) ??
@@ -59,6 +73,33 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
     // saved by saveWorkspace after the membership check succeeds.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!props.conversationId) return;
+    let active = true;
+    setHistoryLoading(true);
+    void fetch("/api/conversations", { cache: "no-store" })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({})) as { data?: SidebarConversation[] };
+        if (!response.ok) throw new Error("Could not load chat history.");
+        if (active) setConversations(Array.isArray(payload.data) ? payload.data : []);
+      })
+      .catch(() => {
+        if (active) setConversations([]);
+      })
+      .finally(() => {
+        if (active) setHistoryLoading(false);
+      });
+    return () => { active = false; };
+  }, [props.conversationId]);
+
+  const visibleConversations = useMemo(() => {
+    const query = historySearch.trim().toLocaleLowerCase();
+    return conversations.filter((conversation) => {
+      const title = conversation.title?.trim() || "New chat";
+      return !query || title.toLocaleLowerCase().includes(query) || conversation.mode.toLocaleLowerCase().includes(query);
+    });
+  }, [conversations, historySearch]);
 
   async function saveWorkspace(workspaceId: string) {
     setError(null);
@@ -163,6 +204,34 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
             </Link>
           </nav>
         </div>
+
+        {props.conversationId && (
+          <section className="mt-7 flex min-h-0 flex-1 flex-col" aria-label="AI chat history">
+            <div className="flex items-center justify-between px-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Chat history</p>
+              <span className="text-[10px] tabular-nums text-slate-400">{conversations.length}</span>
+            </div>
+            <label className="mt-3 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-400 focus-within:border-violet-300 focus-within:ring-2 focus-within:ring-violet-100">
+              <Search className="h-3.5 w-3.5 shrink-0" />
+              <input value={historySearch} onChange={(event) => setHistorySearch(event.target.value)} placeholder="Search chats" aria-label="Search chat history" className="min-w-0 w-full bg-transparent text-xs text-slate-800 outline-none placeholder:text-slate-400" />
+            </label>
+            <div className="mt-3 min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
+              {historyLoading ? (
+                <p className="px-3 py-4 text-xs text-slate-400">Loading conversations…</p>
+              ) : visibleConversations.length ? visibleConversations.map((conversation) => (
+                <Link key={conversation.id} href={base + "/chat/" + conversation.id} aria-current={conversation.id === props.conversationId ? "page" : undefined} className={"group flex items-start gap-2.5 rounded-xl px-3 py-2.5 text-xs transition " + (conversation.id === props.conversationId ? "bg-violet-50 text-violet-800 ring-1 ring-violet-100" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950")}>
+                  <MessageSquare className={"mt-0.5 h-3.5 w-3.5 shrink-0 " + (conversation.id === props.conversationId ? "text-violet-600" : "text-slate-400")} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{conversation.title?.trim() || "New chat"}</span>
+                    <span className="mt-1 block truncate text-[10px] capitalize text-slate-400">{conversation.mode}{conversation.pinned ? " · Pinned" : ""}</span>
+                  </span>
+                </Link>
+              )) : (
+                <p className="px-3 py-4 text-xs leading-5 text-slate-400">{historySearch ? "No chats match your search." : "Your conversations will appear here after you start chatting."}</p>
+              )}
+            </div>
+          </section>
+        )}
 
         <div className="mt-8">
           <label htmlFor="supa-workspace-select" className="px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
