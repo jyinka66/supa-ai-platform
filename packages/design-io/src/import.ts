@@ -596,12 +596,12 @@ function parseTextContent(el: Element): { content: string; runs: RichRun[] } {
   const runs: RichRun[] = [];
 
   if (tspans.length === 0) {
-    content = el.textContent ?? "";
+    content = el.textContent;
     return { content, runs: [{ start: 0, end: content.length }] };
   }
 
   for (const tspan of tspans) {
-    const text = tspan.textContent ?? "";
+    const text = tspan.textContent;
     const start = content.length;
     content += text;
 
