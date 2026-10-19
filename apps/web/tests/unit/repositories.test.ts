@@ -91,24 +91,28 @@ function makeMockRow(sqlStr: string): Record<string, unknown> {
   return {};
 }
 
+const mockSystemTx = {
+  unsafe: vi.fn(async (sql: string, params: unknown[] = []) => {
+    sqlCapture.push({ sql, params });
+    if (/^\s*select/i.test(sql.trim())) return [makeMockRow(sql)];
+    if (/returning/i.test(sql)) return [{ id: "00000000-0000-0000-0000-000000000aaa" }];
+    return [];
+  }),
+  array: (values: unknown[]) => values,
+};
+
 vi.mock("@supa/db", () => ({
   db: {
     execute: vi.fn(async (sqlTag: { queryChunks?: unknown[] }) => {
       const sqlStr = String(sqlTag);
       sqlCapture.push({ sql: sqlStr, params: sqlTag.queryChunks ?? [] });
-      // SELECT queries return an array with one mock row; INSERT/UPDATE/DELETE
-      // return an empty array (the repository's mutation code doesn't read
-      // the result).
-      if (/^\s*select/i.test(sqlStr.trim())) {
-        return [makeMockRow(sqlStr)];
-      }
-      // UPDATE ... RETURNING also returns rows.
-      if (/returning/i.test(sqlStr)) {
-        return [{ id: "00000000-0000-0000-0000-000000000aaa" }];
-      }
+      if (/^\s*select/i.test(sqlStr.trim())) return [makeMockRow(sqlStr)];
+      if (/returning/i.test(sqlStr)) return [{ id: "00000000-0000-0000-0000-000000000aaa" }];
       return [];
     }),
   },
+  getSystemPool: () => mockSystemTx,
+  withSystem: async (_pool: unknown, callback: (tx: typeof mockSystemTx) => Promise<unknown>) => callback(mockSystemTx),
 }));
 
 vi.mock("drizzle-orm", () => ({
