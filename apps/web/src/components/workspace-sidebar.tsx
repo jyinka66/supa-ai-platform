@@ -369,7 +369,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
             <input value={historySearch} onChange={(event) => setHistorySearch(event.target.value)} placeholder="Search chats" aria-label="Search chat history" className="min-w-0 w-full bg-transparent text-xs text-slate-800 outline-none placeholder:text-slate-400" />
           </label>
           <div className="max-h-[calc(65dvh-7rem)] overflow-y-auto p-2">
-            {visibleConversations.length ? visibleConversations.map((conversation) => (
+            {historyLoading ? <p className="px-3 py-5 text-center text-xs text-slate-400">Loading conversations…</p> : visibleConversations.length ? visibleConversations.map((conversation) => (
               <Link key={conversation.id} href={base + "/chat/" + conversation.id} onClick={() => setMobileHistoryOpen(false)} className={"flex items-start gap-3 rounded-xl px-3 py-3 " + (conversation.id === props.conversationId ? "bg-violet-50 text-violet-800" : "text-slate-700 hover:bg-slate-50")}>
                 <MessageSquare className="mt-0.5 h-4 w-4 shrink-0" />
                 <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{conversation.title?.trim() || "New chat"}</span><span className="mt-1 block text-xs capitalize text-slate-400">{conversation.mode}{conversation.pinned ? " · Pinned" : ""}</span></span>
