@@ -264,7 +264,8 @@ describe("Dashboard — 3-second contract", () => {
     ];
     const rollup = buildDailyRollup(facts, NOW, NGN, WS);
     expect(rollup).not.toBeNull();
-    const verification = verifyRollup(rollup!, facts);
+    if (!rollup) throw new Error("expected daily rollup");
+    const verification = verifyRollup(rollup, facts);
     expect(verification.consistent).toBe(true);
   });
 
@@ -272,7 +273,8 @@ describe("Dashboard — 3-second contract", () => {
     const facts = [
       makeFact({ id: "f1", kind: "invoice-issued", nativeAmountMinor: 500_000n, asOf: NOW }),
     ];
-    const rollup = buildDailyRollup(facts, NOW, NGN, WS)!;
+    const rollup = buildDailyRollup(facts, NOW, NGN, WS);
+    if (!rollup) throw new Error("expected daily rollup");
     // Tamper with the rollup.
     const tampered = { ...rollup, revenueMinor: 999_999n };
     const verification = verifyRollup(tampered, facts);
